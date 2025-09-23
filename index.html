@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en    <link rel=" icon" type="image/svg+xml" href="favicon.svg">>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leelaaverse - Generate Alternate You | AI Social Media Platform</title>
+
+    <!-- SEO Meta Tags -->
+    <meta name="description"
+        content="Leelaaverse is the new social media for AI creators. Join the community to explore, generate, and share AI art. Generate alternate you with AI-powered creativity.">
+    <meta name="keywords"
+        content="AI social media, AI art, AI creators, generate AI content, AI community, artificial intelligence, digital art">
+    <meta name="author" content="Leelaaverse">
+    <meta name="robots" content="index, follow">
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Leelaaverse - Generate Alternate You">
+    <meta property="og:description"
+        content="The new social media for AI creators. Explore, generate, and share AI art in a vibrant community.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://leelaaverse.com">
+    <meta property="og:site_name" content="Leelaaverse">
+
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Leelaaverse - Generate Alternate You">
+    <meta name="twitter:description"
+        content="The new social media for AI creators. Explore, generate, and share AI art.">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+
+    <!-- Logo SVG - Inline for performance -->
+    <style>
+        .logo-svg {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 2px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
+            overflow: hidden;
+        }
+
+        .logo-svg:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.2);
+            border-color: #6366f1;
+        }
+
+        .logo-svg img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+        .logo-svg-large {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 2px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
+            overflow: hidden;
+        }
+
+        .logo-svg-large img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 12px;
+        }
+
+        .logo-svg-small {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+            transition: all 0.3s ease;
+            box-shadow: 0 1px 4px rgba(99, 102, 241, 0.1);
+            overflow: hidden;
+        }
+
+        .logo-svg-small img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 4px;
+        }
+    </style>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Leelaaverse",
+        "url": "https://leelaaverse.com",
+        "description": "The new social media for AI creators. Explore, generate, and share AI art.",
+        "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://leelaaverse.com/search?q={search_term_string}",
+            "query-input": "required name=search_term_string"
+        }
+    }
+    </script>
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="header">
+        <nav class="nav">
+            <div class="nav-container">
+                <div class="logo">
+                    <div class="logo-container">
+                        <div class="logo-svg">
+                            <img src="logo.png" alt="Leelaaverse Logo" width="24" height="24" />
+                        </div>
+                        <h1 class="logo-text">Leelaaverse</h1>
+                    </div>
+                </div>
+                <div class="nav-links">
+                    <a href="#features" class="nav-link">Features</a>
+                    <a href="#how-it-works" class="nav-link">How It Works</a>
+                    <a href="#faq" class="nav-link">FAQ</a>
+                    <button class="waitlist-btn-nav" id="navWaitlistBtn">Join Waitlist</button>
+                </div>
+                <div class="mobile-menu-toggle" id="mobileMenuToggle">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <main>
+        <section class="hero">
+            <div class="hero-container">
+                <div class="hero-content">
+                    <div class="hero-badge">
+                        <span class="badge-text">🚀 Coming Soon</span>
+                    </div>
+
+                    <h1 class="hero-title">
+                        Generate <span class="gradient-text">Alternate You</span>
+                    </h1>
+
+                    <p class="hero-subtitle">
+                        Leelaaverse is the new social media for AI creators. A community to explore, generate, and share
+                        AI art. Where imagination meets technology.
+                    </p>
+
+                    <div class="hero-buttons">
+                        <button class="cta-button primary" id="mainWaitlistBtn">
+                            <span class="button-text">Join the Future</span>
+                            <div class="button-shine"></div>
+                        </button>
+                        <button class="cta-button secondary">
+                            <span class="button-text">Learn More</span>
+                        </button>
+                    </div>
+
+                    <div class="hero-stats">
+                        <div class="stat">
+                            <div class="stat-number">10K+</div>
+                            <div class="stat-label">AI Creators Waiting</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-number">∞</div>
+                            <div class="stat-label">Creative Possibilities</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-number">0.05%</div>
+                            <div class="stat-label">Marketplace Fee</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hero-visual">
+                    <div class="floating-cards">
+                        <div class="floating-card card-1">
+                            <div class="card-header">AI Generated</div>
+                            <div class="card-content">🎨</div>
+                        </div>
+                        <div class="floating-card card-2">
+                            <div class="card-header">Vote & Share</div>
+                            <div class="card-content">⬆️</div>
+                        </div>
+                        <div class="floating-card card-3">
+                            <div class="card-header">Marketplace</div>
+                            <div class="card-content">💰</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Animated Background -->
+            <div class="hero-bg">
+                <div class="gradient-orb orb-1"></div>
+                <div class="gradient-orb orb-2"></div>
+                <div class="gradient-orb orb-3"></div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="features" id="features">
+            <div class="features-container">
+                <div class="section-header">
+                    <h2 class="section-title">Why Leelaaverse?</h2>
+                    <p class="section-subtitle">The future of AI-powered social creativity</p>
+                </div>
+
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🤖</div>
+                        <h3 class="feature-title">AI-Only Content</h3>
+                        <p class="feature-description">Post AI-generated images, videos, and text. No regular photos,
+                            just pure AI creativity.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">⬆️</div>
+                        <h3 class="feature-title">Vote & Trend</h3>
+                        <p class="feature-description">Upvote the best content. Weekly awards and trending algorithms
+                            reward creativity.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">🛒</div>
+                        <h3 class="feature-title">AI Marketplace</h3>
+                        <p class="feature-description">Buy and sell AI art directly. Set your price, we take only 0.05%
+                            commission.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">⚡</div>
+                        <h3 class="feature-title">Instant Generation</h3>
+                        <p class="feature-description">Input prompts, select AI models, generate content instantly using
+                            our coins system.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">🏆</div>
+                        <h3 class="feature-title">Leaderboards</h3>
+                        <p class="feature-description">Weekly top creators and earners. Build your reputation in the AI
+                            community.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">🌐</div>
+                        <h3 class="feature-title">Multi-AI Models</h3>
+                        <p class="feature-description">Choose from multiple AI providers. Find the perfect model for
+                            your vision.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section class="about" id="about">
+            <div class="about-container">
+                <div class="about-content">
+                    <h2 class="about-title">The Future of <span class="gradient-text">Creative Expression</span></h2>
+                    <p class="about-description">
+                        Leelaaverse isn't just another social platform. We're building the Facebook for AI creators,
+                        evolving into the YouTube for AI content. A vibrant, community-driven space where technology
+                        meets imagination, and everyone can explore their alternate digital identity.
+                    </p>
+
+                    <div class="about-highlights">
+                        <div class="highlight">
+                            <div class="highlight-icon">🎯</div>
+                            <div class="highlight-text">India-first launch with global scalability</div>
+                        </div>
+                        <div class="highlight">
+                            <div class="highlight-icon">💳</div>
+                            <div class="highlight-text">UPI payments for seamless transactions</div>
+                        </div>
+                        <div class="highlight">
+                            <div class="highlight-icon">🎮</div>
+                            <div class="highlight-text">Addictive design with Gen-Z appeal</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- How It Works Section -->
+        <section class="how-it-works" id="how-it-works">
+            <div class="how-it-works-container">
+                <div class="section-header">
+                    <h2 class="section-title">How Leelaaverse Works</h2>
+                    <p class="section-subtitle">From prompt to viral post in 3 simple steps</p>
+                </div>
+
+                <div class="steps-container">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h3 class="step-title">Generate & Create</h3>
+                            <p class="step-description">Use our AI models to generate stunning images, videos, or text.
+                                Choose from multiple providers and customize your prompts.</p>
+                            <div class="step-features">
+                                <span class="feature-tag">Multiple AI Models</span>
+                                <span class="feature-tag">Custom Prompts</span>
+                                <span class="feature-tag">Instant Generation</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h3 class="step-title">Share & Engage</h3>
+                            <p class="step-description">Post your AI creations to the community. Get upvotes, comments,
+                                and build your following in the AI creator ecosystem.</p>
+                            <div class="step-features">
+                                <span class="feature-tag">Community Voting</span>
+                                <span class="feature-tag">Comments & Shares</span>
+                                <span class="feature-tag">Creator Profiles</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h3 class="step-title">Earn & Grow</h3>
+                            <p class="step-description">Monetize your creativity through our marketplace. Sell your AI
+                                art, earn from tips, and climb the leaderboards.</p>
+                            <div class="step-features">
+                                <span class="feature-tag">AI Marketplace</span>
+                                <span class="feature-tag">Creator Tips</span>
+                                <span class="feature-tag">Weekly Awards</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Testimonials Section -->
+        <section class="testimonials" id="testimonials">
+            <div class="testimonials-container">
+                <div class="section-header">
+                    <h2 class="section-title">What Early Users Say</h2>
+                    <p class="section-subtitle">Join thousands who are already creating their alternate selves</p>
+                </div>
+
+                <div class="testimonials-grid">
+                    <div class="testimonial-card">
+                        <div class="testimonial-content">
+                            <p class="testimonial-text">"Leelaaverse is revolutionary! I've never seen such an intuitive
+                                platform for AI art. The community is amazing and the voting system keeps me motivated
+                                to create better content."</p>
+                        </div>
+                        <div class="testimonial-author">
+                            <div class="author-avatar">🎨</div>
+                            <div class="author-info">
+                                <div class="author-name">Priya Sharma</div>
+                                <div class="author-title">Digital Artist, Mumbai</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="testimonial-card">
+                        <div class="testimonial-content">
+                            <p class="testimonial-text">"Finally, a social platform that gets AI creators! The
+                                marketplace feature is genius - I've already made ₹15,000 selling my AI art. The 0.05%
+                                fee is incredibly fair."</p>
+                        </div>
+                        <div class="testimonial-author">
+                            <div class="author-avatar">🚀</div>
+                            <div class="author-info">
+                                <div class="author-name">Arjun Patel</div>
+                                <div class="author-title">AI Enthusiast, Bangalore</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="testimonial-card">
+                        <div class="testimonial-content">
+                            <p class="testimonial-text">"The AI models available are incredible! From text to images to
+                                videos, everything is possible. The community feedback helps me improve my prompts
+                                daily."</p>
+                        </div>
+                        <div class="testimonial-author">
+                            <div class="author-avatar">✨</div>
+                            <div class="author-info">
+                                <div class="author-name">Sneha Gupta</div>
+                                <div class="author-title">Content Creator, Delhi</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="testimonial-stats">
+                    <div class="stat-item">
+                        <div class="stat-value">4.9/5</div>
+                        <div class="stat-label">User Rating</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">50K+</div>
+                        <div class="stat-label">AI Artworks Created</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">₹2M+</div>
+                        <div class="stat-label">Creator Earnings</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ Section -->
+        <section class="faq" id="faq">
+            <div class="faq-container">
+                <div class="section-header">
+                    <h2 class="section-title">Frequently Asked Questions</h2>
+                    <p class="section-subtitle">Everything you need to know about Leelaaverse</p>
+                </div>
+
+                <div class="faq-accordion">
+                    <div class="faq-item">
+                        <div class="faq-question" data-faq="1">
+                            <h3>What makes Leelaaverse different from other social media platforms?</h3>
+                            <span class="faq-icon">+</span>
+                        </div>
+                        <div class="faq-answer" id="faq-1">
+                            <p>Leelaaverse is the world's first AI-only social media platform. Unlike Instagram or
+                                TikTok where you post regular photos, here you can only post AI-generated content. We
+                                have built-in AI generation tools, a voting system instead of likes, and a marketplace
+                                where you can monetize your AI art with just 0.05% commission.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <div class="faq-question" data-faq="2">
+                            <h3>How does the coins system work?</h3>
+                            <span class="faq-icon">+</span>
+                        </div>
+                        <div class="faq-answer" id="faq-2">
+                            <p>Coins are our platform currency. You buy coins via UPI and use them to generate AI
+                                content. Each generation costs coins depending on the AI model complexity. You can also
+                                receive coins as gifts from other users or earn them through community rewards and
+                                contests.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <div class="faq-question" data-faq="3">
+                            <h3>Which AI models do you support?</h3>
+                            <span class="faq-icon">+</span>
+                        </div>
+                        <div class="faq-answer" id="faq-3">
+                            <p>We support multiple AI providers including DALL-E, Midjourney, Stable Diffusion, GPT
+                                models for text, and various video generation models. You can choose the best model for
+                                your specific creative needs. We're constantly adding new AI providers based on
+                                community requests.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <div class="faq-question" data-faq="4">
+                            <h3>How does the marketplace work?</h3>
+                            <span class="faq-icon">+</span>
+                        </div>
+                        <div class="faq-answer" id="faq-4">
+                            <p>Our marketplace lets you sell your AI-generated art directly to other users. You set your
+                                own price, and we take only 0.05% commission - one of the lowest in the industry.
+                                Payments are processed instantly via UPI, and you keep 99.95% of your earnings.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <div class="faq-question" data-faq="5">
+                            <h3>What is the voting system and how does it work?</h3>
+                            <span class="faq-icon">+</span>
+                        </div>
+                        <div class="faq-answer" id="faq-5">
+                            <p>Instead of traditional likes, we use upvotes and downvotes similar to Reddit. This
+                                creates a quality-driven feed where the best AI content rises to the top. High-voted
+                                content gets featured in trending, weekly awards, and has better visibility. It
+                                encourages creators to focus on quality over quantity.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <div class="faq-question" data-faq="6">
+                            <h3>When will Leelaaverse launch?</h3>
+                            <span class="faq-icon">+</span>
+                        </div>
+                        <div class="faq-answer" id="faq-6">
+                            <p>We're currently in private beta testing with select creators. Public launch is planned
+                                for Q1 2026. Join our waitlist to get early access and be among the first to experience
+                                the future of AI social media. Waitlist members get priority access and exclusive launch
+                                bonuses.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <div class="faq-question" data-faq="7">
+                            <h3>Is Leelaaverse free to use?</h3>
+                            <span class="faq-icon">+</span>
+                        </div>
+                        <div class="faq-answer" id="faq-7">
+                            <p>Yes! You can browse, vote, comment, and follow creators for free. However, generating AI
+                                content requires coins, which you purchase via UPI. We offer various coin packs starting
+                                from ₹99, and larger packs give you more value per coin.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <div class="faq-question" data-faq="8">
+                            <h3>Will there be a mobile app?</h3>
+                            <span class="faq-icon">+</span>
+                        </div>
+                        <div class="faq-answer" id="faq-8">
+                            <p>Absolutely! We're launching with a responsive web app first, followed by native iOS and
+                                Android apps in Phase 2. The mobile apps will have full feature parity with push
+                                notifications, offline viewing, and optimized AI generation on mobile devices.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Newsletter Section -->
+        <section class="newsletter">
+            <div class="newsletter-container">
+                <div class="newsletter-content">
+                    <div class="newsletter-text">
+                        <h3 class="newsletter-title">Stay Updated</h3>
+                        <p class="newsletter-subtitle">Get the latest updates on Leelaaverse launch, new AI models, and
+                            creator spotlights</p>
+                    </div>
+                    <div class="newsletter-form">
+                        <input type="email" placeholder="Enter your email" class="newsletter-input">
+                        <button class="newsletter-button">Subscribe</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="cta-section">
+            <div class="cta-container">
+                <h2 class="cta-title">Ready to Generate Your Alternate You?</h2>
+                <p class="cta-subtitle">Join thousands of AI creators waiting for launch</p>
+                <button class="cta-button primary large" id="finalWaitlistBtn">
+                    <span class="button-text">Join the Waitlist</span>
+                    <div class="button-shine"></div>
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="footer-logo-container">
+                        <div class="logo-svg-small">
+                            <img src="logo.png" alt="Leelaaverse Logo" width="20" height="20" />
+                        </div>
+                        <h3 class="footer-logo">Leelaaverse</h3>
+                    </div>
+                    <p class="footer-tagline">Generate alternate you</p>
+                </div>
+                <div class="footer-links">
+                    <a href="#" class="footer-link">Privacy Policy</a>
+                    <a href="#" class="footer-link">Terms of Service</a>
+                    <a href="#" class="footer-link">Contact</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Leelaaverse. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Waitlist Modal -->
+    <div class="modal-overlay" id="waitlistModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title-container">
+                    <div class="logo-svg-small">
+                        <img src="logo.png" alt="Leelaaverse Logo" width="20" height="20" />
+                    </div>
+                    <h3 class="modal-title">Join the Waitlist</h3>
+                </div>
+                <button class="modal-close" id="modalClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description">Be the first to experience the future of AI social media</p>
+                <form class="waitlist-form" id="waitlistForm">
+                    <input type="email" placeholder="Enter your email" class="form-input" required>
+                    <button type="submit" class="form-submit">Join Waitlist</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="script.js"></script>
+</body>
+
+</html>
