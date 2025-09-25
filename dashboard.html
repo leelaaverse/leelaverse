@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Leelaaverse | AI Social Media Platform</title>
+
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Leelaaverse Dashboard - Create, share, and monetize AI art. Your personal AI creation studio.">
+    <meta name="robots" content="noindex, nofollow">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dashboard-styles.css">
+</head>
+
+<body class="dashboard-body">
+    <!-- Dashboard Header -->
+    <header class="dashboard-header">
+        <nav class="dashboard-nav">
+            <div class="nav-container">
+                <div class="logo">
+                    <div class="logo-container">
+                        <div class="logo-svg">
+                            <img src="logo.png" alt="Leelaaverse Logo" width="24" height="24" />
+                        </div>
+                        <h1 class="logo-text">Leelaaverse</h1>
+                    </div>
+                </div>
+
+                <!-- Search Bar -->
+                <div class="search-container">
+                    <input type="text" placeholder="Search creators, art, or prompts..." class="search-input">
+                    <button class="search-btn">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="M21 21l-4.35-4.35"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- User Menu -->
+                <div class="user-menu">
+                    <div class="coins-display">
+                        <svg class="coin-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                            <circle cx="12" cy="12" r="10" fill="#FFD700"/>
+                            <text x="12" y="16" text-anchor="middle" fill="#000" font-size="8">₹</text>
+                        </svg>
+                        <span class="coin-count">1,250</span>
+                        <button class="add-coins-btn">+</button>
+                    </div>
+
+                    <button class="notification-btn">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                        </svg>
+                        <span class="notification-badge">3</span>
+                    </button>
+
+                    <div class="user-profile" id="userProfileDropdown">
+                        <img src="https://via.placeholder.com/32x32/6366f1/ffffff?text=U" alt="User Avatar" class="user-avatar">
+                        <span class="user-name">Demo User</span>
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6,9 12,15 18,9"/>
+                        </svg>
+
+                        <!-- Dropdown Menu -->
+                        <div class="dropdown-menu" id="profileDropdown">
+                            <a href="#" class="dropdown-item">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                                Profile
+                            </a>
+                            <a href="#" class="dropdown-item">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="3"/>
+                                    <path d="M12 1v6M12 17v6M4.22 4.22l4.24 4.24M15.54 15.54l4.24 4.24M1 12h6M17 12h6M4.22 19.78l4.24-4.24M15.54 8.46l4.24-4.24"/>
+                                </svg>
+                                Settings
+                            </a>
+                            <a href="#" class="dropdown-item">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <circle cx="12" cy="12" r="4"/>
+                                    <line x1="21.17" y1="8" x2="12" y2="8"/>
+                                    <line x1="3.95" y1="6.06" x2="8.54" y2="14"/>
+                                    <line x1="10.88" y1="21.94" x2="15.46" y2="14"/>
+                                </svg>
+                                Analytics
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            <button class="dropdown-item logout-btn" id="logoutBtn">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                                    <polyline points="16,17 21,12 16,7"/>
+                                    <line x1="21" y1="12" x2="9" y2="12"/>
+                                </svg>
+                                Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-item active">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9,22 9,12 15,12 15,22"/>
+                </svg>
+                <span>Home</span>
+            </a>
+            
+            <a href="#" class="nav-item">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+                <span>Generate</span>
+            </a>
+
+            <a href="#" class="nav-item">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                    <line x1="8" y1="21" x2="16" y2="21"/>
+                    <line x1="12" y1="17" x2="12" y2="21"/>
+                </svg>
+                <span>Explore</span>
+            </a>
+
+            <a href="#" class="nav-item">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <path d="M16 10a4 4 0 0 1-8 0"/>
+                </svg>
+                <span>Marketplace</span>
+            </a>
+
+            <a href="#" class="nav-item">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+                </svg>
+                <span>My Posts</span>
+            </a>
+
+            <a href="#" class="nav-item">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 20V10"/>
+                    <path d="M18 20V4"/>
+                    <path d="M6 20v-4"/>
+                </svg>
+                <span>Leaderboard</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        <div class="main-content">
+            <!-- Welcome Section -->
+            <section class="welcome-section">
+                <div class="welcome-content">
+                    <h1 class="welcome-title">Welcome back, <span class="gradient-text">Demo User</span>!</h1>
+                    <p class="welcome-subtitle">Ready to create something amazing today?</p>
+                </div>
+                <button class="create-btn">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="16"/>
+                        <line x1="8" y1="12" x2="16" y2="12"/>
+                    </svg>
+                    Create New Post
+                </button>
+            </section>
+
+            <!-- Stats Cards -->
+            <section class="stats-section">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                            </svg>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value">127</div>
+                            <div class="stat-label">Posts Created</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                                <path d="M7 10v12l5-3 5 3V10M7 10l5 3 5-3M7 10l-2-2h14l-2 2"/>
+                            </svg>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value">2.4K</div>
+                            <div class="stat-label">Total Upvotes</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                                <circle cx="12" cy="12" r="10" fill="#FFD700"/>
+                                <text x="12" y="16" text-anchor="middle" fill="#000" font-size="8">₹</text>
+                            </svg>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value">₹12,450</div>
+                            <div class="stat-label">Earnings</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value">856</div>
+                            <div class="stat-label">Followers</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Recent Posts -->
+            <section class="recent-posts">
+                <div class="section-header">
+                    <h2 class="section-title">Your Recent Posts</h2>
+                    <a href="#" class="view-all">View All</a>
+                </div>
+
+                <div class="posts-grid">
+                    <div class="post-card">
+                        <div class="post-image">
+                            <img src="https://via.placeholder.com/300x300/6366f1/ffffff?text=AI+Art+1" alt="AI Generated Art">
+                            <div class="post-overlay">
+                                <button class="post-action">View</button>
+                            </div>
+                        </div>
+                        <div class="post-info">
+                            <h3 class="post-title">Futuristic Cityscape</h3>
+                            <div class="post-stats">
+                                <span class="upvotes">245 ⬆️</span>
+                                <span class="comments">12 💬</span>
+                                <span class="earnings">₹450</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="post-card">
+                        <div class="post-image">
+                            <img src="https://via.placeholder.com/300x300/8b5cf6/ffffff?text=AI+Art+2" alt="AI Generated Art">
+                            <div class="post-overlay">
+                                <button class="post-action">View</button>
+                            </div>
+                        </div>
+                        <div class="post-info">
+                            <h3 class="post-title">Abstract Portrait</h3>
+                            <div class="post-stats">
+                                <span class="upvotes">189 ⬆️</span>
+                                <span class="comments">8 💬</span>
+                                <span class="earnings">₹320</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="post-card">
+                        <div class="post-image">
+                            <img src="https://via.placeholder.com/300x300/06b6d4/ffffff?text=AI+Art+3" alt="AI Generated Art">
+                            <div class="post-overlay">
+                                <button class="post-action">View</button>
+                            </div>
+                        </div>
+                        <div class="post-info">
+                            <h3 class="post-title">Digital Landscape</h3>
+                            <div class="post-stats">
+                                <span class="upvotes">298 ⬆️</span>
+                                <span class="comments">15 💬</span>
+                                <span class="earnings">₹650</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="post-card">
+                        <div class="post-image">
+                            <img src="https://via.placeholder.com/300x300/f59e0b/ffffff?text=AI+Art+4" alt="AI Generated Art">
+                            <div class="post-overlay">
+                                <button class="post-action">View</button>
+                            </div>
+                        </div>
+                        <div class="post-info">
+                            <h3 class="post-title">Cosmic Dreams</h3>
+                            <div class="post-stats">
+                                <span class="upvotes">156 ⬆️</span>
+                                <span class="comments">6 💬</span>
+                                <span class="earnings">₹280</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Trending Section -->
+            <section class="trending-section">
+                <div class="section-header">
+                    <h2 class="section-title">Trending Now</h2>
+                    <select class="filter-select">
+                        <option>This Week</option>
+                        <option>This Month</option>
+                        <option>All Time</option>
+                    </select>
+                </div>
+
+                <div class="trending-grid">
+                    <div class="trending-item">
+                        <div class="trend-rank">#1</div>
+                        <div class="trend-content">
+                            <img src="https://via.placeholder.com/60x60/ef4444/ffffff?text=1" alt="Trending Post" class="trend-image">
+                            <div class="trend-info">
+                                <h4 class="trend-title">AI Anime Characters</h4>
+                                <p class="trend-creator">by @artistpro</p>
+                                <div class="trend-stats">1.2K ⬆️ • ₹2.5K earned</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="trending-item">
+                        <div class="trend-rank">#2</div>
+                        <div class="trend-content">
+                            <img src="https://via.placeholder.com/60x60/10b981/ffffff?text=2" alt="Trending Post" class="trend-image">
+                            <div class="trend-info">
+                                <h4 class="trend-title">Cyberpunk Portraits</h4>
+                                <p class="trend-creator">by @futuretech</p>
+                                <div class="trend-stats">980 ⬆️ • ₹1.8K earned</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="trending-item">
+                        <div class="trend-rank">#3</div>
+                        <div class="trend-content">
+                            <img src="https://via.placeholder.com/60x60/8b5cf6/ffffff?text=3" alt="Trending Post" class="trend-image">
+                            <div class="trend-info">
+                                <h4 class="trend-title">Fantasy Worlds</h4>
+                                <p class="trend-creator">by @dreamscape</p>
+                                <div class="trend-stats">756 ⬆️ • ₹1.4K earned</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Create Post Modal -->
+    <div class="modal-overlay" id="createModal">
+        <div class="modal create-modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Create New Post</h3>
+                <button class="modal-close" id="createModalClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="create-tabs">
+                    <button class="tab-btn active" data-tab="generate">Generate AI Art</button>
+                    <button class="tab-btn" data-tab="upload">Upload Existing</button>
+                </div>
+                
+                <div class="tab-content active" id="generateTab">
+                    <div class="form-group">
+                        <label class="form-label">AI Model</label>
+                        <select class="form-select">
+                            <option>DALL-E 3</option>
+                            <option>Midjourney</option>
+                            <option>Stable Diffusion</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Prompt</label>
+                        <textarea class="form-textarea" placeholder="Describe what you want to create..." rows="4"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Style</label>
+                        <div class="style-options">
+                            <button class="style-btn">Realistic</button>
+                            <button class="style-btn">Anime</button>
+                            <button class="style-btn">Abstract</button>
+                            <button class="style-btn">Cyberpunk</button>
+                        </div>
+                    </div>
+                    <div class="cost-display">
+                        <span>Cost: 50 coins</span>
+                    </div>
+                    <button class="generate-btn">Generate Art</button>
+                </div>
+                
+                <div class="tab-content" id="uploadTab">
+                    <div class="upload-area">
+                        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17,8 12,3 7,8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        <p>Drag and drop your AI art, or click to browse</p>
+                        <input type="file" accept="image/*" style="display: none;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="dashboard.js"></script>
+</body>
+
+</html>
