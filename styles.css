@@ -188,6 +188,22 @@ h6 {
     color: var(--primary-color);
 }
 
+.signup-nav {
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--primary-color) !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: var(--radius-md);
+    border: 2px solid transparent;
+    transition: all var(--transition-normal);
+}
+
+.signup-nav:hover {
+    background: var(--primary-color);
+    color: var(--white) !important;
+    border-color: var(--primary-color);
+    transform: translateY(-1px);
+}
+
 .waitlist-btn-nav {
     background: var(--primary-color);
     color: var(--white);
