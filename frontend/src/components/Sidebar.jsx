@@ -61,7 +61,7 @@ const Sidebar = ({ currentUser, suggestedUsers }) => {
                     <div className="text-xs text-gray-400 dark:text-gray-500 space-y-1">
                         <p>About • Help • Press • API • Jobs • Privacy</p>
                         <p>Terms • Locations • Language • Meta Verified</p>
-                        <p className="pt-2">© 2025 LEELAVERSE FROM META</p>
+                        <p className="pt-2">© 2025 LEELAVERSE</p>
                     </div>
                 </div>
             </div>
