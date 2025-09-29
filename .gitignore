@@ -1,0 +1,17 @@
+node_modules
+.DS_Store
+dist
+coverage
+*.log
+logs/
+uploads/
+*.sqlite
+*.db
+*.db-journal
+.env
+backend/.env
+frontend/.env
+backend/node_modules
+frontend/node_modules
+backend/dist
+frontend/dist
