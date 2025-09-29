@@ -22,20 +22,33 @@ export const AuthProvider = ({ children }) => {
     // Check if user is logged in on app start
     useEffect(() => {
         const checkAuth = async () => {
-            if (accessToken) {
+            const storedAccessToken = localStorage.getItem('accessToken');
+            const storedRefreshToken = localStorage.getItem('refreshToken');
+
+            console.log('Auth check - stored tokens:', { accessToken: !!storedAccessToken, refreshToken: !!storedRefreshToken });
+
+            if (storedAccessToken) {
                 try {
                     const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
                         headers: {
-                            'Authorization': `Bearer ${accessToken}`
+                            'Authorization': `Bearer ${storedAccessToken}`
                         }
                     });
 
                     if (response.ok) {
                         const data = await response.json();
+                        console.log('Profile fetch successful:', data.data.user);
                         setUser(data.data.user);
+                        setAccessToken(storedAccessToken);
+                        setRefreshToken(storedRefreshToken);
                     } else {
+                        console.log('Profile fetch failed, attempting token refresh');
                         // Token might be expired, try to refresh
-                        await refreshAccessToken();
+                        if (storedRefreshToken) {
+                            await refreshAccessToken();
+                        } else {
+                            logout();
+                        }
                     }
                 } catch (error) {
                     console.error('Auth check error:', error);
@@ -46,7 +59,7 @@ export const AuthProvider = ({ children }) => {
         };
 
         checkAuth();
-    }, [accessToken]);
+    }, []); // Only run once on mount
 
     const login = async (email, password) => {
         try {
@@ -63,13 +76,16 @@ export const AuthProvider = ({ children }) => {
             if (data.success) {
                 const { user, accessToken, refreshToken } = data.data;
 
+                // Update all auth states
                 setUser(user);
                 setAccessToken(accessToken);
                 setRefreshToken(refreshToken);
 
+                // Store tokens in localStorage
                 localStorage.setItem('accessToken', accessToken);
                 localStorage.setItem('refreshToken', refreshToken);
 
+                console.log('Login successful, user set:', user);
                 return { success: true };
             } else {
                 return { success: false, message: data.message };
@@ -95,13 +111,16 @@ export const AuthProvider = ({ children }) => {
             if (data.success) {
                 const { user, accessToken, refreshToken } = data.data;
 
+                // Update all auth states
                 setUser(user);
                 setAccessToken(accessToken);
                 setRefreshToken(refreshToken);
 
+                // Store tokens in localStorage
                 localStorage.setItem('accessToken', accessToken);
                 localStorage.setItem('refreshToken', refreshToken);
 
+                console.log('Registration successful, user set:', user);
                 return { success: true };
             } else {
                 return { success: false, message: data.message, errors: data.errors };
