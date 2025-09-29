@@ -28,11 +28,11 @@ const StoryCircle = ({ story, isOwn = false }) => {
                 )}
             </div>
             <div className="text-center">
-                <span className="text-xs cabin-semibold text-gray-700 dark:text-gray-300 block max-w-[80px] truncate">
+                <span className="text-xs cabin-semibold text-gray-800 dark:text-gray-200 block max-w-[80px] truncate">
                     {isOwn ? 'Your AI' : story.username}
                 </span>
                 {!isOwn && (
-                    <span className="text-[10px] cabin-regular text-gray-500 dark:text-gray-400 block">
+                    <span className="text-[10px] cabin-regular text-gray-600 dark:text-gray-300 block">
                         {story.aiActivity || 'Creating...'}
                     </span>
                 )}
@@ -43,12 +43,12 @@ const StoryCircle = ({ story, isOwn = false }) => {
 
 const Stories = ({ stories, currentUser }) => {
     return (
-        <div className="bg-gradient-to-r from-white via-gray-50 to-white dark:from-gray-800 dark:via-gray-750 dark:to-gray-800 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg zalando-sans-expanded-primary text-gray-900 dark:text-white">AI Creators Live</h3>
                 <div className="flex items-center space-x-2">
                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-xs cabin-regular text-gray-600 dark:text-gray-400">Live Now</span>
+                    <span className="text-xs cabin-regular text-gray-600 dark:text-gray-300">Live Now</span>
                 </div>
             </div>
 
@@ -76,7 +76,7 @@ const Stories = ({ stories, currentUser }) => {
                             </div>
                         </div>
                     </div>
-                    <span className="text-xs cabin-semibold text-gray-600 dark:text-gray-400 text-center max-w-[80px]">
+                    <span className="text-xs cabin-semibold text-gray-700 dark:text-gray-300 text-center max-w-[80px]">
                         Discover
                     </span>
                 </div>
