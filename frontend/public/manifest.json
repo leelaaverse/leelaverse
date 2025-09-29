@@ -1,0 +1,171 @@
+{
+  "name": "Leelaaverse - AI Social Media Platform",
+  "short_name": "Leelaaverse",
+  "description": "A comprehensive AI-powered social media platform with intelligent feeds, real-time messaging, marketplace, and immersive user experiences.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0066ff",
+  "theme_color": "#0066ff",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["social", "entertainment", "lifestyle"],
+  "screenshots": [
+    {
+      "src": "screenshots/desktop-home.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Leelaaverse desktop home screen"
+    },
+    {
+      "src": "screenshots/mobile-feed.png",
+      "sizes": "375x812",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Leelaaverse mobile feed"
+    }
+  ],
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "16x16 32x32",
+      "type": "image/x-icon",
+      "purpose": "any"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Feed",
+      "short_name": "Feed",
+      "description": "View your personalized social feed",
+      "url": "/feed.html",
+      "icons": [
+        {
+          "src": "icons/shortcut-feed.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Messages",
+      "short_name": "Messages",
+      "description": "Check your messages and conversations",
+      "url": "/messages.html",
+      "icons": [
+        {
+          "src": "icons/shortcut-messages.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Explore",
+      "short_name": "Explore",
+      "description": "Discover new content and users",
+      "url": "/explore.html",
+      "icons": [
+        {
+          "src": "icons/shortcut-explore.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Marketplace",
+      "short_name": "Shop",
+      "description": "Browse and shop in the marketplace",
+      "url": "/marketplace.html",
+      "icons": [
+        {
+          "src": "icons/shortcut-marketplace.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "share_target": {
+    "action": "/feed.html",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "related_applications": [
+    {
+      "platform": "webapp",
+      "url": "https://leelaaverse.com/manifest.json"
+    }
+  ],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "launch_handler": {
+    "client_mode": ["navigate-existing", "auto"]
+  },
+  "handle_links": "preferred",
+  "protocol_handlers": [
+    {
+      "protocol": "web+leelaaverse",
+      "url": "/profile.html?user=%s"
+    }
+  ]
+}
