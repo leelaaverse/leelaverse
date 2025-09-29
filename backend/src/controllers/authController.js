@@ -1,12 +1,19 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const mongoose = require('mongoose');
 
 class AuthController {
     // Register new user
     async register(req, res) {
         try {
             const { username, email, password, firstName, lastName } = req.body;
+
+            // Mock mode when database is not available
+            if (mongoose.connection.readyState !== 1) {
+                console.log('🚫 Database not available, using mock authentication');
+                return await this.mockRegister(req, res);
+            }
 
             // Check if user already exists
             const existingUser = await User.findOne({
@@ -110,8 +117,14 @@ class AuthController {
             const { email, password } = req.body;
             const clientIP = req.ip || req.connection.remoteAddress;
 
-            // Find user by email
-            const user = await User.findOne({ email });
+            // Mock mode when database is not available
+            if (mongoose.connection.readyState !== 1) {
+                console.log('🚫 Database not available, using mock authentication');
+                return await this.mockLogin(req, res);
+            }
+
+            // Find user by email and include password field
+            const user = await User.findOne({ email }).select('+password');
 
             if (!user) {
                 return res.status(401).json({
@@ -148,18 +161,11 @@ class AuthController {
             const isMatch = await user.comparePassword(password);
 
             if (!isMatch) {
-                // Record failed login attempt
-                user.loginAttempts.push({
-                    ip: clientIP,
-                    success: false,
-                    timestamp: new Date()
-                });
-
                 // Increment failed attempts
-                user.failedLoginAttempts += 1;
+                user.loginAttempts += 1;
 
                 // Lock account if too many failed attempts
-                if (user.failedLoginAttempts >= 5) {
+                if (user.loginAttempts >= 5) {
                     user.lockUntil = Date.now() + (30 * 60 * 1000); // Lock for 30 minutes
                 }
 
@@ -172,22 +178,10 @@ class AuthController {
             }
 
             // Successful login - reset failed attempts and update last login
-            user.failedLoginAttempts = 0;
+            user.loginAttempts = 0;
             user.lockUntil = undefined;
             user.lastLogin = new Date();
             user.lastActiveAt = new Date();
-
-            // Record successful login attempt
-            user.loginAttempts.unshift({
-                ip: clientIP,
-                success: true,
-                timestamp: new Date()
-            });
-
-            // Keep only last 10 login attempts
-            if (user.loginAttempts.length > 10) {
-                user.loginAttempts = user.loginAttempts.slice(0, 10);
-            }
 
             // Generate tokens
             const accessToken = user.generateAccessToken();
@@ -332,6 +326,30 @@ class AuthController {
         try {
             const user = req.user;
 
+            // Mock mode when database is not available
+            if (!user.save) {
+                // This is a mock user from JWT token
+                const mockUser = {
+                    _id: user.userId,
+                    username: user.email?.split('@')[0] || 'mockuser',
+                    email: user.email,
+                    firstName: 'Mock',
+                    lastName: 'User',
+                    createdAt: new Date(),
+                    profile: {
+                        firstName: 'Mock',
+                        lastName: 'User'
+                    }
+                };
+
+                return res.json({
+                    success: true,
+                    data: {
+                        user: mockUser
+                    }
+                });
+            }
+
             // Update last active timestamp
             user.lastActiveAt = new Date();
             await user.save();
@@ -402,7 +420,8 @@ class AuthController {
     // Change password
     async changePassword(req, res) {
         try {
-            const user = req.user;
+            // Get user with password field explicitly
+            const user = await User.findById(req.user._id || req.user.id).select('+password');
             const { currentPassword, newPassword } = req.body;
 
             // Verify current password
@@ -521,6 +540,103 @@ class AuthController {
                 message: 'Server error while resetting password'
             });
         }
+    }
+
+    // Mock authentication methods for development without database
+    mockLogin(req, res) {
+        const { email, password } = req.body;
+
+        // Simple mock validation
+        if (!email || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email and password are required'
+            });
+        }
+
+        // Generate mock JWT tokens
+        const mockUser = {
+            _id: 'mock-user-id',
+            username: email.split('@')[0],
+            email: email,
+            firstName: 'Mock',
+            lastName: 'User',
+            createdAt: new Date(),
+            profile: {
+                firstName: 'Mock',
+                lastName: 'User'
+            }
+        };
+
+        const accessToken = jwt.sign(
+            { userId: mockUser._id, email: mockUser.email },
+            process.env.JWT_SECRET || 'mock-jwt-secret',
+            { expiresIn: '15m' }
+        );
+
+        const refreshToken = jwt.sign(
+            { userId: mockUser._id },
+            process.env.JWT_REFRESH_SECRET || 'mock-refresh-secret',
+            { expiresIn: '7d' }
+        );
+
+        res.json({
+            success: true,
+            message: 'Login successful (mock mode)',
+            data: {
+                user: mockUser,
+                accessToken,
+                refreshToken
+            }
+        });
+    }
+
+    mockRegister(req, res) {
+        const { username, email, password, firstName, lastName } = req.body;
+
+        // Simple mock validation
+        if (!email || !password || !username) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email, username and password are required'
+            });
+        }
+
+        // Generate mock user
+        const mockUser = {
+            _id: 'mock-user-id-' + Date.now(),
+            username: username,
+            email: email,
+            firstName: firstName || '',
+            lastName: lastName || '',
+            createdAt: new Date(),
+            profile: {
+                firstName: firstName || '',
+                lastName: lastName || ''
+            }
+        };
+
+        const accessToken = jwt.sign(
+            { userId: mockUser._id, email: mockUser.email },
+            process.env.JWT_SECRET || 'mock-jwt-secret',
+            { expiresIn: '15m' }
+        );
+
+        const refreshToken = jwt.sign(
+            { userId: mockUser._id },
+            process.env.JWT_REFRESH_SECRET || 'mock-refresh-secret',
+            { expiresIn: '7d' }
+        );
+
+        res.status(201).json({
+            success: true,
+            message: 'User registered successfully (mock mode)',
+            data: {
+                user: mockUser,
+                accessToken,
+                refreshToken
+            }
+        });
     }
 }
 

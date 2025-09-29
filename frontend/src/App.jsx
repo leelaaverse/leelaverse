@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { DarkModeProvider } from './contexts/DarkModeContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import Header from './components/Header'
@@ -25,6 +25,18 @@ function AppContent() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false)
   const { user, loading, logout } = useAuth()
+
+  // Debug logging
+  console.log('AppContent - user:', user, 'loading:', loading)
+
+  // Close modals when user is authenticated
+  useEffect(() => {
+    if (user) {
+      setIsLoginModalOpen(false)
+      setIsSignupModalOpen(false)
+      setIsWaitlistModalOpen(false)
+    }
+  }, [user])
 
   const renderPage = () => {
     if (user) {
