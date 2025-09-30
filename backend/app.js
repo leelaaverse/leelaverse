@@ -49,6 +49,21 @@ app.get('/api/health', (req, res) => {
     });
 });
 
+// Add root route handler
+app.get('/', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Welcome to Leelaverse Backend API',
+        version: '1.0.0',
+        endpoints: {
+            health: '/api/health',
+            auth: '/api/auth',
+            documentation: 'See README.md for full API documentation'
+        },
+        timestamp: new Date().toISOString()
+    });
+});
+
 // API routes
 app.use('/api/auth', authRoutes);
 
