@@ -32,7 +32,8 @@ export const AuthProvider = ({ children }) => {
                     const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
                         headers: {
                             'Authorization': `Bearer ${storedAccessToken}`
-                        }
+                        },
+                        credentials: 'include'
                     });
 
                     if (response.ok) {
@@ -68,6 +69,7 @@ export const AuthProvider = ({ children }) => {
                 headers: {
                     'Content-Type': 'application/json'
                 },
+                credentials: 'include',
                 body: JSON.stringify({ email, password })
             });
 
@@ -103,6 +105,7 @@ export const AuthProvider = ({ children }) => {
                 headers: {
                     'Content-Type': 'application/json'
                 },
+                credentials: 'include',
                 body: JSON.stringify(userData)
             });
 
@@ -140,6 +143,7 @@ export const AuthProvider = ({ children }) => {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${accessToken}`
                     },
+                    credentials: 'include',
                     body: JSON.stringify({ refreshToken })
                 });
             }
@@ -165,6 +169,7 @@ export const AuthProvider = ({ children }) => {
                 headers: {
                     'Content-Type': 'application/json'
                 },
+                credentials: 'include',
                 body: JSON.stringify({ refreshToken })
             });
 
@@ -198,6 +203,7 @@ export const AuthProvider = ({ children }) => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${accessToken}`
                 },
+                credentials: 'include',
                 body: JSON.stringify(profileData)
             });
 
