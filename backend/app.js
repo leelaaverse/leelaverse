@@ -21,12 +21,35 @@ connectDB();
 // Security middleware
 app.use(helmet());
 
-// CORS configuration
+// CORS configuration - Allow multiple origins
+const allowedOrigins = [
+    'https://www.leelaaverse.com',
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://127.0.0.1:5173'
+];
+
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: function (origin, callback) {
+        // Log for debugging
+        console.log('CORS Request from origin:', origin);
+
+        // Allow requests with no origin (like mobile apps, curl, Postman)
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+            console.log('✅ Origin allowed:', origin);
+            callback(null, true);
+        } else {
+            console.log('❌ Origin blocked:', origin);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204
 }));
 
 // Body parsing middleware
