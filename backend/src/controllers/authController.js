@@ -4,6 +4,22 @@ const crypto = require('crypto');
 const mongoose = require('mongoose');
 
 class AuthController {
+    constructor() {
+        // Bind all methods to preserve 'this' context
+        this.register = this.register.bind(this);
+        this.login = this.login.bind(this);
+        this.logout = this.logout.bind(this);
+        this.refreshToken = this.refreshToken.bind(this);
+        this.getProfile = this.getProfile.bind(this);
+        this.updateProfile = this.updateProfile.bind(this);
+        this.changePassword = this.changePassword.bind(this);
+        this.deleteAccount = this.deleteAccount.bind(this);
+        this.requestPasswordReset = this.requestPasswordReset.bind(this);
+        this.resetPassword = this.resetPassword.bind(this);
+        this.mockRegister = this.mockRegister.bind(this);
+        this.mockLogin = this.mockLogin.bind(this);
+    }
+
     // Register new user
     async register(req, res) {
         try {
