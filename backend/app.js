@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const path = require('path');
 require('dotenv').config();
 
 // Import database connection
@@ -14,6 +15,24 @@ const authRoutes = require('./src/routes/auth');
 
 const app = express();
 const port = process.env.PORT || 3000;
+
+// In-memory log storage for debugging (limited to last 100 entries)
+const requestLogs = [];
+const MAX_LOGS = 100;
+
+function addLog(type, message, data = {}) {
+    const log = {
+        timestamp: new Date().toISOString(),
+        type,
+        message,
+        data
+    };
+    requestLogs.unshift(log);
+    if (requestLogs.length > MAX_LOGS) {
+        requestLogs.pop();
+    }
+    console.log(`[${type}] ${message}`, data);
+}
 
 // Connect to MongoDB
 connectDB();
@@ -32,16 +51,19 @@ const allowedOrigins = [
 app.use(cors({
     origin: function (origin, callback) {
         // Log for debugging
-        console.log('CORS Request from origin:', origin);
+        addLog('CORS', 'Request received', { origin, env: process.env.NODE_ENV });
 
         // Allow requests with no origin (like mobile apps, curl, Postman)
-        if (!origin) return callback(null, true);
+        if (!origin) {
+            addLog('CORS', 'No origin - allowing request');
+            return callback(null, true);
+        }
 
         if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
-            console.log('✅ Origin allowed:', origin);
+            addLog('CORS', '✅ Origin allowed', { origin });
             callback(null, true);
         } else {
-            console.log('❌ Origin blocked:', origin);
+            addLog('CORS', '❌ Origin blocked', { origin, allowedOrigins });
             callback(new Error('Not allowed by CORS'));
         }
     },
@@ -56,11 +78,26 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Request logger middleware
+app.use((req, res, next) => {
+    addLog('REQUEST', `${req.method} ${req.path}`, {
+        origin: req.headers.origin,
+        referer: req.headers.referer,
+        userAgent: req.headers['user-agent'],
+        contentType: req.headers['content-type'],
+        authorization: req.headers.authorization ? 'Present' : 'None'
+    });
+    next();
+});
+
 // Rate limiting
 app.use(generalLimiter);
 
 // Trust proxy (for accurate IP addresses behind reverse proxy)
 app.set('trust proxy', 1);
+
+// Serve static files from public directory
+app.use('/public', express.static(path.join(__dirname, 'public')));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -69,6 +106,32 @@ app.get('/api/health', (req, res) => {
         message: 'Leelaverse Backend API is running',
         timestamp: new Date().toISOString(),
         environment: process.env.NODE_ENV || 'development'
+    });
+});
+
+// Debug logs endpoint (publicly accessible for debugging)
+app.get('/api/debug/logs', (req, res) => {
+    const limit = parseInt(req.query.limit) || 50;
+    res.json({
+        success: true,
+        message: 'Recent request logs',
+        count: requestLogs.length,
+        logs: requestLogs.slice(0, limit),
+        allowedOrigins,
+        environment: process.env.NODE_ENV || 'development',
+        timestamp: new Date().toISOString()
+    });
+});
+
+// Clear logs endpoint (for cleanup)
+app.post('/api/debug/logs/clear', (req, res) => {
+    const clearedCount = requestLogs.length;
+    requestLogs.length = 0;
+    addLog('SYSTEM', 'Logs cleared', { count: clearedCount });
+    res.json({
+        success: true,
+        message: `Cleared ${clearedCount} logs`,
+        timestamp: new Date().toISOString()
     });
 });
 
@@ -81,6 +144,8 @@ app.get('/', (req, res) => {
         endpoints: {
             health: '/api/health',
             auth: '/api/auth',
+            logs: '/api/debug/logs',
+            logsViewer: '/public/logs.html',
             documentation: 'See README.md for full API documentation'
         },
         timestamp: new Date().toISOString()

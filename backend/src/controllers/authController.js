@@ -9,6 +9,13 @@ class AuthController {
         try {
             const { username, email, password, firstName, lastName } = req.body;
 
+            console.log('🔐 REGISTER attempt:', {
+                email,
+                username,
+                origin: req.headers.origin,
+                ip: req.ip
+            });
+
             // Mock mode when database is not available
             if (mongoose.connection.readyState !== 1) {
                 console.log('🚫 Database not available, using mock authentication');
@@ -116,6 +123,12 @@ class AuthController {
         try {
             const { email, password } = req.body;
             const clientIP = req.ip || req.connection.remoteAddress;
+
+            console.log('🔐 LOGIN attempt:', {
+                email,
+                origin: req.headers.origin,
+                ip: clientIP
+            });
 
             // Mock mode when database is not available
             if (mongoose.connection.readyState !== 1) {
