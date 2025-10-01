@@ -9,11 +9,11 @@ class AuthController {
         this.register = this.register.bind(this);
         this.login = this.login.bind(this);
         this.logout = this.logout.bind(this);
+        this.logoutAll = this.logoutAll.bind(this);
         this.refreshToken = this.refreshToken.bind(this);
         this.getProfile = this.getProfile.bind(this);
         this.updateProfile = this.updateProfile.bind(this);
         this.changePassword = this.changePassword.bind(this);
-        this.deleteAccount = this.deleteAccount.bind(this);
         this.requestPasswordReset = this.requestPasswordReset.bind(this);
         this.resetPassword = this.resetPassword.bind(this);
         this.mockRegister = this.mockRegister.bind(this);
