@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leelaverse Backend Logs</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #0f0f0f;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #fff;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .info {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #4CAF50;
+        }
+
+        .info p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #1976D2;
+        }
+
+        button.danger {
+            background: #f44336;
+        }
+
+        button.danger:hover {
+            background: #d32f2f;
+        }
+
+        .filter {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        select,
+        input {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #333;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            font-size: 14px;
+        }
+
+        .log-container {
+            background: #1a1a1a;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .log-entry {
+            padding: 15px;
+            border-bottom: 1px solid #2a2a2a;
+            transition: background 0.2s;
+        }
+
+        .log-entry:hover {
+            background: #252525;
+        }
+
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .log-type {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .log-type.CORS {
+            background: #2196F3;
+            color: white;
+        }
+
+        .log-type.REQUEST {
+            background: #9C27B0;
+            color: white;
+        }
+
+        .log-type.SYSTEM {
+            background: #FF9800;
+            color: white;
+        }
+
+        .timestamp {
+            font-size: 12px;
+            color: #999;
+            font-family: monospace;
+        }
+
+        .log-message {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+
+        .log-data {
+            background: #0a0a0a;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            color: #4CAF50;
+        }
+
+        .log-data pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .error {
+            background: #f44336;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #2196F3;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #999;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .highlight-success {
+            color: #4CAF50;
+        }
+
+        .highlight-error {
+            color: #f44336;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🔍 Leelaverse Backend Logs</h1>
+
+        <div id="info" class="info">
+            <p><strong>Environment:</strong> <span id="environment">-</span></p>
+            <p><strong>Total Logs:</strong> <span id="totalLogs">-</span></p>
+            <p><strong>Allowed Origins:</strong> <span id="allowedOrigins">-</span></p>
+            <p><strong>Last Updated:</strong> <span id="lastUpdated">-</span></p>
+        </div>
+
+        <div class="stats" id="stats" style="display: none;">
+            <div class="stat-card">
+                <div class="stat-label">CORS Requests</div>
+                <div class="stat-value" id="corsCount">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">API Requests</div>
+                <div class="stat-value" id="requestCount">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Blocked Origins</div>
+                <div class="stat-value highlight-error" id="blockedCount">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Allowed Origins</div>
+                <div class="stat-value highlight-success" id="allowedCount">0</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button onclick="fetchLogs()">🔄 Refresh Logs</button>
+            <button onclick="toggleAutoRefresh()" id="autoRefreshBtn">▶️ Auto Refresh (OFF)</button>
+            <button class="danger" onclick="clearLogs()">🗑️ Clear Logs</button>
+
+            <div class="filter">
+                <label>Filter:</label>
+                <select id="filterType" onchange="filterLogs()">
+                    <option value="all">All Types</option>
+                    <option value="CORS">CORS Only</option>
+                    <option value="REQUEST">Requests Only</option>
+                    <option value="SYSTEM">System Only</option>
+                </select>
+            </div>
+
+            <div class="filter">
+                <label>Limit:</label>
+                <input type="number" id="logLimit" value="50" min="10" max="100" step="10" onchange="fetchLogs()">
+            </div>
+        </div>
+
+        <div id="error" style="display: none;" class="error"></div>
+        <div id="loading" class="loading">Loading logs...</div>
+        <div id="logContainer" class="log-container"></div>
+    </div>
+
+    <script>
+        let autoRefreshInterval = null;
+        let allLogs = [];
+
+        async function fetchLogs() {
+            const loading = document.getElementById('loading');
+            const logContainer = document.getElementById('logContainer');
+            const errorDiv = document.getElementById('error');
+            const limit = document.getElementById('logLimit').value;
+
+            loading.style.display = 'block';
+            errorDiv.style.display = 'none';
+
+            try {
+                const response = await fetch(`/api/debug/logs?limit=${limit}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    allLogs = data.logs;
+
+                    // Update info
+                    document.getElementById('environment').textContent = data.environment;
+                    document.getElementById('totalLogs').textContent = data.count;
+                    document.getElementById('allowedOrigins').textContent = data.allowedOrigins.join(', ');
+                    document.getElementById('lastUpdated').textContent = new Date(data.timestamp).toLocaleString();
+
+                    // Calculate stats
+                    updateStats(data.logs);
+
+                    // Render logs
+                    filterLogs();
+                } else {
+                    showError('Failed to fetch logs');
+                }
+            } catch (error) {
+                showError('Error fetching logs: ' + error.message);
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        function updateStats(logs) {
+            const stats = {
+                cors: 0,
+                request: 0,
+                blocked: 0,
+                allowed: 0
+            };
+
+            logs.forEach(log => {
+                if (log.type === 'CORS') stats.cors++;
+                if (log.type === 'REQUEST') stats.request++;
+                if (log.message.includes('blocked') || log.message.includes('❌')) stats.blocked++;
+                if (log.message.includes('allowed') || log.message.includes('✅')) stats.allowed++;
+            });
+
+            document.getElementById('corsCount').textContent = stats.cors;
+            document.getElementById('requestCount').textContent = stats.request;
+            document.getElementById('blockedCount').textContent = stats.blocked;
+            document.getElementById('allowedCount').textContent = stats.allowed;
+            document.getElementById('stats').style.display = 'grid';
+        }
+
+        function filterLogs() {
+            const filterType = document.getElementById('filterType').value;
+            const logContainer = document.getElementById('logContainer');
+
+            let filteredLogs = allLogs;
+            if (filterType !== 'all') {
+                filteredLogs = allLogs.filter(log => log.type === filterType);
+            }
+
+            if (filteredLogs.length === 0) {
+                logContainer.innerHTML = '<div class="empty"><h2>No logs found</h2><p>No logs match the current filter criteria.</p></div>';
+                return;
+            }
+
+            logContainer.innerHTML = filteredLogs.map(log => `
+                <div class="log-entry">
+                    <div class="log-header">
+                        <span class="log-type ${log.type}">${log.type}</span>
+                        <span class="timestamp">${new Date(log.timestamp).toLocaleString()}</span>
+                    </div>
+                    <div class="log-message">${log.message}</div>
+                    ${Object.keys(log.data).length > 0 ? `
+                        <div class="log-data">
+                            <pre>${JSON.stringify(log.data, null, 2)}</pre>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        function toggleAutoRefresh() {
+            const btn = document.getElementById('autoRefreshBtn');
+
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+                btn.textContent = '▶️ Auto Refresh (OFF)';
+                btn.style.background = '#2196F3';
+            } else {
+                autoRefreshInterval = setInterval(fetchLogs, 3000);
+                btn.textContent = '⏸️ Auto Refresh (ON)';
+                btn.style.background = '#4CAF50';
+            }
+        }
+
+        async function clearLogs() {
+            if (!confirm('Are you sure you want to clear all logs?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/debug/logs/clear', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    alert(data.message);
+                    fetchLogs();
+                } else {
+                    showError('Failed to clear logs');
+                }
+            } catch (error) {
+                showError('Error clearing logs: ' + error.message);
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        // Initial load
+        fetchLogs();
+    </script>
+</body>
+
+</html>
