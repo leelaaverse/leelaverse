@@ -2,6 +2,21 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const User = require('../models/User');
 
+// Validate OAuth environment variables
+if (!process.env.GOOGLE_CLIENT_ID) {
+	console.error('❌ GOOGLE_CLIENT_ID environment variable is required');
+	console.error('Please add GOOGLE_CLIENT_ID to your Vercel environment variables');
+	process.exit(1);
+}
+
+if (!process.env.GOOGLE_CLIENT_SECRET) {
+	console.error('❌ GOOGLE_CLIENT_SECRET environment variable is required');
+	console.error('Please add GOOGLE_CLIENT_SECRET to your Vercel environment variables');
+	process.exit(1);
+}
+
+console.log('✅ OAuth environment variables loaded successfully');
+
 // Passport configuration for Google OAuth
 passport.use(new GoogleStrategy({
 	clientID: process.env.GOOGLE_CLIENT_ID,
