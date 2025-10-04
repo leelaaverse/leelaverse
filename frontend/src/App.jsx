@@ -17,6 +17,7 @@ import Dashboard from './components/Dashboard'
 import WaitlistModal from './components/WaitlistModal'
 import LoginModal from './components/LoginModal'
 import SignupModal from './components/SignupModal'
+import OAuthCallback from './components/OAuthCallback'
 import './App.css'
 
 function AppContent() {
@@ -26,8 +27,12 @@ function AppContent() {
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false)
   const { user, loading, logout } = useAuth()
 
+  // Check if this is the OAuth callback route
+  const isOAuthCallback = window.location.pathname === '/auth/callback' ||
+                         window.location.search.includes('access_token');
+
   // Debug logging
-  console.log('AppContent - user:', user, 'loading:', loading)
+  console.log('AppContent - user:', user, 'loading:', loading, 'isOAuthCallback:', isOAuthCallback)
 
   // Close modals when user is authenticated
   useEffect(() => {
@@ -37,6 +42,11 @@ function AppContent() {
       setIsWaitlistModalOpen(false)
     }
   }, [user])
+
+  // Show OAuth callback handler if this is the callback route
+  if (isOAuthCallback) {
+    return <OAuthCallback />
+  }
 
   const renderPage = () => {
     if (user) {

@@ -6,15 +6,23 @@ const crypto = require('crypto');
 const userSchema = new mongoose.Schema({
     firstName: {
         type: String,
-        required: [true, 'First name is required'],
+        required: function () {
+            // First name is required for non-OAuth users
+            return !this.oauth || !this.oauth.providers || this.oauth.providers.length === 0;
+        },
         trim: true,
-        maxlength: [50, 'First name cannot be more than 50 characters']
+        maxlength: [50, 'First name cannot be more than 50 characters'],
+        default: 'User'
     },
     lastName: {
         type: String,
-        required: [true, 'Last name is required'],
+        required: function () {
+            // Last name is required for non-OAuth users
+            return !this.oauth || !this.oauth.providers || this.oauth.providers.length === 0;
+        },
         trim: true,
-        maxlength: [50, 'Last name cannot be more than 50 characters']
+        maxlength: [50, 'Last name cannot be more than 50 characters'],
+        default: 'OAuth'
     },
     username: {
         type: String,
@@ -40,11 +48,15 @@ const userSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: [true, 'Password is required'],
+        required: function () {
+            // Password is only required if user is not using OAuth
+            return !this.oauth || !this.oauth.providers || this.oauth.providers.length === 0;
+        },
         minlength: [8, 'Password must be at least 8 characters'],
         validate: {
             validator: function (password) {
                 // Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character
+                if (!password) return true; // Allow empty for OAuth users
                 return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/.test(password);
             },
             message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
@@ -54,6 +66,48 @@ const userSchema = new mongoose.Schema({
     avatar: {
         type: String,
         default: null
+    },
+    // OAuth information
+    oauth: {
+        googleId: {
+            type: String,
+            unique: true,
+            sparse: true // Allows null values to be non-unique
+        },
+        providers: [{
+            type: String,
+            enum: ['google', 'github', 'discord']
+        }]
+    },
+    // Enhanced profile information
+    profile: {
+        bio: {
+            type: String,
+            maxlength: [500, 'Bio cannot be more than 500 characters']
+        },
+        location: {
+            type: String,
+            maxlength: [100, 'Location cannot be more than 100 characters']
+        },
+        website: {
+            type: String,
+            maxlength: [200, 'Website URL cannot be more than 200 characters']
+        },
+        avatar: {
+            type: String,
+            default: null
+        },
+        coverImage: {
+            type: String,
+            default: null
+        },
+        socialLinks: {
+            twitter: String,
+            instagram: String,
+            linkedin: String,
+            github: String,
+            discord: String
+        }
     },
     role: {
         type: String,
@@ -102,25 +156,6 @@ const userSchema = new mongoose.Schema({
     lockUntil: {
         type: Date
     },
-    // Profile information
-    bio: {
-        type: String,
-        maxlength: [500, 'Bio cannot be more than 500 characters']
-    },
-    location: {
-        type: String,
-        maxlength: [100, 'Location cannot be more than 100 characters']
-    },
-    website: {
-        type: String,
-        maxlength: [200, 'Website URL cannot be more than 200 characters']
-    },
-    socialLinks: {
-        twitter: String,
-        instagram: String,
-        linkedin: String,
-        discord: String
-    },
     // AI Creator stats
     totalCreations: {
         type: Number,
@@ -162,6 +197,7 @@ const userSchema = new mongoose.Schema({
 // Indexes for better performance
 userSchema.index({ email: 1 });
 userSchema.index({ username: 1 });
+userSchema.index({ 'oauth.googleId': 1 });
 userSchema.index({ createdAt: -1 });
 userSchema.index({ role: 1 });
 userSchema.index({ isActive: 1, isBanned: 1 });
@@ -188,8 +224,8 @@ userSchema.virtual('isLocked').get(function () {
 
 // Pre-save middleware to hash password
 userSchema.pre('save', async function (next) {
-    // Only hash password if it's modified
-    if (!this.isModified('password')) {
+    // Only hash password if it's modified and exists
+    if (!this.isModified('password') || !this.password) {
         return next();
     }
 

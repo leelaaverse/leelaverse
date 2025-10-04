@@ -230,7 +230,10 @@ export const AuthProvider = ({ children }) => {
         register,
         logout,
         updateProfile,
-        refreshAccessToken
+        refreshAccessToken,
+        setUser,
+        setAccessToken,
+        setRefreshToken
     };
 
     return (

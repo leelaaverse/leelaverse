@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import GoogleOAuthButton from './GoogleOAuthButton'
 
 export default function Signup({ setCurrentPage }) {
     const [formData, setFormData] = useState({
@@ -280,10 +281,10 @@ export default function Signup({ setCurrentPage }) {
 
                     {/* Social Signup */}
                     <div className="grid grid-cols-2 gap-4">
-                        <button className="flex items-center justify-center px-4 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors duration-300 cabin-semibold font-semibold">
-                            <span className="mr-2">🌐</span>
-                            Google
-                        </button>
+                        <GoogleOAuthButton
+                            mode="signup"
+                            onError={(errorMessage) => setError(errorMessage)}
+                        />
                         <button className="flex items-center justify-center px-4 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors duration-300 cabin-semibold font-semibold">
                             <span className="mr-2">💬</span>
                             Discord
