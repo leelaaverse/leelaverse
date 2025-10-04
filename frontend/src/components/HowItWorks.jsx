@@ -6,21 +6,21 @@ export default function HowItWorks() {
             number: '1',
             title: 'Create Your Prompt',
             description: 'Describe your vision in words. Our AI understands natural language and artistic concepts.',
-            icon: 'pencil',
+            icon: 'wand',
             color: 'from-blue-500 to-cyan-600'
         },
         {
             number: '2',
             title: 'Choose AI Model',
             description: 'Select from multiple AI providers and models. Each offers unique styles and capabilities.',
-            icon: 'target',
+            icon: 'brain',
             color: 'from-purple-500 to-pink-600'
         },
         {
             number: '3',
             title: 'Generate & Share',
             description: 'Watch your creation come to life instantly. Share with the community and start earning.',
-            icon: 'rocket',
+            icon: 'magic',
             color: 'from-emerald-500 to-teal-600'
         }
     ]
@@ -78,8 +78,8 @@ export default function HowItWorks() {
                                 {/* Visual Example */}
                                 <div className="mt-8">
                                     <div className={`bg-gradient-to-br ${step.color} bg-opacity-10 dark:bg-opacity-20 rounded-2xl p-6 shadow-lg group-hover:shadow-xl transition-all duration-300`}>
-                                        <div className="bg-white rounded-xl h-32 flex items-center justify-center shadow-inner">
-                                            <span className="text-4xl opacity-50">{step.icon}</span>
+                                        <div className="bg-white dark:bg-gray-800 rounded-xl h-32 flex items-center justify-center shadow-inner">
+                                            <Icon name={step.icon} className="w-16 h-16 text-gray-600 dark:text-gray-400" />
                                         </div>
                                     </div>
                                 </div>

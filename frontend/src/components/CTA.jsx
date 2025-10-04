@@ -2,8 +2,33 @@ import Icon from './Icon';
 
 export default function CTA({ setIsWaitlistModalOpen }) {
     return (
-        <section className="py-20 bg-gradient-to-br from-slate-50 to-indigo-50 dark:from-gray-900 dark:to-indigo-900/20">
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <section className="py-20 bg-gradient-to-br from-slate-50 to-indigo-50 dark:from-gray-900 dark:to-indigo-900/20 relative overflow-hidden">
+            {/* Background Images */}
+            <div className="absolute inset-0 opacity-10 dark:opacity-5">
+                <div className="absolute top-10 left-10">
+                    <img
+                        src="https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=200"
+                        alt="Innovation"
+                        className="w-32 h-32 object-cover rounded-full"
+                    />
+                </div>
+                <div className="absolute top-20 right-20">
+                    <img
+                        src="https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=200"
+                        alt="Startup"
+                        className="w-40 h-40 object-cover rounded-full"
+                    />
+                </div>
+                <div className="absolute bottom-20 left-20">
+                    <img
+                        src="https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=200"
+                        alt="Creativity"
+                        className="w-36 h-36 object-cover rounded-full"
+                    />
+                </div>
+            </div>
+
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
                 {/* Main Content */}
                 <div className="relative">
                     {/* Background Glow */}

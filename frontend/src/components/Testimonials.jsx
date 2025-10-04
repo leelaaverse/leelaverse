@@ -42,6 +42,43 @@ export default function Testimonials() {
                     <p className="cabin-regular text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
                         Join thousands who are already creating their alternate selves
                     </p>
+
+                    {/* User Success Showcase */}
+                    <div className="grid md:grid-cols-3 gap-6 mt-12 mb-8">
+                        <div className="relative group overflow-hidden rounded-2xl shadow-lg">
+                            <img
+                                src="https://images.pexels.com/photos/3184339/pexels-photo-3184339.jpeg?auto=compress&cs=tinysrgb&w=400"
+                                alt="Creative Success Story"
+                                className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                            <div className="absolute bottom-3 left-3">
+                                <span className="text-white cabin-semibold text-sm">Success Stories</span>
+                            </div>
+                        </div>
+                        <div className="relative group overflow-hidden rounded-2xl shadow-lg">
+                            <img
+                                src="https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=400"
+                                alt="Happy Creators"
+                                className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                            <div className="absolute bottom-3 left-3">
+                                <span className="text-white cabin-semibold text-sm">Happy Creators</span>
+                            </div>
+                        </div>
+                        <div className="relative group overflow-hidden rounded-2xl shadow-lg">
+                            <img
+                                src="https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=400"
+                                alt="Community Growth"
+                                className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                            <div className="absolute bottom-3 left-3">
+                                <span className="text-white cabin-semibold text-sm">Growing Community</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Testimonials Grid */}
