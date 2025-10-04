@@ -29,10 +29,10 @@ function AppContent() {
 
   // Check if this is the OAuth callback route
   const isOAuthCallback = window.location.pathname === '/auth/callback' ||
-                         window.location.search.includes('access_token');
+                         window.location.search.includes('success=true');
 
   // Debug logging
-  console.log('AppContent - user:', user, 'loading:', loading, 'isOAuthCallback:', isOAuthCallback)
+  console.log('AppContent - user:', user, 'loading:', loading, 'isOAuthCallback:', isOAuthCallback, 'pathname:', window.location.pathname)
 
   // Close modals when user is authenticated
   useEffect(() => {
