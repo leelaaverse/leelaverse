@@ -36,18 +36,21 @@ export default function OAuthCallback() {
 
                     console.log('OAuth login successful:', user);
 
-                    // Redirect to dashboard or home
-                    window.location.href = '/dashboard';
+                    // Clean the URL by removing the OAuth parameters
+                    window.history.replaceState({}, document.title, '/');
+
+                    // The auth context will automatically show the dashboard
+                    // since the user is now authenticated
 
                 } catch (err) {
                     console.error('Error parsing OAuth response:', err);
                     alert('Authentication failed. Please try again.');
-                    window.location.href = '/';
+                    window.history.replaceState({}, document.title, '/');
                 }
             } else {
                 console.error('Invalid OAuth callback parameters');
                 alert('Authentication failed. Please try again.');
-                window.location.href = '/';
+                window.history.replaceState({}, document.title, '/');
             }
         };
 
