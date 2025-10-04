@@ -59,7 +59,7 @@ export default function LoginModal({ isOpen, setIsOpen, setIsSignupModalOpen }) 
                 <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
 
                 {/* Modal content */}
-                <div className="relative inline-block align-bottom bg-white dark:bg-gray-800 rounded-3xl px-8 pt-8 pb-8 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full">
+                <div className="relative inline-block align-bottom bg-white dark:bg-gray-800 rounded-3xl px-8 pt-8 pb-8 text-left overflow-hidden shadow-2xl border border-gray-100 dark:border-gray-700 transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
                     {/* Close button */}
                     <button
                         onClick={() => setIsOpen(false)}
@@ -70,19 +70,19 @@ export default function LoginModal({ isOpen, setIsOpen, setIsSignupModalOpen }) 
 
                     <div className="space-y-6">
                         {/* Header */}
-                        <div className="text-center">
+                        <div className="text-center mb-6">
                             <div className="flex items-center justify-center mb-4">
-                                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-600 rounded-2xl flex items-center justify-center shadow-xl">
                                     <span className="text-white font-bold text-xl zalando-sans-expanded-bold">L</span>
                                 </div>
                             </div>
 
-                            <h2 className="zalando-sans-expanded-bold text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                            <h2 className="zalando-sans-expanded-bold text-2xl font-bold text-gray-900 dark:text-white mb-2">
                                 Welcome Back
                             </h2>
 
                             <p className="cabin-regular text-gray-600 dark:text-gray-300">
-                                Sign in to your Leelaaverse account
+                                Sign in to continue creating
                             </p>
                         </div>
 
@@ -154,7 +154,7 @@ export default function LoginModal({ isOpen, setIsOpen, setIsSignupModalOpen }) 
                             <button
                                 type="submit"
                                 disabled={isLoading}
-                                className="cabin-semibold w-full py-3 px-6 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 font-bold shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                                className="cabin-semibold w-full py-3 px-6 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-xl hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 transition-all duration-300 font-bold shadow-lg hover:shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                             >
                                 {isLoading ? (
                                     <>
@@ -178,15 +178,12 @@ export default function LoginModal({ isOpen, setIsOpen, setIsSignupModalOpen }) 
                         </div>
 
                         {/* Social Login */}
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="w-full">
                             <GoogleOAuthButton
                                 mode="login"
                                 onError={(errorMessage) => setError(errorMessage)}
+                                className="w-full py-3 font-semibold rounded-xl border-2 hover:shadow-lg"
                             />
-                            <button className="flex items-center justify-center px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-300 cabin-semibold font-semibold text-gray-700 dark:text-gray-300">
-                                <Icon name="chat" className="w-4 h-4 mr-2" />
-                                Discord
-                            </button>
                         </div>
 
                         {/* Sign Up Link */}

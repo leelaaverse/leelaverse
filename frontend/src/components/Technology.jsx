@@ -87,6 +87,54 @@ export default function Technology() {
                     <p className="cabin-regular text-xl text-white/80 max-w-3xl mx-auto">
                         Built on the latest AI models and cloud infrastructure for unmatched performance
                     </p>
+
+                    {/* Technology Showcase Images */}
+                    <div className="grid md:grid-cols-4 gap-4 mt-12">
+                        <div className="relative group overflow-hidden rounded-2xl">
+                            <img
+                                src="https://images.pexels.com/photos/8439093/pexels-photo-8439093.jpeg?auto=compress&cs=tinysrgb&w=300"
+                                alt="AI Neural Networks"
+                                className="w-full h-32 object-cover group-hover:scale-110 transition-transform duration-300"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-blue-600/80 to-transparent"></div>
+                            <div className="absolute bottom-2 left-2">
+                                <span className="text-white text-xs cabin-semibold">Neural AI</span>
+                            </div>
+                        </div>
+                        <div className="relative group overflow-hidden rounded-2xl">
+                            <img
+                                src="https://images.pexels.com/photos/8438918/pexels-photo-8438918.jpeg?auto=compress&cs=tinysrgb&w=300"
+                                alt="Machine Learning"
+                                className="w-full h-32 object-cover group-hover:scale-110 transition-transform duration-300"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-purple-600/80 to-transparent"></div>
+                            <div className="absolute bottom-2 left-2">
+                                <span className="text-white text-xs cabin-semibold">ML Models</span>
+                            </div>
+                        </div>
+                        <div className="relative group overflow-hidden rounded-2xl">
+                            <img
+                                src="https://images.pexels.com/photos/8438971/pexels-photo-8438971.jpeg?auto=compress&cs=tinysrgb&w=300"
+                                alt="Data Processing"
+                                className="w-full h-32 object-cover group-hover:scale-110 transition-transform duration-300"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-cyan-600/80 to-transparent"></div>
+                            <div className="absolute bottom-2 left-2">
+                                <span className="text-white text-xs cabin-semibold">Data Flow</span>
+                            </div>
+                        </div>
+                        <div className="relative group overflow-hidden rounded-2xl">
+                            <img
+                                src="https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg?auto=compress&cs=tinysrgb&w=300"
+                                alt="AI Generation"
+                                className="w-full h-32 object-cover group-hover:scale-110 transition-transform duration-300"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-pink-600/80 to-transparent"></div>
+                            <div className="absolute bottom-2 left-2">
+                                <span className="text-white text-xs cabin-semibold">Generation</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* AI Models Grid */}

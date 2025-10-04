@@ -163,25 +163,25 @@ export default function SignupModal({ isOpen, setIsOpen, setIsLoginModalOpen }) 
                 <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
 
                 {/* Modal content */}
-                <div className="relative inline-block align-bottom bg-white dark:bg-gray-800 rounded-3xl px-8 pt-8 pb-8 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full max-h-[90vh] overflow-y-auto">
+                <div className="relative inline-block align-bottom bg-white dark:bg-gray-800 rounded-3xl px-6 pt-6 pb-6 text-left overflow-hidden shadow-2xl border border-gray-100 dark:border-gray-700 transform transition-all sm:my-4 sm:align-middle sm:max-w-lg sm:w-full max-h-[95vh] overflow-y-auto">
                     {/* Close button */}
                     <button
                         onClick={() => setIsOpen(false)}
-                        className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors z-10"
+                        className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors z-10"
                     >
-                        <Icon name="x" className="w-6 h-6" />
+                        <Icon name="x" className="w-5 h-5" />
                     </button>
 
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                         {/* Header */}
-                        <div className="text-center">
+                        <div className="text-center mb-6">
                             <div className="flex items-center justify-center mb-4">
-                                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-600 rounded-2xl flex items-center justify-center shadow-xl">
                                     <span className="text-white font-bold text-xl zalando-sans-expanded-bold">L</span>
                                 </div>
                             </div>
 
-                            <h2 className="zalando-sans-expanded-bold text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                            <h2 className="zalando-sans-expanded-bold text-2xl font-bold text-gray-900 dark:text-white mb-2">
                                 Join Leelaaverse
                             </h2>
 
@@ -204,7 +204,7 @@ export default function SignupModal({ isOpen, setIsOpen, setIsLoginModalOpen }) 
                                         required
                                         value={formData.firstName}
                                         onChange={handleChange}
-                                        className="cabin-regular w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-300 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                                        className="cabin-regular w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-300 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                                         placeholder="John"
                                     />
                                 </div>
@@ -219,7 +219,7 @@ export default function SignupModal({ isOpen, setIsOpen, setIsLoginModalOpen }) 
                                         required
                                         value={formData.lastName}
                                         onChange={handleChange}
-                                        className="cabin-regular w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-300 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                                        className="cabin-regular w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-300 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                                         placeholder="Doe"
                                     />
                                 </div>
@@ -340,7 +340,7 @@ export default function SignupModal({ isOpen, setIsOpen, setIsLoginModalOpen }) 
                             <button
                                 type="submit"
                                 disabled={isLoading}
-                                className="cabin-semibold w-full py-3 px-6 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 font-bold shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                                className="cabin-semibold w-full py-3 px-6 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-xl hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 transition-all duration-300 font-bold shadow-lg hover:shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                             >
                                 {isLoading ? (
                                     <>
@@ -364,15 +364,12 @@ export default function SignupModal({ isOpen, setIsOpen, setIsLoginModalOpen }) 
                         </div>
 
                         {/* Social Login */}
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="w-full">
                             <GoogleOAuthButton
                                 mode="signup"
                                 onError={(errorMessage) => setError(errorMessage)}
+                                className="w-full py-3 font-semibold rounded-xl border-2 hover:shadow-lg"
                             />
-                            <button className="flex items-center justify-center px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-300 cabin-semibold font-semibold text-gray-700 dark:text-gray-300">
-                                <Icon name="chat" className="w-4 h-4 mr-2" />
-                                Discord
-                            </button>
                         </div>
 
                         {/* Login Link */}

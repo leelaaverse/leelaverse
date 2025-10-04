@@ -99,6 +99,43 @@ export default function Community() {
 
                 {/* Featured Creators */}
                 <div className="bg-gradient-to-br from-gray-50 to-indigo-50 dark:from-gray-800 dark:to-indigo-900/20 rounded-3xl p-12 border border-gray-100 dark:border-gray-700">
+                    {/* Community Showcase Images */}
+                    <div className="grid md:grid-cols-3 gap-6 mb-12">
+                        <div className="relative group">
+                            <img
+                                src="https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=400"
+                                alt="Creative Community"
+                                className="w-full h-48 object-cover rounded-2xl shadow-lg group-hover:shadow-2xl transition-all duration-300 group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                            <div className="absolute bottom-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <span className="text-white cabin-semibold">Creative Minds</span>
+                            </div>
+                        </div>
+                        <div className="relative group">
+                            <img
+                                src="https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400"
+                                alt="Digital Artists"
+                                className="w-full h-48 object-cover rounded-2xl shadow-lg group-hover:shadow-2xl transition-all duration-300 group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                            <div className="absolute bottom-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <span className="text-white cabin-semibold">Digital Artists</span>
+                            </div>
+                        </div>
+                        <div className="relative group">
+                            <img
+                                src="https://images.pexels.com/photos/3184611/pexels-photo-3184611.jpeg?auto=compress&cs=tinysrgb&w=400"
+                                alt="Innovation Hub"
+                                className="w-full h-48 object-cover rounded-2xl shadow-lg group-hover:shadow-2xl transition-all duration-300 group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                            <div className="absolute bottom-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <span className="text-white cabin-semibold">Innovation Hub</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <div className="text-center mb-12">
                         <h3 className="zalando-sans-expanded-bold text-3xl font-bold text-gray-900 dark:text-white mb-4">
                             Top Creators This Month

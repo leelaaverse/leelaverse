@@ -93,6 +93,58 @@ export default function Hero({ setIsWaitlistModalOpen }) {
                     {/* Visual */}
                     <div className="relative">
                         <div className="relative max-w-lg mx-auto">
+                            {/* AI Generated Images Gallery */}
+                            <div className="grid grid-cols-2 gap-4 mb-6">
+                                <div className="space-y-4">
+                                    <div className="relative group overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+                                        <img
+                                            src="https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg?auto=compress&cs=tinysrgb&w=400"
+                                            alt="AI Digital Art"
+                                            className="w-full h-32 object-cover"
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                        <div className="absolute bottom-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                            <span className="text-white text-xs cabin-semibold">Digital Art</span>
+                                        </div>
+                                    </div>
+                                    <div className="relative group overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+                                        <img
+                                            src="https://images.pexels.com/photos/8439093/pexels-photo-8439093.jpeg?auto=compress&cs=tinysrgb&w=400"
+                                            alt="Abstract AI Art"
+                                            className="w-full h-40 object-cover"
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                        <div className="absolute bottom-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                            <span className="text-white text-xs cabin-semibold">Abstract</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="space-y-4 mt-8">
+                                    <div className="relative group overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+                                        <img
+                                            src="https://images.pexels.com/photos/8386434/pexels-photo-8386434.jpeg?auto=compress&cs=tinysrgb&w=400"
+                                            alt="Futuristic AI"
+                                            className="w-full h-36 object-cover"
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                        <div className="absolute bottom-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                            <span className="text-white text-xs cabin-semibold">Futuristic</span>
+                                        </div>
+                                    </div>
+                                    <div className="relative group overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+                                        <img
+                                            src="https://images.pexels.com/photos/8386422/pexels-photo-8386422.jpeg?auto=compress&cs=tinysrgb&w=400"
+                                            alt="Creative AI"
+                                            className="w-full h-32 object-cover"
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                        <div className="absolute bottom-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                            <span className="text-white text-xs cabin-semibold">Creative</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             {/* Floating Cards */}
                             <div className="relative z-10">
                                 {/* Main Card */}

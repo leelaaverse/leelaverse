@@ -65,6 +65,58 @@ export default function About() {
 
                     {/* Visual */}
                     <div className="relative">
+                        {/* Background Images */}
+                        <div className="grid grid-cols-2 gap-4 mb-6">
+                            <div className="space-y-4">
+                                <div className="relative group overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300">
+                                    <img
+                                        src="https://images.pexels.com/photos/8438918/pexels-photo-8438918.jpeg?auto=compress&cs=tinysrgb&w=400"
+                                        alt="AI Neural Network"
+                                        className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-300"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-indigo-600/70 to-transparent"></div>
+                                    <div className="absolute bottom-3 left-3">
+                                        <span className="text-white text-sm cabin-semibold">Neural Networks</span>
+                                    </div>
+                                </div>
+                                <div className="relative group overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300">
+                                    <img
+                                        src="https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg?auto=compress&cs=tinysrgb&w=400"
+                                        alt="Digital Creativity"
+                                        className="w-full h-32 object-cover group-hover:scale-105 transition-transform duration-300"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-purple-600/70 to-transparent"></div>
+                                    <div className="absolute bottom-2 left-2">
+                                        <span className="text-white text-xs cabin-semibold">Digital Art</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="space-y-4 mt-8">
+                                <div className="relative group overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300">
+                                    <img
+                                        src="https://images.pexels.com/photos/8438971/pexels-photo-8438971.jpeg?auto=compress&cs=tinysrgb&w=400"
+                                        alt="AI Technology"
+                                        className="w-full h-36 object-cover group-hover:scale-105 transition-transform duration-300"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-pink-600/70 to-transparent"></div>
+                                    <div className="absolute bottom-2 left-2">
+                                        <span className="text-white text-xs cabin-semibold">AI Tech</span>
+                                    </div>
+                                </div>
+                                <div className="relative group overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300">
+                                    <img
+                                        src="https://images.pexels.com/photos/8386422/pexels-photo-8386422.jpeg?auto=compress&cs=tinysrgb&w=400"
+                                        alt="Creative AI"
+                                        className="w-full h-32 object-cover group-hover:scale-105 transition-transform duration-300"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-cyan-600/70 to-transparent"></div>
+                                    <div className="absolute bottom-2 left-2">
+                                        <span className="text-white text-xs cabin-semibold">Creativity</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="relative z-10">
                             {/* Main Visual Card */}
                             <div className="glass-strong dark:bg-gray-800/50 rounded-3xl p-8 shadow-2xl mb-6 border border-white/30 dark:border-gray-700/50">
