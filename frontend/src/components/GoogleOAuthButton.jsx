@@ -64,7 +64,7 @@ const GoogleOAuthButton = ({
                 </>
             ) : (
                 <>
-                    <Icon name="globe" className="w-4 h-4 mr-2" />
+                    <Icon name="google" className="w-4 h-4 mr-2" />
                     {buttonText}
                 </>
             )}
