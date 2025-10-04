@@ -1,17 +1,22 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const session = require('express-session');
 const path = require('path');
 require('dotenv').config();
 
 // Import database connection
 const connectDB = require('./src/config/database');
 
+// Import passport configuration
+require('./src/config/passport');
+
 // Import middleware
 const { generalLimiter } = require('./src/middleware/rateLimiter');
 
 // Import routes
 const authRoutes = require('./src/routes/auth');
+const oauthRoutes = require('./src/routes/oauth');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -77,6 +82,17 @@ app.use(cors({
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Session middleware for OAuth
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'your-session-secret-key',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
+}));
 
 // Request logger middleware
 app.use((req, res, next) => {
@@ -154,6 +170,7 @@ app.get('/', (req, res) => {
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/oauth', oauthRoutes);
 
 // Handle 404 errors
 app.use('*', (req, res) => {

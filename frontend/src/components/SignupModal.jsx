@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import Icon from './Icon'
 import PasswordStrengthIndicator from './PasswordStrengthIndicator'
+import GoogleOAuthButton from './GoogleOAuthButton'
 
 export default function SignupModal({ isOpen, setIsOpen, setIsLoginModalOpen }) {
     const [formData, setFormData] = useState({
@@ -364,10 +365,10 @@ export default function SignupModal({ isOpen, setIsOpen, setIsLoginModalOpen }) 
 
                         {/* Social Login */}
                         <div className="grid grid-cols-2 gap-4">
-                            <button className="flex items-center justify-center px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-300 cabin-semibold font-semibold text-gray-700 dark:text-gray-300">
-                                <Icon name="globe" className="w-4 h-4 mr-2" />
-                                Google
-                            </button>
+                            <GoogleOAuthButton
+                                mode="signup"
+                                onError={(errorMessage) => setError(errorMessage)}
+                            />
                             <button className="flex items-center justify-center px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-300 cabin-semibold font-semibold text-gray-700 dark:text-gray-300">
                                 <Icon name="chat" className="w-4 h-4 mr-2" />
                                 Discord
