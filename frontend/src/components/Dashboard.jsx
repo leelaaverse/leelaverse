@@ -1,358 +1,713 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import React, { useState } from 'react';
 import { useDarkMode } from '../contexts/DarkModeContext';
-import SocialNavigation from './SocialNavigation';
-import TopBar from './TopBar';
-import Stories from './Stories';
-import PostCard from './PostCard';
-import Sidebar from './Sidebar';
 import Icon from './Icon';
-import { mockPosts, mockStories, mockSuggestedUsers, mockCurrentUser } from '../data/mockData';
+import CreatePostModal from './CreatePostModal';
+import FeedPost from './FeedPost';
+import FeedShort from './FeedShort';
+import { mockPosts, mockSuggestedUsers, mockCurrentUser } from '../data/mockData';
+import logoImage from '../assets/logo.png';
 
 const Dashboard = ({ user, onLogout }) => {
     const [activeTab, setActiveTab] = useState('home');
-    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [showProfileMenu, setShowProfileMenu] = useState(false);
     const { isDarkMode, toggleDarkMode } = useDarkMode();
 
-    // Enhanced user object with mock data
     const currentUser = {
         ...mockCurrentUser,
         username: user?.username || mockCurrentUser.username,
         firstName: user?.firstName || mockCurrentUser.name,
-        avatar: user?.avatar || mockCurrentUser.avatar
+        avatar: user?.avatar || mockCurrentUser.avatar,
+        coins: user?.coins || 250,
+        posts: user?.posts || 42,
+        followers: user?.followers || '2.5K',
+        following: user?.following || 180,
     };
 
-    // AI Theme colors and effects
-    const [aiParticles, setAiParticles] = useState([]);
+    // Mock feed data with mixed content
+    const feedData = [
+        {
+            type: 'post',
+            data: {
+                ...mockPosts[0],
+                aiGenerated: true,
+                aiModel: 'DALL-E 3',
+                tags: ['AIArt', 'DigitalCreation', 'GenerativeAI']
+            }
+        },
+        {
+            type: 'short',
+            data: {
+                id: 's1',
+                user: mockCurrentUser,
+                thumbnail: 'https://picsum.photos/400/700',
+                title: 'AI-Generated Dance Animation - Stunning Results!',
+                views: '1.2M',
+                likes: 45000,
+                aiGenerated: true
+            }
+        },
+        {
+            type: 'post',
+            data: {
+                ...mockPosts[1],
+                tags: ['Photography', 'AIEnhanced']
+            }
+        },
+        {
+            type: 'short',
+            data: {
+                id: 's2',
+                user: mockSuggestedUsers[0],
+                thumbnail: 'https://picsum.photos/401/700',
+                title: 'Futuristic Cityscape - AI Architecture',
+                views: '890K',
+                likes: 32000,
+                aiGenerated: true
+            }
+        },
+        {
+            type: 'post',
+            data: {
+                ...mockPosts[2],
+                aiGenerated: true,
+                aiModel: 'Midjourney v6',
+                tags: ['Fantasy', 'AIArt', 'Concept']
+            }
+        },
+    ];
 
-    useEffect(() => {
-        // Generate floating AI particles
-        const particles = Array.from({ length: 15 }, (_, i) => ({
-            id: i,
-            x: Math.random() * 100,
-            y: Math.random() * 100,
-            size: Math.random() * 3 + 1,
-            opacity: Math.random() * 0.3 + 0.1
-        }));
-        setAiParticles(particles);
-    }, []);
-
+    // Render content based on active tab
     const renderContent = () => {
         switch (activeTab) {
             case 'home':
                 return (
-                    <div className="space-y-6 sm:space-y-8">
-                        {/* AI Universe Welcome Banner */}
-                        <div className="relative bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-800 rounded-2xl sm:rounded-3xl p-6 sm:p-8 overflow-hidden">
-                            <div className="absolute inset-0 opacity-30">
-                                <div className="w-full h-full bg-gradient-to-br from-white/5 via-transparent to-white/5 rounded-full blur-3xl"></div>
-                            </div>
-                            <div className="relative z-10 text-center">
-                                <h2 className="text-2xl sm:text-3xl zalando-sans-expanded-bold text-white mb-2">Welcome to the AI Universe</h2>
-                                <p className="cabin-regular text-blue-100 mb-4 sm:mb-6 text-sm sm:text-base">Where creativity meets artificial intelligence</p>
-                                <div className="flex flex-wrap justify-center gap-2 sm:gap-4">
-                                    <div className="bg-white/20 backdrop-blur-sm rounded-lg sm:rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 text-white cabin-semibold text-xs sm:text-sm">
-                                        ✨ AI-Generated
-                                    </div>
-                                    <div className="bg-white/20 backdrop-blur-sm rounded-lg sm:rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 text-white cabin-semibold text-xs sm:text-sm">
-                                        🎨 Creative
-                                    </div>
-                                    <div className="bg-white/20 backdrop-blur-sm rounded-lg sm:rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 text-white cabin-semibold text-xs sm:text-sm">
-                                        🌟 Unique
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Quick Action Panel */}
-                        <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-                            <h3 className="text-lg sm:text-xl zalando-sans-expanded-primary text-gray-900 dark:text-white mb-4">Create Something Amazing</h3>
-                            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-                                <button className="group bg-gradient-to-br from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-white transition-all transform hover:scale-105 active:scale-95">
-                                    <Icon name="image" className="w-5 h-5 sm:w-6 sm:h-6 mx-auto mb-1 sm:mb-2 group-hover:scale-110 transition-transform" />
-                                    <span className="cabin-semibold text-xs sm:text-sm">AI Art</span>
-                                </button>
-                                <button className="group bg-gradient-to-br from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-white transition-all transform hover:scale-105 active:scale-95">
-                                    <Icon name="video" className="w-5 h-5 sm:w-6 sm:h-6 mx-auto mb-1 sm:mb-2 group-hover:scale-110 transition-transform" />
-                                    <span className="cabin-semibold text-xs sm:text-sm">AI Video</span>
-                                </button>
-                                <button className="group bg-gradient-to-br from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-white transition-all transform hover:scale-105 active:scale-95">
-                                    <Icon name="mic" className="w-5 h-5 sm:w-6 sm:h-6 mx-auto mb-1 sm:mb-2 group-hover:scale-110 transition-transform" />
-                                    <span className="cabin-semibold text-xs sm:text-sm">AI Audio</span>
-                                </button>
-                                <button className="group bg-gradient-to-br from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-white transition-all transform hover:scale-105 active:scale-95">
-                                    <Icon name="edit-3" className="w-5 h-5 sm:w-6 sm:h-6 mx-auto mb-1 sm:mb-2 group-hover:scale-110 transition-transform" />
-                                    <span className="cabin-semibold text-xs sm:text-sm">AI Text</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* AI Stories Showcase */}
-                        <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-                            <div className="flex items-center justify-between mb-4 sm:mb-6">
-                                <h3 className="text-lg sm:text-xl zalando-sans-expanded-primary text-gray-900 dark:text-white">AI Creators Today</h3>
-                                <button className="text-indigo-600 dark:text-indigo-400 cabin-semibold text-xs sm:text-sm hover:text-indigo-700 dark:hover:text-indigo-300">
-                                    View All
-                                </button>
-                            </div>
-                            <Stories stories={mockStories} currentUser={currentUser} />
-                        </div>
-
-                        {/* Neural Feed */}
-                        <div className="space-y-6 sm:space-y-8">
-                            <h3 className="text-xl sm:text-2xl zalando-sans-expanded-primary text-gray-900 dark:text-white text-center">
-                                Neural Feed
-                                <span className="block text-xs sm:text-sm cabin-regular text-gray-600 dark:text-gray-300 mt-1">AI-curated content just for you</span>
-                            </h3>
-                            {mockPosts.map((post, index) => (
-                                <div key={post.id} className="relative">
-                                    {/* Glowing effect for every 3rd post */}
-                                    {index % 3 === 0 && (
-                                        <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-pink-500/20 rounded-2xl sm:rounded-3xl blur-lg"></div>
-                                    )}
-                                    <PostCard post={post} />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                );
-            case 'explore':
-                return (
-                    <div className="space-y-6 sm:space-y-8">
-                        {/* AI Discovery Hub */}
-                        <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-white">
-                            <h2 className="text-2xl sm:text-3xl zalando-sans-expanded-bold mb-3 sm:mb-4">AI Discovery Hub</h2>
-                            <p className="cabin-regular text-purple-100 mb-4 sm:mb-6 text-sm sm:text-base">Explore the infinite possibilities of AI creativity</p>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
-                                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 sm:p-6 hover:bg-white/20 transition-colors cursor-pointer group">
-                                    <Icon name="trending-up" className="w-6 h-6 sm:w-8 sm:h-8 mb-3 sm:mb-4 group-hover:scale-110 transition-transform text-white" />
-                                    <h3 className="text-base sm:text-lg zalando-sans-expanded-primary mb-2 text-white">Trending AI</h3>
-                                    <p className="cabin-regular text-xs sm:text-sm text-purple-100">Latest viral AI creations</p>
-                                </div>
-                                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 sm:p-6 hover:bg-white/20 transition-colors cursor-pointer group">
-                                    <Icon name="zap" className="w-6 h-6 sm:w-8 sm:h-8 mb-3 sm:mb-4 group-hover:scale-110 transition-transform text-white" />
-                                    <h3 className="text-base sm:text-lg zalando-sans-expanded-primary mb-2 text-white">AI Challenges</h3>
-                                    <p className="cabin-regular text-xs sm:text-sm text-purple-100">Join creative competitions</p>
-                                </div>
-                                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 sm:p-6 hover:bg-white/20 transition-colors cursor-pointer group">
-                                    <Icon name="award" className="w-6 h-6 sm:w-8 sm:h-8 mb-3 sm:mb-4 group-hover:scale-110 transition-transform text-white" />
-                                    <h3 className="text-base sm:text-lg zalando-sans-expanded-primary mb-2 text-white">Top Creators</h3>
-                                    <p className="cabin-regular text-xs sm:text-sm text-purple-100">Follow the best AI artists</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Trending Tags */}
-                        <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-                            <h3 className="text-lg sm:text-xl zalando-sans-expanded-primary text-gray-900 dark:text-white mb-3 sm:mb-4">Trending in AI Universe</h3>
-                            <div className="flex flex-wrap gap-2 sm:gap-3">
-                                {['#AIArt', '#NeuralStyle', '#DigitalCreativity', '#AIPhotography', '#MachineLearning', '#GenerativeAI', '#AIMusic', '#DeepDream'].map((tag) => (
-                                    <span key={tag} className="bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900 dark:to-purple-900 text-indigo-700 dark:text-indigo-300 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full cabin-semibold text-xs sm:text-sm hover:from-indigo-200 hover:to-purple-200 dark:hover:from-indigo-800 dark:hover:to-purple-800 cursor-pointer transition-colors">
-                                        {tag}
-                                    </span>
+                    <div className="space-y-8">
+                        {/* New Creation Zone */}
+                        <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-md border border-purple-100 dark:border-purple-900/20">
+                            <h2 className="text-xl cabin-semibold mb-4 text-gray-900 dark:text-white">Create Something Amazing</h2>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                {[
+                                    { icon: 'image', label: 'Upload Image', color: 'from-blue-400 to-indigo-500' },
+                                    { icon: 'wand', label: 'Generate Image', color: 'from-purple-400 to-fuchsia-500' },
+                                    { icon: 'film', label: 'Upload Video', color: 'from-orange-400 to-red-500' },
+                                    { icon: 'sparkles', label: 'Generate Video', color: 'from-green-400 to-teal-500' },
+                                ].map((item, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => setIsCreateModalOpen(true)}
+                                        className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-gradient-to-br ${item.color} text-white hover:shadow-lg hover:scale-105 transition-all`}
+                                    >
+                                        <Icon name={item.icon} className="w-6 h-6" />
+                                        <span className="text-sm cabin-medium">{item.label}</span>
+                                    </button>
                                 ))}
                             </div>
                         </div>
-                    </div>
-                );
-            case 'create':
-                return (
-                    <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
-                        {/* AI Studio Header */}
-                        <div className="text-center bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-600 rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-white">
-                            <h2 className="text-3xl sm:text-4xl zalando-sans-expanded-bold mb-3 sm:mb-4">AI Creation Studio</h2>
-                            <p className="text-lg sm:text-xl cabin-regular text-emerald-100">Turn your imagination into reality</p>
-                        </div>
 
-                        {/* Creation Tools Grid */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                            {[
-                                { icon: 'image', title: 'AI Image Generator', desc: 'Create stunning visuals from text', color: 'from-pink-500 to-rose-500', feature: 'Most Popular' },
-                                { icon: 'video', title: 'AI Video Creator', desc: 'Generate amazing video content', color: 'from-blue-500 to-indigo-500', feature: 'New' },
-                                { icon: 'music', title: 'AI Music Composer', desc: 'Compose original soundtracks', color: 'from-purple-500 to-violet-500', feature: 'Beta' },
-                                { icon: 'edit-3', title: 'AI Text Writer', desc: 'Generate creative content', color: 'from-green-500 to-emerald-500', feature: '' },
-                                { icon: 'layers', title: 'AI Style Transfer', desc: 'Transform artistic styles', color: 'from-orange-500 to-red-500', feature: 'Premium' },
-                                { icon: 'cpu', title: 'Custom AI Model', desc: 'Train your own AI', color: 'from-gray-600 to-gray-800', feature: 'Pro' }
-                            ].map((tool, index) => (
-                                <div key={index} className="group bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6 hover:shadow-2xl transition-all transform hover:scale-105 cursor-pointer">
-                                    <div className="relative">
-                                        {tool.feature && (
-                                            <span className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs zalando-sans-expanded-bold px-2 py-1 rounded-full">
-                                                {tool.feature}
-                                            </span>
-                                        )}
-                                        <div className={`bg-gradient-to-r ${tool.color} w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform`}>
-                                            <Icon name={tool.icon} className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                        {/* New Masonry-style Feed */}
+                        <div>
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-xl cabin-semibold text-gray-900 dark:text-white">Your Feed</h2>
+                                <div className="flex gap-2">
+                                    <button className="px-3 py-1 bg-purple-600 text-white rounded-lg text-sm cabin-medium">
+                                        All
+                                    </button>
+                                    <button className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm cabin-medium">
+                                        Images
+                                    </button>
+                                    <button className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm cabin-medium">
+                                        Videos
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Grid Layout for Feed */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {/* First Large Post */}
+                                <div className="bg-white dark:bg-gray-800 rounded-3xl overflow-hidden shadow-md border border-gray-100 dark:border-gray-700 sm:col-span-2 lg:col-span-2">
+                                    <div className="relative aspect-[16/9]">
+                                        <img
+                                            src="https://picsum.photos/800/450"
+                                            alt="Featured post"
+                                            className="w-full h-full object-cover"
+                                        />
+                                        {/* Featured Badge */}
+                                        <div className="absolute top-4 left-4 px-3 py-1 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full text-white text-xs cabin-semibold flex items-center gap-1">
+                                            <Icon name="star" className="w-3 h-3" />
+                                            FEATURED
                                         </div>
-                                        <h3 className="text-base sm:text-lg zalando-sans-expanded-primary text-gray-900 dark:text-white mb-2">{tool.title}</h3>
-                                        <p className="cabin-regular text-gray-600 dark:text-gray-400 text-xs sm:text-sm">{tool.desc}</p>
+                                        {/* AI Model Badge */}
+                                        <div className="absolute top-4 right-4 px-3 py-1 bg-black/60 backdrop-blur-sm rounded-full text-white text-xs cabin-medium flex items-center gap-1">
+                                            <Icon name="sparkles" className="w-3 h-3" />
+                                            DALL-E 3
+                                        </div>
+                                    </div>
+                                    <div className="p-5">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center gap-2">
+                                                <img
+                                                    src={currentUser.avatar}
+                                                    alt={currentUser.username}
+                                                    className="w-8 h-8 rounded-full object-cover"
+                                                />
+                                                <span className="cabin-medium text-gray-900 dark:text-white">@{currentUser.username}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                                                <Icon name="clock" className="w-4 h-4" />
+                                                <span>2h ago</span>
+                                            </div>
+                                        </div>
+                                        <h3 className="text-lg cabin-semibold text-gray-900 dark:text-white mb-2">Otherworldly Landscapes: AI Vision of Alien Worlds</h3>
+                                        <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">
+                                            Exploring what alien landscapes might look like with the help of DALL-E 3's imagination. #AIArt #SciFi
+                                        </p>
+                                                                                    <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-4">
+                                                <button className="flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400">
+                                                    <Icon name="heart" className="w-5 h-5" />
+                                                    <span className="text-sm cabin-medium">1.2K</span>
+                                                </button>
+                                                <button className="flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400">
+                                                    <Icon name="message-square" className="w-5 h-5" />
+                                                    <span className="text-sm cabin-medium">85</span>
+                                                </button>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button className="text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400">
+                                                    <Icon name="bookmark" className="w-5 h-5" />
+                                                </button>
+                                                <button className="text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400">
+                                                    <Icon name="share" className="w-5 h-5" />
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    </div>
-                );
-            case 'activity':
-                return (
-                    <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
-                        <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-white text-center">
-                            <h2 className="text-2xl sm:text-3xl zalando-sans-expanded-bold mb-3 sm:mb-4">Neural Activity Center</h2>
-                            <p className="cabin-regular text-orange-100 text-sm sm:text-base">Track your AI universe interactions</p>
-                        </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
-                            <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6 text-center">
-                                <Icon name="heart" className="w-10 h-10 sm:w-12 sm:h-12 text-red-500 mx-auto mb-3 sm:mb-4" />
-                                <h3 className="text-xl sm:text-2xl zalando-sans-expanded-bold text-gray-900 dark:text-white mb-1 sm:mb-2">1.2k</h3>
-                                <p className="cabin-regular text-gray-600 dark:text-gray-300 text-sm">Likes Received</p>
-                            </div>
-                            <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6 text-center">
-                                <Icon name="message-circle" className="w-10 h-10 sm:w-12 sm:h-12 text-blue-500 mx-auto mb-3 sm:mb-4" />
-                                <h3 className="text-xl sm:text-2xl zalando-sans-expanded-bold text-gray-900 dark:text-white mb-1 sm:mb-2">346</h3>
-                                <p className="cabin-regular text-gray-600 dark:text-gray-300 text-sm">Comments</p>
-                            </div>
-                            <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6 text-center">
-                                <Icon name="users" className="w-10 h-10 sm:w-12 sm:h-12 text-green-500 mx-auto mb-3 sm:mb-4" />
-                                <h3 className="text-xl sm:text-2xl zalando-sans-expanded-bold text-gray-900 dark:text-white mb-1 sm:mb-2">89</h3>
-                                <p className="cabin-regular text-gray-600 dark:text-gray-300 text-sm">New Followers</p>
+                                {/* Regular Posts */}
+                                {Array.from({ length: 5 }).map((_, i) => (
+                                    <div
+                                        key={i}
+                                        className={`bg-white dark:bg-gray-800 rounded-3xl overflow-hidden shadow-md border border-gray-100 dark:border-gray-700`}
+                                    >
+                                        <div className="relative aspect-square">
+                                            <img
+                                                src={`https://picsum.photos/500/${500 + i}`}
+                                                alt={`Post ${i}`}
+                                                className="w-full h-full object-cover"
+                                            />
+                                            {/* AI Model Badge */}
+                                            <div className="absolute top-3 right-3 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-full text-white text-xs cabin-medium flex items-center gap-1">
+                                                <Icon name="sparkles" className="w-3 h-3" />
+                                                {['Midjourney', 'Stable Diffusion', 'DALL-E', 'Firefly', 'Imagen'][i % 5]}
+                                            </div>
+                                        </div>
+                                        <div className="p-4">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div className="flex items-center gap-2">
+                                                    <img
+                                                        src={`https://i.pravatar.cc/150?img=${20 + i}`}
+                                                        alt={`User ${i}`}
+                                                        className="w-6 h-6 rounded-full object-cover"
+                                                    />
+                                                    <span className="text-sm cabin-medium text-gray-900 dark:text-white">@user{i}</span>
+                                                </div>
+                                                <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                                                    <Icon name="clock" className="w-3 h-3" />
+                                                    <span>{i + 1}h ago</span>
+                                                </div>
+                                            </div>
+                                            <h3 className="text-sm cabin-semibold text-gray-900 dark:text-white mb-2">
+                                                {[
+                                                    "Cyberpunk Dreamscapes",
+                                                    "Neon City at Night",
+                                                    "Abstract Digital Art",
+                                                    "Fantasy Character Design",
+                                                    "Futuristic Architecture"
+                                                ][i % 5]}
+                                            </h3>
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <button className="flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400">
+                                                        <Icon name="heart" className="w-4 h-4" />
+                                                        <span className="text-xs cabin-medium">{(i + 2) * 100}</span>
+                                                    </button>
+                                                    <button className="flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400">
+                                                        <Icon name="message-square" className="w-4 h-4" />
+                                                        <span className="text-xs cabin-medium">{(i + 1) * 12}</span>
+                                                    </button>
+                                                </div>
+                                                <button className="text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400">
+                                                    <Icon name="more-horizontal" className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {/* Video Post / Short */}
+                                <div className="bg-white dark:bg-gray-800 rounded-3xl overflow-hidden shadow-md border border-gray-100 dark:border-gray-700">
+                                    <div className="relative aspect-[9/16]">
+                                        <img
+                                            src="https://picsum.photos/400/720"
+                                            alt="Short video"
+                                            className="w-full h-full object-cover"
+                                        />
+                                        {/* Play Button */}
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <div className="w-14 h-14 bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center">
+                                                <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center ml-1">
+                                                    <Icon name="play" className="w-5 h-5 text-white" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {/* AI Model Badge */}
+                                        <div className="absolute top-3 right-3 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-full text-white text-xs cabin-medium flex items-center gap-1">
+                                            <Icon name="sparkles" className="w-3 h-3" />
+                                            Runway Gen-2
+                                        </div>
+                                        {/* Views */}
+                                        <div className="absolute bottom-3 left-3 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-full text-white text-xs cabin-medium flex items-center gap-1">
+                                            <Icon name="eye" className="w-3 h-3" />
+                                            1.5M views
+                                        </div>
+                                    </div>
+                                    <div className="p-4">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-2">
+                                                <img
+                                                    src={mockSuggestedUsers[1].avatar}
+                                                    alt={mockSuggestedUsers[1].username}
+                                                    className="w-6 h-6 rounded-full object-cover"
+                                                />
+                                                <span className="text-sm cabin-medium text-gray-900 dark:text-white">@{mockSuggestedUsers[1].username}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                                                <Icon name="clock" className="w-3 h-3" />
+                                                <span>5h ago</span>
+                                            </div>
+                                        </div>
+                                        <h3 className="text-sm cabin-semibold text-gray-900 dark:text-white mb-2">
+                                            Dancing in Digital Dreams
+                                        </h3>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <button className="flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400">
+                                                    <Icon name="heart" className="w-4 h-4" />
+                                                    <span className="text-xs cabin-medium">45K</span>
+                                                </button>
+                                                <button className="flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400">
+                                                    <Icon name="message-square" className="w-4 h-4" />
+                                                    <span className="text-xs cabin-medium">218</span>
+                                                </button>
+                                            </div>
+                                            <button className="text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400">
+                                                <Icon name="more-horizontal" className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Text-based Post */}
+                                <div className="bg-white dark:bg-gray-800 rounded-3xl overflow-hidden shadow-md border border-gray-100 dark:border-gray-700">
+                                    <div className="p-5">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center gap-2">
+                                                <img
+                                                    src={`https://i.pravatar.cc/150?img=35`}
+                                                    alt="User"
+                                                    className="w-8 h-8 rounded-full object-cover"
+                                                />
+                                                <span className="cabin-medium text-gray-900 dark:text-white">@ai_enthusiast</span>
+                                            </div>
+                                            <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                                                <Icon name="clock" className="w-4 h-4" />
+                                                <span>3h ago</span>
+                                            </div>
+                                        </div>
+                                        <div className="px-3 py-2 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-2xl mb-4">
+                                            <h3 className="text-lg cabin-semibold text-gray-900 dark:text-white mb-2">Thoughts on AI Art Evolution</h3>
+                                            <p className="text-gray-600 dark:text-gray-300">
+                                                It's fascinating to see how AI art has evolved in the past year. The level of detail and creativity possible now is mind-blowing. I'm particularly impressed with how models can now maintain consistent characters and styles across multiple images.
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-4">
+                                                <button className="flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400">
+                                                    <Icon name="heart" className="w-5 h-5" />
+                                                    <span className="text-sm cabin-medium">324</span>
+                                                </button>
+                                                <button className="flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400">
+                                                    <Icon name="message-square" className="w-5 h-5" />
+                                                    <span className="text-sm cabin-medium">48</span>
+                                                </button>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button className="text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400">
+                                                    <Icon name="bookmark" className="w-5 h-5" />
+                                                </button>
+                                                <button className="text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400">
+                                                    <Icon name="share" className="w-5 h-5" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 );
+
+            case 'shorts':
+                return (
+                    <div className="space-y-6">
+                        <div className="text-center py-16">
+                            <Icon name="video" className="w-16 h-16 text-purple-500 mx-auto mb-4" />
+                            <h2 className="text-2xl cabin-semibold text-gray-900 dark:text-white mb-2">Shorts</h2>
+                            <p className="text-gray-600 dark:text-gray-400">Short-form AI-generated videos coming soon</p>
+                        </div>
+                    </div>
+                );
+
+            case 'explore':
+                return (
+                    <div className="space-y-6">
+                        <div className="text-center py-16">
+                            <Icon name="search" className="w-16 h-16 text-purple-500 mx-auto mb-4" />
+                            <h2 className="text-2xl cabin-semibold text-gray-900 dark:text-white mb-2">Explore</h2>
+                            <p className="text-gray-600 dark:text-gray-400">Discover trending AI content and creators</p>
+                        </div>
+                    </div>
+                );
+
+            case 'groups':
+                return (
+                    <div className="space-y-6">
+                        <div className="text-center py-16">
+                            <Icon name="users" className="w-16 h-16 text-purple-500 mx-auto mb-4" />
+                            <h2 className="text-2xl cabin-semibold text-gray-900 dark:text-white mb-2">Groups</h2>
+                            <p className="text-gray-600 dark:text-gray-400">Join communities of AI creators and enthusiasts</p>
+                        </div>
+                    </div>
+                );
+
             case 'profile':
                 return (
-                    <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
-                        {/* Profile Header with AI Theme */}
-                        <div className="bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 rounded-2xl sm:rounded-3xl overflow-hidden">
-                            <div className="relative p-6 sm:p-8">
-                                {/* Floating particles background */}
-                                <div className="absolute inset-0 overflow-hidden">
-                                    {aiParticles.map((particle) => (
-                                        <div
-                                            key={particle.id}
-                                            className="absolute bg-white rounded-full animate-pulse"
-                                            style={{
-                                                left: `${particle.x}%`,
-                                                top: `${particle.y}%`,
-                                                width: `${particle.size}px`,
-                                                height: `${particle.size}px`,
-                                                opacity: particle.opacity
-                                            }}
-                                        />
-                                    ))}
-                                </div>
-
-                                <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start space-y-4 sm:space-y-6 md:space-y-0 md:space-x-6 lg:space-x-8">
-                                    <div className="relative flex-shrink-0">
-                                        <img
-                                            src={currentUser.avatar}
-                                            alt={currentUser.username}
-                                            className="w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover border-4 border-white/30"
-                                        />
-                                        <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-green-400 to-blue-500 rounded-full p-1.5 sm:p-2">
-                                            <Icon name="zap" className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-                                        </div>
-                                    </div>
-                                    <div className="text-center md:text-left flex-1 text-white">
-                                        <h1 className="text-2xl sm:text-3xl zalando-sans-expanded-bold mb-1 sm:mb-2">{currentUser.username}</h1>
-                                        <p className="cabin-regular text-indigo-200 mb-3 sm:mb-4 text-sm sm:text-base">{currentUser.name} • AI Creator</p>
-                                        <div className="flex justify-center md:justify-start space-x-4 sm:space-x-6 lg:space-x-8 mb-4 sm:mb-6">
-                                            <div className="text-center">
-                                                <div className="text-xl sm:text-2xl zalando-sans-expanded-bold">{currentUser.posts}</div>
-                                                <div className="text-xs sm:text-sm cabin-regular text-indigo-200">Creations</div>
-                                            </div>
-                                            <div className="text-center">
-                                                <div className="text-xl sm:text-2xl zalando-sans-expanded-bold">{currentUser.followers}</div>
-                                                <div className="text-xs sm:text-sm cabin-regular text-indigo-200">Followers</div>
-                                            </div>
-                                            <div className="text-center">
-                                                <div className="text-xl sm:text-2xl zalando-sans-expanded-bold">{currentUser.following}</div>
-                                                <div className="text-xs sm:text-sm cabin-regular text-indigo-200">Following</div>
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                                            <button className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white px-4 sm:px-6 py-2 rounded-xl cabin-semibold transition-colors border border-white/30 text-sm sm:text-base">
-                                                Edit Profile
-                                            </button>
-                                            <button
-                                                onClick={onLogout}
-                                                className="bg-red-500/20 backdrop-blur-sm hover:bg-red-500/30 text-white px-4 sm:px-6 py-2 rounded-xl cabin-semibold transition-colors border border-red-400/30 text-sm sm:text-base"
-                                            >
-                                                Sign Out
-                                            </button>
-                                        </div>
+                    <div className="space-y-6">
+                        <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-md border border-gray-100 dark:border-gray-700">
+                            <div className="flex items-center gap-6 mb-6">
+                                <img
+                                    src={currentUser.avatar}
+                                    alt={currentUser.username}
+                                    className="w-24 h-24 rounded-full object-cover border-4 border-purple-500"
+                                />
+                                <div>
+                                    <h2 className="text-2xl cabin-semibold text-gray-900 dark:text-white">{currentUser.username}</h2>
+                                    <p className="text-gray-600 dark:text-gray-400">@{currentUser.username.toLowerCase()}</p>
+                                    <div className="flex gap-4 mt-2">
+                                        <span className="text-sm"><strong className="cabin-semibold">{currentUser.posts}</strong> Posts</span>
+                                        <span className="text-sm"><strong className="cabin-semibold">{currentUser.followers}</strong> Followers</span>
+                                        <span className="text-sm"><strong className="cabin-semibold">{currentUser.following}</strong> Following</span>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-
-                        {/* AI Stats Panel */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-                            {[
-                                { label: 'AI Models Used', value: '12', icon: 'cpu', color: 'bg-blue-500' },
-                                { label: 'Images Generated', value: '2.3k', icon: 'image', color: 'bg-purple-500' },
-                                { label: 'Total Likes', value: '15.7k', icon: 'heart', color: 'bg-red-500' },
-                                { label: 'AI Rank', value: '#47', icon: 'award', color: 'bg-yellow-500' }
-                            ].map((stat, index) => (
-                                <div key={index} className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-4 sm:p-6 text-center">
-                                    <div className={`${stat.color} w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center mx-auto mb-2 sm:mb-3`}>
-                                        <Icon name={stat.icon} className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                                    </div>
-                                    <div className="text-lg sm:text-2xl zalando-sans-expanded-bold text-gray-900 dark:text-white mb-1">{stat.value}</div>
-                                    <div className="text-xs sm:text-sm cabin-regular text-gray-600 dark:text-gray-300">{stat.label}</div>
-                                </div>
-                            ))}
+                            <div className="text-center py-8">
+                                <p className="text-gray-600 dark:text-gray-400">Your profile content will appear here</p>
+                            </div>
                         </div>
                     </div>
                 );
+
+            case 'settings':
+                return (
+                    <div className="space-y-6">
+                        <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-md border border-gray-100 dark:border-gray-700">
+                            <h2 className="text-2xl cabin-semibold text-gray-900 dark:text-white mb-6">Settings</h2>
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
+                                    <div>
+                                        <h3 className="cabin-semibold text-gray-900 dark:text-white">Dark Mode</h3>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">Toggle dark mode on/off</p>
+                                    </div>
+                                    <button
+                                        onClick={toggleDarkMode}
+                                        className={`relative w-14 h-7 rounded-full transition-colors ${
+                                            isDarkMode ? 'bg-purple-600' : 'bg-gray-300'
+                                        }`}
+                                    >
+                                        <div
+                                            className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform ${
+                                                isDarkMode ? 'translate-x-7' : 'translate-x-0'
+                                            }`}
+                                        />
+                                    </button>
+                                </div>
+                                <div className="text-center py-8">
+                                    <p className="text-gray-600 dark:text-gray-400">More settings coming soon</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+
             default:
                 return null;
         }
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-            {/* Navigation */}
-            <SocialNavigation
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-                isDarkMode={isDarkMode}
-                isCollapsed={isSidebarCollapsed}
-                setIsCollapsed={setIsSidebarCollapsed}
-            />
-
-            {/* Top Bar */}
-            <TopBar
-                user={currentUser}
-                onLogout={onLogout}
-                isDarkMode={isDarkMode}
-                toggleDarkMode={toggleDarkMode}
-                activeTab={activeTab}
-            />
-
-            {/* Main Content */}
-            <main className={`transition-all duration-300 pt-16 pb-20 md:pb-8 px-2 sm:px-4 ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-72'}`}>
-                <div className="flex justify-center">
-                    <div className="w-full max-w-7xl flex flex-col xl:flex-row gap-4 xl:gap-6">
-                        {/* Main Feed */}
-                        <div className="flex-1 order-1">
-                            <div className="py-2 sm:py-6">
-                                {renderContent()}
-                            </div>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300 cabin-regular">
+            {/* Top Navigation Bar - Redesigned */}
+            <nav className="fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 z-40 shadow-sm">
+                <div className="max-w-7xl mx-auto px-4">
+                    <div className="flex items-center justify-between h-16">
+                        {/* Left: Logo */}
+                        <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveTab('home')}>
+                            <img
+                                src={logoImage}
+                                alt="Leelaaverse Logo"
+                                className="h-10 w-10 object-contain rounded-2xl"
+                            />
+                            <h1 className="text-2xl zalando-sans-expanded-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                                Leelaaverse
+                            </h1>
                         </div>
 
-                        {/* Right Sidebar - Hidden on mobile and tablet, visible on xl screens */}
-                        <div className="hidden xl:block xl:w-80 order-2">
-                            <Sidebar
-                                currentUser={currentUser}
-                                suggestedUsers={mockSuggestedUsers}
-                            />
+                        {/* Center: Navigation - New Style */}
+                        <div className="hidden md:flex items-center bg-gray-100 dark:bg-gray-700 rounded-full p-1">
+                            {[
+                                { id: 'home', icon: 'layout', label: 'Home' },
+                                { id: 'shorts', icon: 'video', label: 'Shorts' },
+                                { id: 'explore', icon: 'search', label: 'Explore' },
+                                { id: 'groups', icon: 'users', label: 'Groups' },
+                            ].map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${
+                                        activeTab === tab.id
+                                            ? 'bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 shadow-sm cabin-semibold'
+                                            : 'text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-600 cabin-medium'
+                                    }`}
+                                >
+                                    <Icon name={tab.icon} className="w-5 h-5" />
+                                    <span>{tab.label}</span>
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Right: Coins, Create, Profile */}
+                        <div className="flex items-center gap-3">
+                            {/* Coins Display - New Style */}
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full text-white cabin-semibold shadow-md hover:shadow-lg transition-shadow cursor-pointer">
+                                <Icon name="hexagon" className="w-4 h-4" />
+                                <span>{currentUser.coins}</span>
+                            </div>
+
+                            {/* Create Button - New Style */}
+                            <button
+                                onClick={() => setIsCreateModalOpen(true)}
+                                className="flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-full cabin-semibold hover:shadow-lg hover:scale-105 transition-all"
+                            >
+                                <Icon name="plus-circle" className="w-4 h-4" />
+                                <span className="hidden sm:inline">Create</span>
+                            </button>
+
+                            {/* Profile Dropdown */}
+                            <div className="relative">
+                                <button
+                                    onClick={() => setShowProfileMenu(!showProfileMenu)}
+                                    className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                                >
+                                    <img
+                                        src={currentUser.avatar}
+                                        alt={currentUser.username}
+                                        className="w-9 h-9 rounded-full object-cover border-2 border-purple-500"
+                                    />
+                                </button>
+
+                                {showProfileMenu && (
+                                    <>
+                                        <div
+                                            className="fixed inset-0 z-40"
+                                            onClick={() => setShowProfileMenu(false)}
+                                        ></div>
+                                        <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 py-2 z-50 animate-slideDown">
+                                            {/* User Info */}
+                                            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                                                <div className="cabin-semibold text-gray-900 dark:text-white">{currentUser.username}</div>
+                                                <div className="text-sm text-gray-600 dark:text-gray-400">@{currentUser.username.toLowerCase()}</div>
+                                            </div>
+
+                                            {/* Menu Items */}
+                                            <div className="py-2">
+                                                <button
+                                                    onClick={() => {
+                                                        setActiveTab('profile');
+                                                        setShowProfileMenu(false);
+                                                    }}
+                                                    className="w-full px-4 py-2 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors cabin-regular"
+                                                >
+                                                    <Icon name="user" className="w-4 h-4" />
+                                                    <span>View Profile</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        setActiveTab('settings');
+                                                        setShowProfileMenu(false);
+                                                    }}
+                                                    className="w-full px-4 py-2 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors cabin-regular"
+                                                >
+                                                    <Icon name="settings" className="w-4 h-4" />
+                                                    <span>Settings</span>
+                                                </button>
+                                                <button
+                                                    className="w-full px-4 py-2 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors cabin-regular"
+                                                >
+                                                    <Icon name="help-circle" className="w-4 h-4" />
+                                                    <span>Help & Support</span>
+                                                </button>
+                                            </div>
+
+                                            {/* Sign Out */}
+                                            <div className="border-t border-gray-200 dark:border-gray-700 pt-2">
+                                                <button
+                                                    onClick={() => {
+                                                        onLogout();
+                                                        setShowProfileMenu(false);
+                                                    }}
+                                                    className="w-full px-4 py-2 text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-3 transition-colors cabin-medium"
+                                                >
+                                                    <Icon name="log-out" className="w-4 h-4" />
+                                                    <span>Sign Out</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
-            </main>
+            </nav>
+
+            {/* Mobile Bottom Navigation - New Style */}
+            <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-40 shadow-lg">
+                <div className="flex items-center justify-around h-16 px-2">
+                    {[
+                        { id: 'home', icon: 'layout', label: 'Home' },
+                        { id: 'shorts', icon: 'video', label: 'Shorts' },
+                        { id: 'explore', icon: 'search', label: 'Explore' },
+                        { id: 'groups', icon: 'users', label: 'Groups' },
+                        { id: 'profile', icon: 'user', label: 'Profile' },
+                    ].map((tab, i) => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={`flex flex-col items-center px-3 py-2 rounded-xl transition-all ${
+                                activeTab === tab.id
+                                    ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
+                                    : 'text-gray-600 dark:text-gray-400'
+                            }`}
+                        >
+                            <Icon name={tab.icon} className="w-6 h-6" />
+                            <span className="text-xs cabin-medium mt-1">{tab.label}</span>
+                        </button>
+                    ))}
+                </div>
+            </nav>
+
+            {/* Main Content - With New Sidebar */}
+            <div className="pt-20 pb-20 md:pb-8 px-4">
+                <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    {/* Left Sidebar - Desktop Only */}
+                    <div className="hidden lg:block">
+                        <div className="sticky top-24 space-y-6">
+                            {/* User Card */}
+                            <div className="bg-white dark:bg-gray-800 rounded-3xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm">
+                                <div className="flex flex-col items-center">
+                                    <img
+                                        src={currentUser.avatar}
+                                        alt={currentUser.username}
+                                        className="w-20 h-20 rounded-full object-cover border-4 border-purple-100 dark:border-purple-900/30 mb-3"
+                                    />
+                                    <h3 className="cabin-semibold text-gray-900 dark:text-white text-lg">{currentUser.username}</h3>
+                                    <p className="text-gray-500 dark:text-gray-400 text-sm mb-3">@{currentUser.username.toLowerCase()}</p>
+                                    <div className="flex justify-between w-full text-center border-t border-gray-100 dark:border-gray-700 pt-3 mt-1">
+                                        <div>
+                                            <div className="cabin-semibold text-gray-900 dark:text-white">{currentUser.posts}</div>
+                                            <div className="text-gray-500 dark:text-gray-400 text-xs">Posts</div>
+                                        </div>
+                                        <div className="border-r border-l border-gray-100 dark:border-gray-700 px-4">
+                                            <div className="cabin-semibold text-gray-900 dark:text-white">{currentUser.followers}</div>
+                                            <div className="text-gray-500 dark:text-gray-400 text-xs">Followers</div>
+                                        </div>
+                                        <div>
+                                            <div className="cabin-semibold text-gray-900 dark:text-white">{currentUser.following}</div>
+                                            <div className="text-gray-500 dark:text-gray-400 text-xs">Following</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Quick Links */}
+                            <div className="bg-white dark:bg-gray-800 rounded-3xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm">
+                                <h3 className="cabin-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                                    <Icon name="bookmark" className="w-5 h-5 text-purple-500" />
+                                    Shortcuts
+                                </h3>
+                                <div className="space-y-1">
+                                    {[
+                                        { icon: 'heart', label: 'Liked Posts', badge: '12' },
+                                        { icon: 'bookmark', label: 'Saved Items', badge: '36' },
+                                        { icon: 'star', label: 'Featured', badge: '2' },
+                                        { icon: 'clock', label: 'Recent' },
+                                        { icon: 'trending-up', label: 'Trending' },
+                                    ].map((item, i) => (
+                                        <button key={i} className="flex items-center justify-between w-full p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-colors group">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center group-hover:bg-purple-200 dark:group-hover:bg-purple-900/50 transition-colors">
+                                                    <Icon name={item.icon} className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                                                </div>
+                                                <span className="text-gray-700 dark:text-gray-300 cabin-medium">{item.label}</span>
+                                            </div>
+                                            {item.badge && (
+                                                <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs rounded-full cabin-medium">
+                                                    {item.badge}
+                                                </span>
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Main Content Area - Responsive Width */}
+                    <div className="lg:col-span-3">
+                        {renderContent()}
+                    </div>
+                </div>
+            </div>
+
+            {/* Create Post Modal */}
+            <CreatePostModal
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
+                currentUser={currentUser}
+            />
+
+            {/* Floating Create Button (Mobile) - New Style */}
+            <button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="md:hidden fixed bottom-20 right-4 w-14 h-14 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-full shadow-xl hover:shadow-2xl hover:scale-110 transition-all z-30 flex items-center justify-center"
+            >
+                <Icon name="plus-circle" className="w-7 h-7" />
+            </button>
         </div>
     );
 };
 
 export default Dashboard;
+
