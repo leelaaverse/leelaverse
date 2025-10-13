@@ -107,6 +107,14 @@ const userSchema = new mongoose.Schema({
             linkedin: String,
             github: String,
             discord: String
+        },
+        // NEW: Phone and DOB
+        phoneNumber: {
+            type: String,
+            sparse: true
+        },
+        dateOfBirth: {
+            type: Date
         }
     },
     role: {
@@ -187,6 +195,62 @@ const userSchema = new mongoose.Schema({
     },
     banExpiresAt: {
         type: Date
+    },
+
+    // NEW FIELDS FROM DATABASE DESIGN
+    // Status and Verification
+    verified: {
+        type: Boolean,
+        default: false
+    },
+
+    // Statistics (Denormalized for performance)
+    stats: {
+        postsCount: { type: Number, default: 0 },
+        followersCount: { type: Number, default: 0 },
+        followingCount: { type: Number, default: 0 },
+        likesReceivedCount: { type: Number, default: 0 },
+        totalViews: { type: Number, default: 0 }
+    },
+
+    // Virtual Currency
+    coins: {
+        type: Number,
+        default: 250,
+        min: 0
+    },
+
+    // AI Credits/Tokens (Separate from coins for API usage tracking)
+    credits: {
+        total: { type: Number, default: 1000 },
+        used: { type: Number, default: 0 },
+        remaining: {
+            type: Number,
+            default: 1000
+        },
+        lastReset: { type: Date, default: Date.now },
+        resetPeriod: { type: String, enum: ['daily', 'weekly', 'monthly', 'never'], default: 'monthly' }
+    },
+
+    // AI Usage Breakdown (for detailed tracking)
+    aiCredits: {
+        imageGeneration: { type: Number, default: 10 },
+        videoGeneration: { type: Number, default: 5 },
+        textEnhancement: { type: Number, default: 20 }
+    },
+
+    // Preferences
+    preferences: {
+        darkMode: { type: Boolean, default: false },
+        emailNotifications: { type: Boolean, default: true },
+        pushNotifications: { type: Boolean, default: true },
+        language: { type: String, default: 'en' }
+    },
+
+    // Soft Delete
+    deletedAt: {
+        type: Date,
+        default: null
     }
 }, {
     timestamps: true,
@@ -200,6 +264,10 @@ userSchema.index({ 'oauth.googleId': 1 });
 userSchema.index({ createdAt: -1 });
 userSchema.index({ role: 1 });
 userSchema.index({ isActive: 1, isBanned: 1 });
+userSchema.index({ 'stats.followersCount': -1 }); // NEW: For trending users
+userSchema.index({ deletedAt: 1 }); // NEW: For soft delete queries
+userSchema.index({ coins: 1 }); // NEW: For coin queries
+userSchema.index({ 'credits.remaining': 1 }); // NEW: For credit queries
 
 // Virtual for full name
 userSchema.virtual('fullName').get(function () {
@@ -214,6 +282,14 @@ userSchema.virtual('followerCount').get(function () {
 // Virtual for following count
 userSchema.virtual('followingCount').get(function () {
     return this.following ? this.following.length : 0;
+});
+
+// NEW: Virtual for follower-following ratio
+userSchema.virtual('engagementRatio').get(function () {
+    const followingCount = this.following ? this.following.length : 0;
+    if (followingCount === 0) return 0;
+    const followerCount = this.followers ? this.followers.length : 0;
+    return (followerCount / followingCount).toFixed(2);
 });
 
 // Check if account is locked
