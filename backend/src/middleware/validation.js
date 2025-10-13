@@ -164,6 +164,45 @@ const validateRefreshToken = [
     handleValidationErrors
 ];
 
+// Post validation
+const validatePost = [
+    body('type')
+        .notEmpty()
+        .withMessage('Post type is required')
+        .isIn(['user-generated', 'ai-generated', 'mixed'])
+        .withMessage('Invalid post type'),
+
+    body('category')
+        .notEmpty()
+        .withMessage('Post category is required')
+        .isIn(['image-post', 'video-post', 'text-post', 'image-text-post', 'ai-art'])
+        .withMessage('Invalid post category'),
+
+    body('caption')
+        .optional()
+        .trim()
+        .isLength({ max: 2200 })
+        .withMessage('Caption must not exceed 2200 characters'),
+
+    body('title')
+        .optional()
+        .trim()
+        .isLength({ max: 200 })
+        .withMessage('Title must not exceed 200 characters'),
+
+    body('tags')
+        .optional()
+        .isArray({ max: 10 })
+        .withMessage('Tags must be an array with maximum 10 items'),
+
+    body('visibility')
+        .optional()
+        .isIn(['public', 'private', 'followers'])
+        .withMessage('Invalid visibility setting'),
+
+    handleValidationErrors
+];
+
 module.exports = {
     validateRegister,
     validateLogin,
@@ -172,5 +211,6 @@ module.exports = {
     validateChangePassword,
     validateProfileUpdate,
     validateRefreshToken,
+    validatePost,
     handleValidationErrors
 };

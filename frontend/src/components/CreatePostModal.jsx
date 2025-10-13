@@ -1,25 +1,35 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import Icon from './Icon';
 
 const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
+    const { user } = useAuth();
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
     const [mode, setMode] = useState('manual'); // manual, agent
     const [prompt, setPrompt] = useState('');
+    const [caption, setCaption] = useState('');
     const [postType, setPostType] = useState('auto'); // auto, image, video, text, upload-image, upload-video
-    const [selectedModel, setSelectedModel] = useState('auto');
+    const [selectedModel, setSelectedModel] = useState('flux-1-srpo');
     const [showAdvanced, setShowAdvanced] = useState(false);
-    const [aspectRatio, setAspectRatio] = useState('1:1');
+    const [aspectRatio, setAspectRatio] = useState('16:9');
     const [style, setStyle] = useState('auto');
     const [isGenerating, setIsGenerating] = useState(false);
+    const [generationProgress, setGenerationProgress] = useState(0);
+    const [generationMessage, setGenerationMessage] = useState('');
+    const [generationId, setGenerationId] = useState(null);
+    const [generatedImageUrl, setGeneratedImageUrl] = useState(null);
     const [enhancedPrompt, setEnhancedPrompt] = useState('');
     const [isEnhancing, setIsEnhancing] = useState(false);
     const [agentAnalysis, setAgentAnalysis] = useState(null);
     const [uploadedFile, setUploadedFile] = useState(null);
     const [filePreview, setFilePreview] = useState(null);
+    const [isPosting, setIsPosting] = useState(false);
+    const [error, setError] = useState(null);
 
     const imageModels = [
-        { id: 'auto', name: 'Auto Select', icon: 'sparkles', description: 'AI picks the best model' },
+        { id: 'flux-1-srpo', name: 'FLUX.1 SRPO', icon: 'sparkles', cost: 10, quality: 'Premium' },
         { id: 'dalle3', name: 'DALL-E 3', icon: 'image', cost: 10, quality: 'Premium' },
-        { id: 'midjourney', name: 'Midjourney v6', icon: 'wand', cost: 15, quality: 'Ultra' },
         { id: 'stable-diffusion', name: 'SD XL', icon: 'zap', cost: 5, quality: 'Fast' },
     ];
 
@@ -82,6 +92,193 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
     const clearUpload = () => {
         setUploadedFile(null);
         setFilePreview(null);
+        setGeneratedImageUrl(null);
+        setGenerationProgress(0);
+        setGenerationMessage('');
+        setError(null);
+    };
+
+    // Poll generation status
+    useEffect(() => {
+        if (!generationId || !isGenerating) return;
+
+        const pollInterval = setInterval(async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_URL}/api/posts/generate-status/${generationId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    setGenerationProgress(data.progress);
+                    setGenerationMessage(data.message);
+
+                    if (data.status === 'completed') {
+                        setGeneratedImageUrl(data.imageUrl);
+                        setFilePreview(data.imageUrl);
+                        setIsGenerating(false);
+                        clearInterval(pollInterval);
+                    } else if (data.status === 'failed') {
+                        setError(data.message);
+                        setIsGenerating(false);
+                        clearInterval(pollInterval);
+                    }
+                }
+            } catch (error) {
+                console.error('Error polling generation status:', error);
+                setError('Failed to check generation status');
+                setIsGenerating(false);
+                clearInterval(pollInterval);
+            }
+        }, 2000); // Poll every 2 seconds
+
+        return () => clearInterval(pollInterval);
+    }, [generationId, isGenerating, API_URL]);
+
+    // Generate Image with FAL AI
+    const handleGenerateImage = async () => {
+        if (!prompt.trim()) {
+            setError('Please enter a prompt');
+            return;
+        }
+
+        setIsGenerating(true);
+        setError(null);
+        setGenerationProgress(0);
+        setGenerationMessage('Starting generation...');
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/api/posts/generate-image`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    prompt: enhancedPrompt || prompt,
+                    imageSize: aspectRatio,
+                    style,
+                    aspectRatio,
+                    selectedModel,
+                    numInferenceSteps: 28,
+                    guidanceScale: 4.5
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setGenerationId(data.generationId);
+                setGenerationMessage('Image generation started...');
+            } else {
+                throw new Error(data.message || 'Failed to start generation');
+            }
+        } catch (error) {
+            console.error('Generate image error:', error);
+            setError(error.message || 'Failed to generate image');
+            setIsGenerating(false);
+        }
+    };
+
+    // Create Post
+    const handleCreatePost = async () => {
+        // Validate based on post type
+        if (postType === 'text' && !caption.trim()) {
+            setError('Please enter a caption for text post');
+            return;
+        }
+
+        if ((postType === 'auto' || postType === 'image' || postType === 'upload-image') && !generatedImageUrl && !uploadedFile) {
+            setError('Please generate or upload an image');
+            return;
+        }
+
+        setIsPosting(true);
+        setError(null);
+
+        try {
+            const token = localStorage.getItem('token');
+
+            // Determine post category
+            let category = 'text-post';
+            let type = 'user-generated';
+
+            if (generatedImageUrl) {
+                category = caption.trim() ? 'image-text-post' : 'image-post';
+                type = 'ai-generated';
+            } else if (uploadedFile) {
+                category = caption.trim() ? 'image-text-post' : 'image-post';
+                type = 'user-generated';
+            }
+
+            const postData = {
+                caption: caption.trim(),
+                type,
+                category,
+                imageUrl: generatedImageUrl,
+                aiGenerated: !!generatedImageUrl,
+                aiDetails: generatedImageUrl ? {
+                    model: selectedModel,
+                    prompt,
+                    enhancedPrompt,
+                    style,
+                    aspectRatio,
+                    steps: 28,
+                    cost: 10
+                } : {},
+                visibility: 'public',
+                status: 'published'
+            };
+
+            const response = await fetch(`${API_URL}/api/posts`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(postData)
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Success! Close modal and refresh feed
+                alert('Post created successfully!');
+                handleCloseModal();
+                // Optionally trigger feed refresh
+                if (window.location.pathname === '/dashboard') {
+                    window.location.reload();
+                }
+            } else {
+                throw new Error(data.message || 'Failed to create post');
+            }
+        } catch (error) {
+            console.error('Create post error:', error);
+            setError(error.message || 'Failed to create post');
+        } finally {
+            setIsPosting(false);
+        }
+    };
+
+    const handleCloseModal = () => {
+        setPrompt('');
+        setCaption('');
+        setEnhancedPrompt('');
+        setGeneratedImageUrl(null);
+        setFilePreview(null);
+        setUploadedFile(null);
+        setGenerationProgress(0);
+        setGenerationMessage('');
+        setError(null);
+        setIsGenerating(false);
+        setIsPosting(false);
+        setGenerationId(null);
+        onClose();
     };
 
     if (!isOpen) return null;
@@ -449,6 +646,71 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
 
                 {/* Footer - Clean Action Bar */}
                 <div className="sticky bottom-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 p-4">
+                    {/* Error Message */}
+                    {error && (
+                        <div className="mb-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm flex items-center gap-2">
+                            <Icon name="alert-circle" className="w-4 h-4 flex-shrink-0" />
+                            <span>{error}</span>
+                        </div>
+                    )}
+
+                    {/* Generation Progress */}
+                    {isGenerating && (
+                        <div className="mb-3 p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="w-5 h-5 border-2 border-purple-600/30 border-t-purple-600 rounded-full animate-spin"></div>
+                                <span className="text-sm cabin-medium text-purple-900 dark:text-purple-200">
+                                    {generationMessage}
+                                </span>
+                            </div>
+                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                                <div
+                                    className="h-full bg-gradient-to-r from-purple-600 to-indigo-600 transition-all duration-300 ease-out"
+                                    style={{ width: `${generationProgress}%` }}
+                                />
+                            </div>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                {generationProgress}% complete
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Preview Generated Image */}
+                    {filePreview && !isGenerating && (
+                        <div className="mb-3 relative rounded-lg overflow-hidden border-2 border-purple-500">
+                            <img
+                                src={filePreview}
+                                alt="Generated preview"
+                                className="w-full h-48 object-cover"
+                            />
+                            <div className="absolute top-2 right-2 flex gap-2">
+                                <button
+                                    onClick={clearUpload}
+                                    className="p-2 bg-red-500/90 hover:bg-red-600 text-white rounded-lg transition-colors backdrop-blur-sm"
+                                >
+                                    <Icon name="x" className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Caption Input */}
+                    {(filePreview || postType === 'text') && !isGenerating && (
+                        <div className="mb-3">
+                            <textarea
+                                value={caption}
+                                onChange={(e) => setCaption(e.target.value)}
+                                placeholder="Write a caption... (optional)"
+                                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                                rows="3"
+                                maxLength="2200"
+                            />
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">
+                                {caption.length}/2200
+                            </p>
+                        </div>
+                    )}
+
                     <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
@@ -456,7 +718,7 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
                             </div>
                             <div>
                                 <p className="text-xs text-gray-500 dark:text-gray-400">Balance</p>
-                                <p className="text-sm cabin-semibold text-gray-900 dark:text-white">{currentUser.coins} coins</p>
+                                <p className="text-sm cabin-semibold text-gray-900 dark:text-white">{currentUser?.coins || 0} coins</p>
                             </div>
                         </div>
                         <div className="text-right">
@@ -469,35 +731,50 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
 
                     <div className="flex gap-3">
                         <button
-                            onClick={onClose}
-                            className="flex-1 py-3 px-4 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl cabin-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
+                            onClick={handleCloseModal}
+                            disabled={isGenerating || isPosting}
+                            className="flex-1 py-3 px-4 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl cabin-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Cancel
                         </button>
-                        <button
-                            disabled={
-                                isGenerating ||
-                                (postType.startsWith('upload') && !uploadedFile) ||
-                                (!postType.startsWith('upload') && (!prompt.trim() || prompt.length < 5))
-                            }
-                            className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl cabin-semibold hover:shadow-lg hover:shadow-purple-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                        >
-                            {isGenerating ? (
-                                <>
-                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                    {postType.startsWith('upload') ? 'Uploading...' : 'Creating...'}
-                                </>
-                            ) : (
-                                <>
-                                    <Icon name={postType.startsWith('upload') ? 'upload' : mode === 'agent' ? 'cpu' : 'sparkles'} className="w-5 h-5" />
-                                    {postType.startsWith('upload')
-                                        ? 'Upload & Post'
-                                        : mode === 'agent'
-                                        ? 'Let AI Create'
-                                        : 'Generate'}
-                                </>
-                            )}
-                        </button>
+
+                        {/* Generate Button (if no image generated yet) */}
+                        {!filePreview && !isGenerating && (
+                            <button
+                                onClick={handleGenerateImage}
+                                disabled={
+                                    isGenerating ||
+                                    isPosting ||
+                                    (postType.startsWith('upload') && !uploadedFile) ||
+                                    (!postType.startsWith('upload') && (!prompt.trim() || prompt.length < 5))
+                                }
+                                className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl cabin-semibold hover:shadow-lg hover:shadow-purple-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                <Icon name="sparkles" className="w-5 h-5" />
+                                Generate Image
+                            </button>
+                        )}
+
+                        {/* Post Button (if image is generated) */}
+                        {filePreview && !isGenerating && (
+                            <button
+                                onClick={handleCreatePost}
+                                disabled={isPosting || (postType === 'text' && !caption.trim())}
+                                className="flex-1 py-3 px-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl cabin-semibold hover:shadow-lg hover:shadow-green-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {isPosting ? (
+                                    <>
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                        Posting...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Icon name="send" className="w-5 h-5" />
+                                        Post
+                                    </>
+                                )}
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
