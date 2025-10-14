@@ -21,7 +21,7 @@ const aiGenerationSchema = new mongoose.Schema({
 	model: {
 		type: String,
 		required: true,
-		enum: ['DALL-E 3', 'Midjourney v6', 'Stable Diffusion XL', 'Runway Gen-2', 'Pika Labs', 'Firefly', 'Leonardo AI']
+		enum: ['DALL-E 3', 'Midjourney v6', 'Stable Diffusion XL', 'Runway Gen-2', 'Pika Labs', 'Firefly', 'Leonardo AI', 'FLUX Schnell', 'FLUX.1 SRPO']
 	},
 
 	// Input
@@ -43,6 +43,9 @@ const aiGenerationSchema = new mongoose.Schema({
 	// Output
 	resultUrl: String,
 	thumbnailUrl: String,
+
+	// FAL AI Request ID for tracking
+	falRequestId: String,
 
 	// Related Post
 	post: {

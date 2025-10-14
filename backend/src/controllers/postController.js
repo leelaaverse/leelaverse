@@ -2,6 +2,7 @@ const { Post, User, AIGeneration, CoinTransaction } = require('../models');
 const { fal } = require("@fal-ai/client");
 const cloudinary = require('cloudinary').v2;
 const axios = require('axios');
+const mongoose = require('mongoose');
 
 // Configure Cloudinary
 cloudinary.config({
@@ -15,26 +16,24 @@ fal.config({
 	credentials: process.env.FAL_KEY
 });
 
-// In-memory store for generation progress (use Redis in production)
-const generationProgress = new Map();
-
 /**
  * Generate Image using FAL AI
  * POST /api/posts/generate-image
  */
 exports.generateImage = async (req, res) => {
 	try {
-		// Get userId from auth or use test user for development
-		const userId = req.user?.id || req.user?._id || 'test-user-id';
+		// Create a test user ID that's a valid ObjectId for development
+		const testUserId = new mongoose.Types.ObjectId('507f1f77bcf86cd799439011');
+		const userId = req.user?.id || req.user?._id || testUserId;
 
 		const {
 			prompt,
-			imageSize = 'landscape_4_3',
-			numInferenceSteps = 28,
-			guidanceScale = 4.5,
-			style = 'auto',
-			aspectRatio = '16:9',
-			selectedModel = 'flux-1-srpo'
+			imageSize,
+			numInferenceSteps,
+			guidanceScale,
+			style,
+			aspectRatio,
+			selectedModel
 		} = req.body;
 
 		// Validate prompt
@@ -45,31 +44,6 @@ exports.generateImage = async (req, res) => {
 			});
 		}
 
-		// ============================================
-		// CREDIT SYSTEM COMMENTED OUT - TO BE IMPLEMENTED LATER
-		// ============================================
-		// let user = null;
-		// if (userId !== 'test-user-id') {
-		// 	user = await User.findById(userId);
-		// 	if (!user) {
-		// 		return res.status(404).json({
-		// 			success: false,
-		// 			message: 'User not found'
-		// 		});
-		// 	}
-
-		// 	// Check AI credits
-		// 	const requiredCredits = 10; // Cost for image generation
-		// 	if (user.aiCredits.imageGeneration < 1) {
-		// 		return res.status(403).json({
-		// 			success: false,
-		// 			message: 'Insufficient AI credits for image generation',
-		// 			credits: user.aiCredits
-		// 		});
-		// 	}
-		// }
-		// ============================================
-
 		// Map image size to FAL format
 		const sizeMap = {
 			'1:1': 'square_hd',
@@ -78,38 +52,91 @@ exports.generateImage = async (req, res) => {
 			'9:16': 'portrait_16_9',
 			'3:4': 'portrait_4_3'
 		};
-		const falImageSize = sizeMap[aspectRatio] || imageSize;
+		const falImageSize = sizeMap[aspectRatio] || imageSize || 'landscape_4_3';
 
-		// Create generation ID for tracking
-		const generationId = `gen_${Date.now()}_${userId}`;
+		// Determine FAL model endpoint based on selectedModel
+		let falModel;
+		let modelName;
+		let defaultSteps;
+		let defaultGuidance;
 
-		// Initialize progress tracking
-		generationProgress.set(generationId, {
-			status: 'queued',
-			progress: 0,
-			message: 'Queuing generation...',
-			userId,
-			prompt
+		switch (selectedModel) {
+			case 'flux-schnell':
+				falModel = "fal-ai/flux/schnell";
+				modelName = 'FLUX Schnell';
+				defaultSteps = 4;  // FLUX Schnell uses fewer steps (max 12)
+				defaultGuidance = 3.5;  // Different default guidance
+				break;
+			case 'flux-1-srpo':
+			default:
+				falModel = "fal-ai/flux-1/srpo";
+				modelName = 'FLUX.1 SRPO';
+				defaultSteps = 28;
+				defaultGuidance = 4.5;
+				break;
+		}
+
+		// Validate and cap steps for FLUX Schnell
+		let finalSteps = numInferenceSteps || defaultSteps;
+		if (selectedModel === 'flux-schnell' && finalSteps > 12) {
+			console.warn(`FLUX Schnell max steps is 12, capping ${finalSteps} to 12`);
+			finalSteps = 12;
+		}
+
+		console.log('Starting image generation with prompt:', prompt);
+		console.log('Using model:', modelName);
+		console.log('Steps:', finalSteps, 'Guidance:', guidanceScale || defaultGuidance);
+
+		// Prepare input parameters based on model
+		const inputParams = {
+			prompt: prompt.trim(), // Use exact user prompt without modification
+			image_size: falImageSize,
+			num_inference_steps: finalSteps,
+			num_images: 1,
+			enable_safety_checker: true,
+			output_format: 'jpeg'
+		};
+
+		// Add model-specific parameters
+		if (selectedModel === 'flux-schnell') {
+			// FLUX Schnell specific parameters
+			inputParams.guidance_scale = guidanceScale || defaultGuidance;
+		} else {
+			// FLUX SRPO specific parameters
+			inputParams.guidance_scale = guidanceScale || defaultGuidance;
+			inputParams.acceleration = 'regular';
+		}
+
+		// Submit request to FAL AI Queue to get request_id
+		const { request_id } = await fal.queue.submit(falModel, {
+			input: inputParams
 		});
 
-		// Start generation process (don't await - respond immediately)
-		processImageGeneration(generationId, {
-			prompt,
-			imageSize: falImageSize,
-			numInferenceSteps,
-			guidanceScale,
-			userId,
-			selectedModel,
-			style,
-			aspectRatio
-			// requiredCredits - COMMENTED OUT
+		// Create AI Generation record with FAL request_id
+		const aiGeneration = await AIGeneration.create({
+			user: userId,
+			type: 'image',
+			model: modelName,
+			prompt: prompt.trim(), // Store exact user prompt
+			parameters: {
+				style: style || '',
+				aspectRatio: aspectRatio || '16:9',
+				steps: finalSteps,
+				quality: guidanceScale || defaultGuidance
+			},
+			status: 'processing',
+			falRequestId: request_id
 		});
 
-		// Return generation ID immediately
+		console.log('Created AI Generation record:', aiGeneration._id);
+		console.log('FAL Request ID:', request_id);
+
+		// Return the FAL request_id for tracking
 		res.json({
 			success: true,
 			message: 'Image generation started',
-			generationId,
+			requestId: request_id, // This is the FAL request_id
+			aiGenerationId: aiGeneration._id,
 			estimatedTime: '15-30 seconds'
 		});
 
@@ -124,228 +151,207 @@ exports.generateImage = async (req, res) => {
 };
 
 /**
- * Process Image Generation (Background)
+ * Check Generation Status and Get Result
+ * GET /api/posts/generation/:requestId
  */
-async function processImageGeneration(generationId, config) {
+exports.getGenerationResult = async (req, res) => {
 	try {
-		const {
-			prompt,
-			imageSize,
-			numInferenceSteps,
-			guidanceScale,
-			userId,
-			selectedModel,
-			style,
-			aspectRatio
-			// requiredCredits - COMMENTED OUT
-		} = config;
+		const { requestId } = req.params;
 
-		// Update progress: Starting
-		generationProgress.set(generationId, {
-			status: 'processing',
-			progress: 10,
-			message: 'Initializing AI model...',
-			userId,
-			prompt
-		});
+		console.log('Checking generation status for request:', requestId);
 
-		// Create AI Generation record
-		const aiGeneration = await AIGeneration.create({
-			user: userId,
-			type: 'image',
-			model: selectedModel === 'flux-1-srpo' ? 'FLUX.1 SRPO' : 'DALL-E 3',
-			prompt,
-			parameters: {
-				style,
-				aspectRatio,
-				steps: numInferenceSteps,
-				quality: guidanceScale
-			},
-			status: 'processing'
-			// cost: requiredCredits  // COMMENTED OUT - TO BE IMPLEMENTED LATER
-		});
+		// Find the AI Generation record to determine which model was used
+		const aiGeneration = await AIGeneration.findOne({ falRequestId: requestId });
 
-		// Update progress: Generating
-		generationProgress.set(generationId, {
-			status: 'processing',
-			progress: 30,
-			message: 'Generating image with AI...',
-			userId,
-			prompt,
-			aiGenerationId: aiGeneration._id
-		});
-
-		// Call FAL AI API with streaming
-		const stream = await fal.stream("fal-ai/flux-1/srpo", {
-			input: {
-				prompt,
-				image_size: imageSize,
-				num_inference_steps: numInferenceSteps,
-				guidance_scale: guidanceScale,
-				num_images: 1,
-				enable_safety_checker: true,
-				output_format: 'jpeg',
-				acceleration: 'regular'
-			}
-		});
-
-		// Track progress from stream
-		let lastProgress = 30;
-		for await (const event of stream) {
-			if (event.type === 'progress') {
-				lastProgress = Math.min(30 + (event.progress * 60), 90);
-				generationProgress.set(generationId, {
-					status: 'processing',
-					progress: lastProgress,
-					message: event.message || 'Generating image...',
-					userId,
-					prompt,
-					aiGenerationId: aiGeneration._id
-				});
-			}
-		}
-
-		// Get final result
-		const result = await stream.done();
-
-		// Update progress: Processing result
-		generationProgress.set(generationId, {
-			status: 'processing',
-			progress: 95,
-			message: 'Finalizing image...',
-			userId,
-			prompt,
-			aiGenerationId: aiGeneration._id
-		});
-
-		// Extract image URL from result
-		const imageUrl = result.data.images[0]?.url;
-		const seed = result.data.seed;
-
-		if (!imageUrl) {
-			throw new Error('No image generated');
-		}
-
-		// Update AI Generation record
-		aiGeneration.resultUrl = imageUrl;
-		aiGeneration.parameters.seed = seed?.toString();
-		aiGeneration.status = 'completed';
-		aiGeneration.generationTime = Math.floor((Date.now() - aiGeneration.createdAt) / 1000);
-		await aiGeneration.save();
-
-		// ============================================
-		// CREDIT DEDUCTION COMMENTED OUT - TO BE IMPLEMENTED LATER
-		// ============================================
-		// let creditsRemaining = 0;
-		// let imageGenerationCredits = 0;
-
-		// if (userId !== 'test-user-id') {
-		// 	const user = await User.findById(userId);
-		// 	user.aiCredits.imageGeneration -= 1;
-		// 	user.credits.used += 10; // requiredCredits
-		// 	user.credits.remaining -= 10;
-		// 	await user.save();
-
-		// 	creditsRemaining = user.credits.remaining;
-		// 	imageGenerationCredits = user.aiCredits.imageGeneration;
-
-		// 	// Record transaction
-		// 	await CoinTransaction.create({
-		// 		user: userId,
-		// 		type: 'spend',
-		// 		amount: -10, // requiredCredits
-		// 		balanceAfter: user.credits.remaining,
-		// 		description: 'AI Image Generation',
-		// 		relatedModel: 'AIGeneration',
-		// 		relatedId: aiGeneration._id,
-		// 		metadata: {
-		// 			aiModel: selectedModel,
-		// 			generationType: 'image'
-		// 		}
-		// 	});
-		// }
-		// ============================================
-
-		// Update progress: Completed
-		generationProgress.set(generationId, {
-			status: 'completed',
-			progress: 100,
-			message: 'Image generated successfully!',
-			userId,
-			prompt,
-			aiGenerationId: aiGeneration._id,
-			imageUrl,
-			seed
-			// credits: {  // COMMENTED OUT
-			// 	remaining: creditsRemaining,
-			// 	imageGeneration: imageGenerationCredits
-			// }
-		});
-
-	} catch (error) {
-		console.error('Image generation error:', error);
-
-		// Update progress: Failed
-		generationProgress.set(generationId, {
-			status: 'failed',
-			progress: 0,
-			message: error.message || 'Image generation failed',
-			userId: config.userId,
-			prompt: config.prompt,
-			error: error.message
-		});
-
-		// Update AI Generation record if exists
-		try {
-			const progress = generationProgress.get(generationId);
-			if (progress?.aiGenerationId) {
-				await AIGeneration.findByIdAndUpdate(progress.aiGenerationId, {
-					status: 'failed',
-					errorMessage: error.message
-				});
-			}
-		} catch (updateError) {
-			console.error('Failed to update AI Generation:', updateError);
-		}
-	}
-}
-
-/**
- * Get Generation Status
- * GET /api/posts/generate-status/:generationId
- */
-exports.getGenerationStatus = async (req, res) => {
-	try {
-		const { generationId } = req.params;
-		const userId = req.user.id;
-
-		const progress = generationProgress.get(generationId);
-
-		if (!progress) {
+		if (!aiGeneration) {
 			return res.status(404).json({
 				success: false,
-				message: 'Generation not found or expired'
+				message: 'Generation request not found'
 			});
 		}
 
-		// Verify user owns this generation
-		if (progress.userId.toString() !== userId) {
-			return res.status(403).json({
+		// Determine FAL model endpoint based on the stored model
+		let falModel;
+		if (aiGeneration.model === 'FLUX Schnell') {
+			falModel = "fal-ai/flux/schnell";
+		} else {
+			falModel = "fal-ai/flux-1/srpo"; // Default to SRPO
+		}
+
+		console.log('Using FAL model:', falModel);
+
+		// Check status from FAL AI - using correct parameter name
+		const status = await fal.queue.status(falModel, {
+			requestId: requestId,
+			logs: true
+		});
+
+		console.log('FAL Status:', status.status);
+
+		// If completed, get the result
+		if (status.status === "COMPLETED") {
+			const result = await fal.queue.result(falModel, {
+				requestId: requestId
+			});
+
+			console.log('Generation completed successfully');
+			console.log('Result data:', result.data);
+
+			// Update AI Generation record
+			await AIGeneration.findOneAndUpdate(
+				{ falRequestId: requestId },
+				{
+					resultUrl: result.data.images[0]?.url,
+					status: 'completed',
+					'parameters.seed': result.data.seed?.toString()
+				}
+			);
+
+			return res.json({
+				success: true,
+				status: 'completed',
+				requestId: requestId,
+				imageUrl: result.data.images[0]?.url,
+				seed: result.data.seed,
+				prompt: result.data.prompt,
+				data: result.data
+			});
+		}
+
+		// If failed
+		if (status.status === "FAILED") {
+			await AIGeneration.findOneAndUpdate(
+				{ falRequestId: requestId },
+				{
+					status: 'failed',
+					errorMessage: 'Generation failed'
+				}
+			);
+
+			return res.json({
 				success: false,
-				message: 'Unauthorized'
+				status: 'failed',
+				requestId: requestId,
+				message: 'Generation failed'
 			});
 		}
 
+		// If still processing
 		res.json({
 			success: true,
-			...progress
+			status: status.status.toLowerCase(),
+			requestId: requestId,
+			queuePosition: status.queue_position || null,
+			logs: status.logs || []
 		});
 
 	} catch (error) {
-		console.error('Get generation status error:', error);
+		console.error('Get generation result error:', error);
+		console.error('Error details:', error.body || error);
 		res.status(500).json({
 			success: false,
-			message: 'Failed to get generation status',
+			message: 'Failed to get generation result',
+			error: error.message,
+			details: error.body || null
+		});
+	}
+};
+
+/**
+ * Create Post from Generated Image
+ * POST /api/posts/create-from-generation
+ */
+exports.createPostFromGeneration = async (req, res) => {
+	try {
+		const testUserId = new mongoose.Types.ObjectId('507f1f77bcf86cd799439011');
+		const userId = req.user?.id || req.user?._id || testUserId;
+
+		const {
+			requestId,
+			caption,
+			title,
+			type = 'content',
+			category = 'image-post',
+			tags = [],
+			visibility = 'public',
+			status = 'published'
+		} = req.body;
+
+		// Validate required fields
+		if (!requestId) {
+			return res.status(400).json({
+				success: false,
+				message: 'Request ID is required'
+			});
+		}
+
+		// Find the AI Generation record
+		const aiGeneration = await AIGeneration.findOne({ falRequestId: requestId });
+		if (!aiGeneration) {
+			return res.status(404).json({
+				success: false,
+				message: 'Generation not found'
+			});
+		}
+
+		if (aiGeneration.status !== 'completed' || !aiGeneration.resultUrl) {
+			return res.status(400).json({
+				success: false,
+				message: 'Generation is not completed or has no result'
+			});
+		}
+
+		// Upload image to Cloudinary
+		const uploadResult = await uploadToCloudinary(aiGeneration.resultUrl, userId);
+		const cloudinaryUrl = uploadResult.secure_url;
+		const thumbnailUrl = uploadResult.secure_url.replace('/upload/', '/upload/w_400,h_400,c_fill/');
+
+		// Create post
+		const post = await Post.create({
+			author: userId,
+			type,
+			category,
+			caption: caption || `AI generated image: ${aiGeneration.prompt}`,
+			title: title || 'AI Generated Image',
+			mediaUrl: cloudinaryUrl,
+			thumbnailUrl,
+			mediaType: 'image/jpeg',
+			aiGenerated: true,
+			aiDetails: {
+				model: aiGeneration.model, // Use the actual model from AI Generation record
+				prompt: aiGeneration.prompt,
+				style: aiGeneration.parameters?.style || '',
+				aspectRatio: aiGeneration.parameters?.aspectRatio || '16:9',
+				steps: aiGeneration.parameters?.steps || 28,
+				seed: aiGeneration.parameters?.seed || '',
+				requestId: requestId
+			},
+			tags: tags.map(tag => tag.toLowerCase().trim()),
+			visibility,
+			status
+		});
+
+		// Link AI Generation to Post
+		await AIGeneration.findByIdAndUpdate(aiGeneration._id, {
+			post: post._id
+		});
+
+		// Populate author details (create a basic user object for test)
+		const populatedPost = await Post.findById(post._id).populate('author', 'username avatar verified');
+
+		console.log('Post created successfully:', post._id);
+
+		res.status(201).json({
+			success: true,
+			message: 'Post created successfully from generated image',
+			post: populatedPost
+		});
+
+	} catch (error) {
+		console.error('Create post from generation error:', error);
+		res.status(500).json({
+			success: false,
+			message: 'Failed to create post from generation',
 			error: error.message
 		});
 	}
@@ -391,7 +397,8 @@ async function uploadToCloudinary(imageUrl, userId) {
  */
 exports.createPost = async (req, res) => {
 	try {
-		const userId = req.user?.id || req.user?._id || 'test-user-id';
+		const testUserId = new mongoose.Types.ObjectId('507f1f77bcf86cd799439011');
+		const userId = req.user?.id || req.user?._id || testUserId;
 		const {
 			caption,
 			title,
@@ -468,7 +475,7 @@ exports.createPost = async (req, res) => {
 		// ============================================
 		// USER STATS UPDATE COMMENTED OUT - TO BE IMPLEMENTED LATER
 		// ============================================
-		// if (userId !== 'test-user-id') {
+		// if (userId.toString() !== testUserId.toString()) {
 		// 	await User.findByIdAndUpdate(userId, {
 		// 		$inc: {
 		// 			'stats.postsCount': 1,
@@ -679,6 +686,117 @@ exports.deletePost = async (req, res) => {
 			success: false,
 			message: 'Failed to delete post',
 			error: error.message
+		});
+	}
+};
+
+/**
+ * Get FAL Request Status (Direct FAL API tracking)
+ * GET /api/posts/fal-status/:requestId
+ */
+exports.getFalStatus = async (req, res) => {
+	try {
+		const { requestId } = req.params;
+
+		// Find the AI Generation record to determine which model was used
+		const aiGeneration = await AIGeneration.findOne({ falRequestId: requestId });
+
+		if (!aiGeneration) {
+			return res.status(404).json({
+				success: false,
+				message: 'Generation request not found'
+			});
+		}
+
+		// Determine FAL model endpoint based on the stored model
+		let falModel;
+		if (aiGeneration.model === 'FLUX Schnell') {
+			falModel = "fal-ai/flux/schnell";
+		} else {
+			falModel = "fal-ai/flux-1/srpo"; // Default to SRPO
+		}
+
+		console.log('Checking FAL status for model:', falModel, 'requestId:', requestId);
+
+		// Get status from FAL AI
+		const status = await fal.queue.status(falModel, {
+			requestId: requestId,
+			logs: true
+		});
+
+		res.json({
+			success: true,
+			falStatus: status.status,
+			requestId: requestId,
+			logs: status.logs || [],
+			queuePosition: status.queue_position || null,
+			responseUrl: status.response_url || null
+		});
+
+	} catch (error) {
+		console.error('FAL status error:', error);
+		console.error('Error details:', error.body || error);
+		res.status(500).json({
+			success: false,
+			message: 'Failed to get FAL status',
+			error: error.message,
+			details: error.body || null
+		});
+	}
+};
+
+/**
+ * Get FAL Result (Direct FAL API result)
+ * GET /api/posts/fal-result/:requestId
+ */
+exports.getFalResult = async (req, res) => {
+	try {
+		const { requestId } = req.params;
+
+		// Find the AI Generation record to determine which model was used
+		const aiGeneration = await AIGeneration.findOne({ falRequestId: requestId });
+
+		if (!aiGeneration) {
+			return res.status(404).json({
+				success: false,
+				message: 'Generation request not found'
+			});
+		}
+
+		// Determine FAL model endpoint based on the stored model
+		let falModel;
+		if (aiGeneration.model === 'FLUX Schnell') {
+			falModel = "fal-ai/flux/schnell";
+		} else {
+			falModel = "fal-ai/flux-1/srpo"; // Default to SRPO
+		}
+
+		console.log('Getting FAL result for model:', falModel, 'requestId:', requestId);
+
+		// Get result from FAL AI
+		const result = await fal.queue.result(falModel, {
+			requestId: requestId
+		});
+
+		console.log('FAL result retrieved successfully');
+
+		res.json({
+			success: true,
+			requestId: requestId,
+			data: result.data,
+			images: result.data.images || [],
+			seed: result.data.seed,
+			prompt: result.data.prompt
+		});
+
+	} catch (error) {
+		console.error('FAL result error:', error);
+		console.error('Error details:', error.body || error);
+		res.status(500).json({
+			success: false,
+			message: 'Failed to get FAL result',
+			error: error.message,
+			details: error.body || null
 		});
 	}
 };
