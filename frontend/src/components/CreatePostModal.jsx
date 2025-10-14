@@ -3,14 +3,14 @@ import { useAuth } from '../contexts/AuthContext';
 import Icon from './Icon';
 
 const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
-    const { user } = useAuth();
+    const { user, accessToken } = useAuth();
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
     const [mode, setMode] = useState('manual'); // manual, agent
     const [prompt, setPrompt] = useState('');
     const [caption, setCaption] = useState('');
     const [postType, setPostType] = useState('auto'); // auto, image, video, text, upload-image, upload-video
-    const [selectedModel, setSelectedModel] = useState('flux-1-srpo');
+    const [selectedModel, setSelectedModel] = useState('flux-schnell');
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [aspectRatio, setAspectRatio] = useState('16:9');
     const [style, setStyle] = useState('auto');
@@ -26,9 +26,11 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
     const [filePreview, setFilePreview] = useState(null);
     const [isPosting, setIsPosting] = useState(false);
     const [error, setError] = useState(null);
+    const [successMessage, setSuccessMessage] = useState(null);
 
     const imageModels = [
         { id: 'flux-1-srpo', name: 'FLUX.1 SRPO', icon: 'sparkles', cost: 10, quality: 'Premium' },
+        { id: 'flux-schnell', name: 'FLUX Schnell', icon: 'zap', cost: 5, quality: 'Fast' },
         { id: 'dalle3', name: 'DALL-E 3', icon: 'image', cost: 10, quality: 'Premium' },
         { id: 'stable-diffusion', name: 'SD XL', icon: 'zap', cost: 5, quality: 'Fast' },
     ];
@@ -61,14 +63,15 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
             reasoning: hasVideoKeywords
                 ? 'Detected motion-related keywords. Video generation recommended.'
                 : hasTextKeywords
-                ? 'Detected discussion keywords. Text post recommended.'
-                : 'Image generation will work best for this prompt.',
+                    ? 'Detected discussion keywords. Text post recommended.'
+                    : 'Image generation will work best for this prompt.',
         });
     };
 
     const enhancePrompt = () => {
         setIsEnhancing(true);
         setTimeout(() => {
+            // Optional user-controlled enhancement - only if user explicitly requests it
             const enhanced = `${prompt}, ultra detailed, professional quality, cinematic lighting, 8k resolution, trending on artstation`;
             setEnhancedPrompt(enhanced);
             setIsEnhancing(false);
@@ -96,6 +99,7 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
         setGenerationProgress(0);
         setGenerationMessage('');
         setError(null);
+        setSuccessMessage(null);
     };
 
     // Poll generation status
@@ -104,26 +108,44 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
 
         const pollInterval = setInterval(async () => {
             try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`${API_URL}/api/posts/generate-status/${generationId}`, {
+                // Use the access token from auth context
+                if (!accessToken) {
+                    throw new Error('No authentication token found. Please login.');
+                }
+
+                const response = await fetch(`${API_URL}/api/posts/generation/${generationId}`, {
                     headers: {
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${accessToken}`
                     }
                 });
 
                 const data = await response.json();
 
                 if (data.success) {
-                    setGenerationProgress(data.progress);
-                    setGenerationMessage(data.message);
-
-                    if (data.status === 'completed') {
+                    // Update progress based on status
+                    if (data.status === 'processing' || data.status === 'in_progress') {
+                        setGenerationProgress(50);
+                        setGenerationMessage('Generating image...');
+                    } else if (data.status === 'completed') {
+                        setGenerationProgress(100);
+                        setGenerationMessage('Generation complete!');
                         setGeneratedImageUrl(data.imageUrl);
                         setFilePreview(data.imageUrl);
                         setIsGenerating(false);
+                        setSuccessMessage('🎉 Image generated successfully!');
+
+                        // Clear success message after 3 seconds
+                        setTimeout(() => setSuccessMessage(null), 3000);
+
                         clearInterval(pollInterval);
                     } else if (data.status === 'failed') {
-                        setError(data.message);
+                        setError(data.message || 'Generation failed');
+                        setIsGenerating(false);
+                        clearInterval(pollInterval);
+                    }
+                } else {
+                    if (data.status === 'failed') {
+                        setError(data.message || 'Generation failed');
                         setIsGenerating(false);
                         clearInterval(pollInterval);
                     }
@@ -134,7 +156,7 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
                 setIsGenerating(false);
                 clearInterval(pollInterval);
             }
-        }, 2000); // Poll every 2 seconds
+        }, 3000); // Poll every 3 seconds
 
         return () => clearInterval(pollInterval);
     }, [generationId, isGenerating, API_URL]);
@@ -152,28 +174,65 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
         setGenerationMessage('Starting generation...');
 
         try {
-            const token = localStorage.getItem('token');
+            // Check if user is authenticated
+            if (!accessToken) {
+                setError('Please login to generate images. Click on the "Login" button in the top navigation.');
+                setIsGenerating(false);
+                return;
+            }
+
+            if (!user) {
+                setError('User authentication error. Please try logging out and logging back in.');
+                setIsGenerating(false);
+                return;
+            }
+
+            console.log('Making image generation request with user:', user.username || user.email);
+
+            // Determine steps and guidance based on selected model
+            const modelConfig = {
+                'flux-schnell': {
+                    numInferenceSteps: 4,
+                    guidanceScale: 3.5
+                },
+                'flux-1-srpo': {
+                    numInferenceSteps: 28,
+                    guidanceScale: 4.5
+                },
+                'dalle3': {
+                    numInferenceSteps: 50,
+                    guidanceScale: 7.5
+                },
+                'stable-diffusion': {
+                    numInferenceSteps: 20,
+                    guidanceScale: 7.0
+                }
+            };
+
+            const config = modelConfig[selectedModel] || modelConfig['flux-schnell'];
+
             const response = await fetch(`${API_URL}/api/posts/generate-image`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${accessToken}`
                 },
                 body: JSON.stringify({
-                    prompt: enhancedPrompt || prompt,
+                    prompt: prompt.trim(), // Use exact user prompt, no enhancement
                     imageSize: aspectRatio,
                     style,
                     aspectRatio,
                     selectedModel,
-                    numInferenceSteps: 28,
-                    guidanceScale: 4.5
+                    numInferenceSteps: config.numInferenceSteps,
+                    guidanceScale: config.guidanceScale
                 })
             });
 
             const data = await response.json();
+            console.log('API Response:', data);
 
             if (data.success) {
-                setGenerationId(data.generationId);
+                setGenerationId(data.requestId); // Use the FAL requestId for polling
                 setGenerationMessage('Image generation started...');
             } else {
                 throw new Error(data.message || 'Failed to start generation');
@@ -185,11 +244,65 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
         }
     };
 
+    // Generate Video (placeholder for future implementation)
+    const handleGenerateVideo = async () => {
+        if (!prompt.trim()) {
+            setError('Please enter a prompt');
+            return;
+        }
+
+        setError('Video generation is coming soon! For now, please use image generation.');
+    };
+
+    // Generate Text Content
+    const handleGenerateText = async () => {
+        if (!prompt.trim()) {
+            setError('Please enter a prompt');
+            return;
+        }
+
+        setIsGenerating(true);
+        setError(null);
+        setGenerationMessage('Generating text content...');
+
+        try {
+            // Check if user is authenticated
+            if (!accessToken) {
+                setError('Please login to generate text content. Click on the "Login" button in the top navigation.');
+                setIsGenerating(false);
+                return;
+            }
+
+            if (!user) {
+                setError('User authentication error. Please try logging out and logging back in.');
+                setIsGenerating(false);
+                return;
+            }
+
+            // Simulate text generation (replace with actual API call later)
+            setTimeout(() => {
+                const generatedText = `Generated content based on: ${prompt}\n\nThis is a placeholder for AI-generated text content. The actual implementation would call an AI text generation service like GPT or Claude.\n\nThe generated content would be more sophisticated and tailored to the prompt: "${prompt}"`;
+                setCaption(generatedText);
+                setFilePreview('text-generated'); // Use special marker for text
+                setIsGenerating(false);
+                setGenerationMessage('Text generation complete!');
+                setSuccessMessage('✍️ Text content generated successfully!');
+
+                // Clear success message after 3 seconds
+                setTimeout(() => setSuccessMessage(null), 3000);
+            }, 2000);
+        } catch (error) {
+            console.error('Generate text error:', error);
+            setError(error.message || 'Failed to generate text');
+            setIsGenerating(false);
+        }
+    };
+
     // Create Post
     const handleCreatePost = async () => {
         // Validate based on post type
-        if (postType === 'text' && !caption.trim()) {
-            setError('Please enter a caption for text post');
+        if (postType === 'text' && !caption.trim() && filePreview !== 'text-generated') {
+            setError('Please enter a caption or generate text content');
             return;
         }
 
@@ -198,38 +311,51 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
             return;
         }
 
+        if ((postType === 'video' || postType === 'upload-video') && !generatedImageUrl && !uploadedFile) {
+            setError('Please generate or upload a video');
+            return;
+        }
+
         setIsPosting(true);
         setError(null);
 
         try {
-            const token = localStorage.getItem('token');
+            // Use the access token from auth context
+            if (!accessToken) {
+                throw new Error('No authentication token found. Please login.');
+            }
 
-            // Determine post category
+            // Determine post category and type
             let category = 'text-post';
             let type = 'user-generated';
 
-            if (generatedImageUrl) {
+            if (generatedImageUrl && generatedImageUrl !== 'text-generated') {
                 category = caption.trim() ? 'image-text-post' : 'image-post';
                 type = 'ai-generated';
             } else if (uploadedFile) {
-                category = caption.trim() ? 'image-text-post' : 'image-post';
+                const isVideo = uploadedFile.type.startsWith('video/');
+                category = caption.trim() ? (isVideo ? 'video-text-post' : 'image-text-post') : (isVideo ? 'video-post' : 'image-post');
                 type = 'user-generated';
+            } else if (filePreview === 'text-generated' || postType === 'text') {
+                category = 'text-post';
+                type = filePreview === 'text-generated' ? 'ai-generated' : 'user-generated';
             }
 
             const postData = {
                 caption: caption.trim(),
                 type,
                 category,
-                imageUrl: generatedImageUrl,
-                aiGenerated: !!generatedImageUrl,
-                aiDetails: generatedImageUrl ? {
+                imageUrl: generatedImageUrl && generatedImageUrl !== 'text-generated' ? generatedImageUrl : null,
+                aiGenerated: !!(generatedImageUrl && generatedImageUrl !== 'text-generated') || filePreview === 'text-generated',
+                aiDetails: ((generatedImageUrl && generatedImageUrl !== 'text-generated') || filePreview === 'text-generated') ? {
                     model: selectedModel,
                     prompt,
                     enhancedPrompt,
                     style,
                     aspectRatio,
                     steps: 28,
-                    cost: 10
+                    cost: getCost(),
+                    contentType: postType
                 } : {},
                 visibility: 'public',
                 status: 'published'
@@ -239,7 +365,7 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${accessToken}`
                 },
                 body: JSON.stringify(postData)
             });
@@ -275,6 +401,7 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
         setGenerationProgress(0);
         setGenerationMessage('');
         setError(null);
+        setSuccessMessage(null);
         setIsGenerating(false);
         setIsPosting(false);
         setGenerationId(null);
@@ -291,25 +418,43 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
         return model?.cost || 0;
     };
 
+    const getImageContainerClass = () => {
+        switch (aspectRatio) {
+            case '1:1': return 'h-64';
+            case '9:16': return 'h-80';
+            case '4:3': return 'h-56';
+            default: return 'h-48'; // 16:9
+        }
+    };
+
+    const getAspectRatioStyle = () => {
+        switch (aspectRatio) {
+            case '1:1': return '1/1';
+            case '9:16': return '9/16';
+            case '4:3': return '4/3';
+            default: return '16/9';
+        }
+    };
+
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fadeIn">
-            <div className="relative bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden border border-gray-200/50 dark:border-gray-700/50 animate-slideUp">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-lg animate-fadeIn">
+            <div className="relative bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 rounded-3xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden border border-gray-200/50 dark:border-gray-700/50 animate-slideUp">
                 {/* Minimalist Header */}
-                <div className="relative p-6 border-b border-gray-200/50 dark:border-gray-700/50">
+                <div className="sticky top-0 z-10 p-6 border-b border-gray-200/50 dark:border-gray-700/50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
                     <button
-                        onClick={onClose}
+                        onClick={handleCloseModal}
                         className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl"
                     >
                         <Icon name="x" className="w-5 h-5" />
                     </button>
 
                     <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
-                            <Icon name="sparkles" className="w-5 h-5 text-white" />
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg">
+                            <Icon name="sparkles" className="w-6 h-6 text-white" />
                         </div>
                         <div>
-                            <h2 className="text-xl cabin-semibold text-gray-900 dark:text-white">Create</h2>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Turn your ideas into reality</p>
+                            <h2 className="text-2xl cabin-bold text-gray-900 dark:text-white">Create Magic</h2>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Turn your imagination into reality with AI</p>
                         </div>
                     </div>
 
@@ -317,22 +462,20 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
                     <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
                         <button
                             onClick={() => setMode('manual')}
-                            className={`flex-1 py-2 px-4 rounded-lg cabin-medium text-sm transition-all ${
-                                mode === 'manual'
-                                    ? 'bg-white dark:bg-gray-700 text-purple-600 dark:text-purple-400 shadow-sm'
-                                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                            }`}
+                            className={`flex-1 py-2 px-4 rounded-lg cabin-medium text-sm transition-all ${mode === 'manual'
+                                ? 'bg-white dark:bg-gray-700 text-purple-600 dark:text-purple-400 shadow-sm'
+                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                                }`}
                         >
                             <Icon name="edit-3" className="w-4 h-4 inline mr-1.5" />
                             Manual
                         </button>
                         <button
                             onClick={() => setMode('agent')}
-                            className={`flex-1 py-2 px-4 rounded-lg cabin-medium text-sm transition-all relative ${
-                                mode === 'agent'
-                                    ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/30'
-                                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                            }`}
+                            className={`flex-1 py-2 px-4 rounded-lg cabin-medium text-sm transition-all relative ${mode === 'agent'
+                                ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/30'
+                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                                }`}
                         >
                             <Icon name="cpu" className="w-4 h-4 inline mr-1.5" />
                             AI Agent
@@ -342,7 +485,7 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
                 </div>
 
                 {/* Content */}
-                <div className="p-6 overflow-y-auto max-h-[calc(90vh-220px)] space-y-6">
+                <div className="p-6 overflow-y-auto max-h-[calc(95vh-280px)] space-y-6 custom-scrollbar">
                     {/* Main Prompt Area - Clean & Focused */}
                     <div className="relative">
                         <div className="relative">
@@ -456,11 +599,10 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
                                                     clearUpload();
                                                 }
                                             }}
-                                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl cabin-medium text-sm transition-all ${
-                                                postType === type
-                                                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30'
-                                                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                                            }`}
+                                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl cabin-medium text-sm transition-all ${postType === type
+                                                ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30'
+                                                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                                                }`}
                                         >
                                             <Icon name={icon} className="w-4 h-4" />
                                             {label}
@@ -545,11 +687,10 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
                                             <button
                                                 key={model.id}
                                                 onClick={() => setSelectedModel(model.id)}
-                                                className={`p-3 rounded-xl border-2 transition-all text-left ${
-                                                    selectedModel === model.id
-                                                        ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-                                                        : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-700'
-                                                }`}
+                                                className={`p-3 rounded-xl border-2 transition-all text-left ${selectedModel === model.id
+                                                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                                                    : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-700'
+                                                    }`}
                                             >
                                                 <div className="flex items-center justify-between mb-2">
                                                     <Icon name={model.icon} className="w-5 h-5 text-purple-600 dark:text-purple-400" />
@@ -591,11 +732,10 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
                                                         <button
                                                             key={ratio}
                                                             onClick={() => setAspectRatio(ratio)}
-                                                            className={`py-2 px-3 rounded-lg text-xs cabin-medium transition-all ${
-                                                                aspectRatio === ratio
-                                                                    ? 'bg-purple-600 text-white'
-                                                                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                                                            }`}
+                                                            className={`py-2 px-3 rounded-lg text-xs cabin-medium transition-all ${aspectRatio === ratio
+                                                                ? 'bg-purple-600 text-white'
+                                                                : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                                                                }`}
                                                         >
                                                             {ratio}
                                                         </button>
@@ -626,6 +766,348 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
                         </>
                     )}
 
+                    {/* Image Generation Preview Area - Redesigned */}
+                    {(postType === 'image' || postType === 'auto') && (
+                        <div>
+                            <label className="block text-sm cabin-medium text-gray-700 dark:text-gray-300 mb-3">
+                                Generated Image
+                            </label>
+
+                            {/* Generation Progress */}
+                            {isGenerating && (
+                                <div className="mb-4 p-4 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border border-purple-200 dark:border-purple-800 rounded-2xl">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="w-5 h-5 border-2 border-purple-600/30 border-t-purple-600 rounded-full animate-spin"></div>
+                                        <span className="text-sm cabin-semibold text-purple-900 dark:text-purple-200">
+                                            {generationMessage}
+                                        </span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden shadow-inner">
+                                        <div
+                                            className="h-full bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 transition-all duration-300 ease-out bg-[length:200%_100%] animate-[shimmer_2s_infinite]"
+                                            style={{ width: `${generationProgress}%` }}
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between mt-2">
+                                        <p className="text-xs text-purple-600 dark:text-purple-400 cabin-medium">
+                                            {generationProgress}% complete
+                                        </p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            {selectedModel === 'flux-schnell' ? '~10s' : '~30s'}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Image Generation Skeleton */}
+                            {isGenerating && (
+                                <div className="mb-4 relative rounded-2xl overflow-hidden border-2 border-purple-300 dark:border-purple-700 shadow-xl">
+                                    <div
+                                        className="w-full bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 animate-pulse"
+                                        style={{
+                                            aspectRatio: getAspectRatioStyle(),
+                                            minHeight: '400px'
+                                        }}
+                                    >
+                                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent dark:via-gray-600/30 animate-[shimmer_2s_infinite] bg-[length:200%_100%]"></div>
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
+                                            <div className="relative mb-4">
+                                                <div className="w-20 h-20 bg-gradient-to-br from-purple-400 to-indigo-500 rounded-2xl flex items-center justify-center animate-pulse shadow-lg">
+                                                    <Icon name="image" className="w-10 h-10 text-white" />
+                                                </div>
+                                                <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-400 rounded-full animate-ping"></div>
+                                                <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                                                    <Icon name="zap" className="w-3 h-3 text-white" />
+                                                </div>
+                                            </div>
+                                            <p className="text-base text-gray-700 dark:text-gray-300 cabin-semibold mb-2">
+                                                AI is creating your masterpiece...
+                                            </p>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 cabin-regular text-center max-w-xs">
+                                                {aspectRatio} • {selectedModel === 'flux-schnell' ? 'FLUX Schnell' : 'FLUX SRPO'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Generated Image Preview - Full Display */}
+                            {filePreview && filePreview !== 'text-generated' && !isGenerating && (
+                                <div className="mb-4 group">
+                                    <div className="relative rounded-2xl overflow-hidden border-2 border-purple-500 dark:border-purple-600 shadow-2xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800">
+                                        {/* Image Container with proper aspect ratio */}
+                                        <div
+                                            className="relative w-full bg-black/5 dark:bg-black/20"
+                                            style={{
+                                                aspectRatio: getAspectRatioStyle(),
+                                                minHeight: '400px',
+                                                maxHeight: '600px'
+                                            }}
+                                        >
+                                            <img
+                                                src={filePreview}
+                                                alt="Generated preview"
+                                                className="absolute inset-0 w-full h-full object-contain"
+                                                style={{ imageRendering: 'high-quality' }}
+                                            />
+
+                                            {/* Overlay Controls - Show on Hover */}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                                {/* Top Controls */}
+                                                <div className="absolute top-4 left-4 right-4 flex items-start justify-between">
+                                                    <div className="flex gap-2">
+                                                        <div className="px-3 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 backdrop-blur-md text-white rounded-lg shadow-lg">
+                                                            <p className="text-xs cabin-semibold flex items-center gap-1.5">
+                                                                <Icon name="sparkles" className="w-3.5 h-3.5" />
+                                                                AI Generated
+                                                            </p>
+                                                        </div>
+                                                        <div className="px-3 py-1.5 bg-black/70 backdrop-blur-md text-white rounded-lg shadow-lg">
+                                                            <p className="text-xs cabin-medium">{aspectRatio}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Action Buttons */}
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => window.open(filePreview, '_blank')}
+                                                            className="p-2.5 bg-white/90 hover:bg-white text-gray-700 rounded-lg transition-all hover:scale-105 shadow-lg"
+                                                            title="Open in new tab"
+                                                        >
+                                                            <Icon name="external-link" className="w-4 h-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={clearUpload}
+                                                            className="p-2.5 bg-red-500/90 hover:bg-red-600 text-white rounded-lg transition-all hover:scale-105 shadow-lg"
+                                                            title="Remove image"
+                                                        >
+                                                            <Icon name="trash-2" className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                {/* Bottom Info */}
+                                                <div className="absolute bottom-4 left-4 right-4">
+                                                    <div className="bg-black/70 backdrop-blur-md rounded-xl p-3 shadow-lg">
+                                                        <div className="flex items-center justify-between text-white">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                                                                    <Icon name="cpu" className="w-4 h-4 text-white" />
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-xs text-gray-300">Model</p>
+                                                                    <p className="text-sm cabin-semibold">
+                                                                        {selectedModel === 'flux-schnell' ? 'FLUX Schnell' : 'FLUX.1 SRPO'}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <p className="text-xs text-gray-300">Quality</p>
+                                                                <p className="text-sm cabin-semibold text-green-400">
+                                                                    {selectedModel === 'flux-schnell' ? 'Fast' : 'Premium'}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Info Bar Below Image */}
+                                        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-3">
+                                            <div className="flex items-center justify-between text-white">
+                                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                    <Icon name="zap" className="w-4 h-4 flex-shrink-0" />
+                                                    <p className="text-xs cabin-medium truncate">
+                                                        {prompt.length > 60 ? prompt.substring(0, 60) + '...' : prompt}
+                                                    </p>
+                                                </div>
+                                                <div className="flex items-center gap-1 ml-3">
+                                                    <Icon name="check-circle" className="w-4 h-4 text-green-300" />
+                                                    <span className="text-xs cabin-semibold">Ready</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Quick Actions Below Image */}
+                                    <div className="mt-3 flex gap-2">
+                                        <button
+                                            onClick={() => {
+                                                const link = document.createElement('a');
+                                                link.href = filePreview;
+                                                link.download = `leelaverse-${Date.now()}.jpg`;
+                                                link.click();
+                                            }}
+                                            className="flex-1 py-2.5 px-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl cabin-medium text-sm flex items-center justify-center gap-2 transition-all hover:shadow-lg hover:shadow-blue-500/30"
+                                        >
+                                            <Icon name="download" className="w-4 h-4" />
+                                            Download
+                                        </button>
+                                        <button
+                                            onClick={handleGenerateImage}
+                                            className="flex-1 py-2.5 px-4 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-xl cabin-medium text-sm flex items-center justify-center gap-2 transition-all hover:shadow-lg hover:shadow-purple-500/30"
+                                        >
+                                            <Icon name="refresh-cw" className="w-4 h-4" />
+                                            Regenerate
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Empty State - No images generated yet */}
+                            {!filePreview && !isGenerating && (
+                                <div className="mb-4 relative rounded-2xl overflow-hidden border-2 border-dashed border-gray-300 dark:border-gray-600 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-900/50">
+                                    <div
+                                        className="p-12 text-center"
+                                        style={{ minHeight: '400px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
+                                    >
+                                        <div className="relative mb-6">
+                                            <div className="w-24 h-24 bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 rounded-3xl flex items-center justify-center shadow-lg">
+                                                <Icon name="image" className="w-12 h-12 text-purple-400 dark:text-purple-500" />
+                                            </div>
+                                            <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
+                                                <Icon name="sparkles" className="w-5 h-5 text-white" />
+                                            </div>
+                                        </div>
+                                        <h3 className="text-lg cabin-semibold text-gray-900 dark:text-white mb-2">
+                                            Ready to Create Magic?
+                                        </h3>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs mb-6">
+                                            Enter a prompt above and click "Generate Image" to create stunning AI artwork
+                                        </p>
+                                        <div className="flex flex-wrap gap-2 justify-center">
+                                            {['Portrait', 'Landscape', 'Abstract', 'Realistic'].map((suggestion) => (
+                                                <button
+                                                    key={suggestion}
+                                                    onClick={() => setPrompt(`A beautiful ${suggestion.toLowerCase()} scene`)}
+                                                    className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs cabin-medium hover:border-purple-400 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-400 transition-all"
+                                                >
+                                                    {suggestion}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Video Generation Preview Area */}
+                    {postType === 'video' && (
+                        <div>
+                            <label className="block text-sm cabin-medium text-gray-700 dark:text-gray-300 mb-3">
+                                Generated Videos
+                            </label>
+
+                            {/* Video Generation Skeleton */}
+                            {isGenerating && (
+                                <div className="mb-4 relative rounded-xl overflow-hidden border-2 border-pink-200 dark:border-pink-800">
+                                    <div className="w-full h-48 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 animate-pulse">
+                                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent dark:via-gray-600/20 animate-[shimmer_2s_infinite] bg-[length:200%_100%]"></div>
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <div className="text-center">
+                                                <div className="w-16 h-16 mx-auto mb-3 bg-pink-100 dark:bg-pink-900/50 rounded-full flex items-center justify-center animate-pulse">
+                                                    <Icon name="video" className="w-8 h-8 text-pink-400 dark:text-pink-500" />
+                                                </div>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400 cabin-medium">
+                                                    Generating your video...
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Empty State for videos */}
+                            {!isGenerating && (
+                                <div className="mb-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 text-center">
+                                    <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                                        <Icon name="video" className="w-8 h-8 text-gray-400" />
+                                    </div>
+                                    <p className="text-gray-500 dark:text-gray-400 cabin-medium mb-2">
+                                        Video generation coming soon
+                                    </p>
+                                    <p className="text-sm text-gray-400 dark:text-gray-500">
+                                        Try image generation for now
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Text Generation Preview Area */}
+                    {postType === 'text' && (
+                        <div>
+                            <label className="block text-sm cabin-medium text-gray-700 dark:text-gray-300 mb-3">
+                                Generated Text
+                            </label>
+
+                            {/* Text Generation Skeleton */}
+                            {isGenerating && (
+                                <div className="mb-4 relative rounded-xl overflow-hidden border-2 border-green-200 dark:border-green-800 p-4">
+                                    <div className="space-y-3">
+                                        <div className="h-4 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-300 dark:from-gray-700 dark:via-gray-600 dark:to-gray-800 rounded animate-pulse">
+                                            <div className="h-full bg-gradient-to-r from-transparent via-white/20 to-transparent dark:via-gray-500/20 animate-[shimmer_2s_infinite] bg-[length:200%_100%]"></div>
+                                        </div>
+                                        <div className="h-4 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-300 dark:from-gray-700 dark:via-gray-600 dark:to-gray-800 rounded animate-pulse w-3/4">
+                                            <div className="h-full bg-gradient-to-r from-transparent via-white/20 to-transparent dark:via-gray-500/20 animate-[shimmer_2s_infinite] bg-[length:200%_100%]"></div>
+                                        </div>
+                                        <div className="h-4 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-300 dark:from-gray-700 dark:via-gray-600 dark:to-gray-800 rounded animate-pulse w-1/2">
+                                            <div className="h-full bg-gradient-to-r from-transparent via-white/20 to-transparent dark:via-gray-500/20 animate-[shimmer_2s_infinite] bg-[length:200%_100%]"></div>
+                                        </div>
+                                    </div>
+                                    <div className="absolute top-2 left-2">
+                                        <div className="w-8 h-8 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center animate-pulse">
+                                            <Icon name="type" className="w-4 h-4 text-green-400 dark:text-green-500" />
+                                        </div>
+                                    </div>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 cabin-medium mt-3 text-center">
+                                        Generating your text content...
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Generated Text Preview */}
+                            {filePreview === 'text-generated' && !isGenerating && (
+                                <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800 rounded-xl">
+                                    <div className="flex items-start gap-3">
+                                        <div className="w-8 h-8 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center flex-shrink-0">
+                                            <Icon name="type" className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-sm text-green-800 dark:text-green-200 mb-2">✍️ AI Generated Text</p>
+                                            <div className="bg-white dark:bg-gray-900 p-3 rounded-lg border border-green-200 dark:border-green-800">
+                                                <p className="text-sm text-gray-700 dark:text-gray-300">{caption}</p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={clearUpload}
+                                            className="p-1.5 text-green-600 hover:text-red-600 transition-colors"
+                                        >
+                                            <Icon name="x" className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Empty State for text */}
+                            {!filePreview && !isGenerating && (
+                                <div className="mb-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 text-center">
+                                    <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                                        <Icon name="type" className="w-8 h-8 text-gray-400" />
+                                    </div>
+                                    <p className="text-gray-500 dark:text-gray-400 cabin-medium mb-2">
+                                        No text generated yet
+                                    </p>
+                                    <p className="text-sm text-gray-400 dark:text-gray-500">
+                                        Enter a prompt above and click "Generate Text"
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     {/* Quick Tags - Minimalist Design */}
                     <div>
                         <label className="block text-sm cabin-medium text-gray-700 dark:text-gray-300 mb-3">
@@ -645,7 +1127,15 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
                 </div>
 
                 {/* Footer - Clean Action Bar */}
-                <div className="sticky bottom-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 p-4">
+                <div className="sticky bottom-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-200 dark:border-gray-700 p-6 shadow-2xl z-10">
+                    {/* Success Message */}
+                    {successMessage && (
+                        <div className="mb-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-green-600 dark:text-green-400 text-sm flex items-center gap-2 animate-slideDown">
+                            <Icon name="check-circle" className="w-4 h-4 flex-shrink-0" />
+                            <span>{successMessage}</span>
+                        </div>
+                    )}
+
                     {/* Error Message */}
                     {error && (
                         <div className="mb-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm flex items-center gap-2">
@@ -654,47 +1144,7 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
                         </div>
                     )}
 
-                    {/* Generation Progress */}
-                    {isGenerating && (
-                        <div className="mb-3 p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
-                            <div className="flex items-center gap-3 mb-2">
-                                <div className="w-5 h-5 border-2 border-purple-600/30 border-t-purple-600 rounded-full animate-spin"></div>
-                                <span className="text-sm cabin-medium text-purple-900 dark:text-purple-200">
-                                    {generationMessage}
-                                </span>
-                            </div>
-                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
-                                <div
-                                    className="h-full bg-gradient-to-r from-purple-600 to-indigo-600 transition-all duration-300 ease-out"
-                                    style={{ width: `${generationProgress}%` }}
-                                />
-                            </div>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                                {generationProgress}% complete
-                            </p>
-                        </div>
-                    )}
-
-                    {/* Preview Generated Image */}
-                    {filePreview && !isGenerating && (
-                        <div className="mb-3 relative rounded-lg overflow-hidden border-2 border-purple-500">
-                            <img
-                                src={filePreview}
-                                alt="Generated preview"
-                                className="w-full h-48 object-cover"
-                            />
-                            <div className="absolute top-2 right-2 flex gap-2">
-                                <button
-                                    onClick={clearUpload}
-                                    className="p-2 bg-red-500/90 hover:bg-red-600 text-white rounded-lg transition-colors backdrop-blur-sm"
-                                >
-                                    <Icon name="x" className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Caption Input */}
+                    {/* Caption Input - Only show when content is ready */}
                     {(filePreview || postType === 'text') && !isGenerating && (
                         <div className="mb-3">
                             <textarea
@@ -738,43 +1188,105 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
                             Cancel
                         </button>
 
-                        {/* Generate Button (if no image generated yet) */}
+                        {/* Generate Buttons - Show different buttons based on post type */}
                         {!filePreview && !isGenerating && (
-                            <button
-                                onClick={handleGenerateImage}
-                                disabled={
-                                    isGenerating ||
-                                    isPosting ||
-                                    (postType.startsWith('upload') && !uploadedFile) ||
-                                    (!postType.startsWith('upload') && (!prompt.trim() || prompt.length < 5))
-                                }
-                                className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl cabin-semibold hover:shadow-lg hover:shadow-purple-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                            >
-                                <Icon name="sparkles" className="w-5 h-5" />
-                                Generate Image
-                            </button>
+                            <>
+                                {/* Generate Image Button */}
+                                {(postType === 'image' || postType === 'auto') && (
+                                    <button
+                                        onClick={handleGenerateImage}
+                                        disabled={
+                                            isGenerating ||
+                                            isPosting ||
+                                            (!prompt.trim() || prompt.length < 5) ||
+                                            !accessToken
+                                        }
+                                        className={`flex-1 py-3 px-4 ${!accessToken
+                                            ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
+                                            : 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-lg hover:shadow-purple-500/30'
+                                            } rounded-xl cabin-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
+                                        title={!accessToken ? 'Please login to generate images' : ''}
+                                    >
+                                        <Icon name="image" className="w-5 h-5" />
+                                        {!accessToken ? 'Login Required' : 'Generate Image'}
+                                    </button>
+                                )}
+
+                                {/* Generate Video Button */}
+                                {postType === 'video' && (
+                                    <button
+                                        onClick={handleGenerateVideo}
+                                        disabled={
+                                            isGenerating ||
+                                            isPosting ||
+                                            (!prompt.trim() || prompt.length < 5) ||
+                                            !accessToken
+                                        }
+                                        className={`flex-1 py-3 px-4 ${!accessToken
+                                            ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
+                                            : 'bg-gradient-to-r from-pink-600 to-purple-600 text-white hover:shadow-lg hover:shadow-pink-500/30'
+                                            } rounded-xl cabin-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
+                                        title={!accessToken ? 'Please login to generate videos' : ''}
+                                    >
+                                        <Icon name="video" className="w-5 h-5" />
+                                        {!accessToken ? 'Login Required' : 'Generate Video'}
+                                    </button>
+                                )}
+
+                                {/* Generate Text Button */}
+                                {postType === 'text' && (
+                                    <button
+                                        onClick={handleGenerateText}
+                                        disabled={
+                                            isGenerating ||
+                                            isPosting ||
+                                            (!prompt.trim() || prompt.length < 5) ||
+                                            !accessToken
+                                        }
+                                        className={`flex-1 py-3 px-4 ${!accessToken
+                                            ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
+                                            : 'bg-gradient-to-r from-green-600 to-teal-600 text-white hover:shadow-lg hover:shadow-green-500/30'
+                                            } rounded-xl cabin-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
+                                        title={!accessToken ? 'Please login to generate text' : ''}
+                                    >
+                                        <Icon name="type" className="w-5 h-5" />
+                                        {!accessToken ? 'Login Required' : 'Generate Text'}
+                                    </button>
+                                )}
+
+                                {/* Upload Types - No Generate Button */}
+                                {(postType === 'upload-image' || postType === 'upload-video') && !uploadedFile && (
+                                    <div className="flex-1 py-3 px-4 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-xl cabin-semibold text-center">
+                                        Upload a file to continue
+                                    </div>
+                                )}
+                            </>
                         )}
 
-                        {/* Post Button (if image is generated) */}
-                        {filePreview && !isGenerating && (
-                            <button
-                                onClick={handleCreatePost}
-                                disabled={isPosting || (postType === 'text' && !caption.trim())}
-                                className="flex-1 py-3 px-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl cabin-semibold hover:shadow-lg hover:shadow-green-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                            >
-                                {isPosting ? (
-                                    <>
-                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                        Posting...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Icon name="send" className="w-5 h-5" />
-                                        Post
-                                    </>
-                                )}
-                            </button>
-                        )}
+                        {/* Post Button - Always available when content is ready */}
+                        {((filePreview && filePreview !== 'text-generated') || // Image/video generated or uploaded
+                            (filePreview === 'text-generated') || // Text generated  
+                            (postType === 'text' && caption.trim()) || // Manual text post
+                            uploadedFile) && // File uploaded
+                            !isGenerating && (
+                                <button
+                                    onClick={handleCreatePost}
+                                    disabled={isPosting}
+                                    className="flex-1 py-3 px-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl cabin-semibold hover:shadow-lg hover:shadow-green-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                >
+                                    {isPosting ? (
+                                        <>
+                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                            Posting...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Icon name="send" className="w-5 h-5" />
+                                            Post
+                                        </>
+                                    )}
+                                </button>
+                            )}
                     </div>
                 </div>
             </div>

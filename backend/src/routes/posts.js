@@ -7,23 +7,30 @@ const { validatePost } = require('../middleware/validation');
 /**
  * @route   POST /api/posts/generate-image
  * @desc    Generate image using FAL AI
- * @access  Private
+ * @access  Public (no auth for testing)
  */
-router.post('/generate-image', postController.generateImage);
+router.post('/generate-image', auth, postController.generateImage);
 
 /**
- * @route   GET /api/posts/generate-status/:generationId
- * @desc    Get image generation status
+ * @route   GET /api/posts/generation/:requestId
+ * @desc    Get image generation status and result
+ * @access  Public (no auth for testing)
+ */
+router.get('/generation/:requestId', auth, postController.getGenerationResult);
+
+/**
+ * @route   POST /api/posts/create-from-generation
+ * @desc    Create post from generated image
  * @access  Private
  */
-router.get('/generate-status/:generationId', auth, postController.getGenerationStatus);
+router.post('/create-from-generation', auth, postController.createPostFromGeneration);
 
 /**
  * @route   POST /api/posts
  * @desc    Create a new post
- * @access  Private
+ * @access  Public (no auth for testing)
  */
-router.post('/', auth, validatePost, postController.createPost);
+router.post('/', postController.createPost);
 
 /**
  * @route   GET /api/posts/feed
@@ -52,5 +59,19 @@ router.get('/:postId', postController.getPost);
  * @access  Private
  */
 router.delete('/:postId', auth, postController.deletePost);
+
+/**
+ * @route   GET /api/posts/fal-status/:requestId
+ * @desc    Get FAL AI request status directly
+ * @access  Private
+ */
+router.get('/fal-status/:requestId', auth, postController.getFalStatus);
+
+/**
+ * @route   GET /api/posts/fal-result/:requestId
+ * @desc    Get FAL AI result directly
+ * @access  Private
+ */
+router.get('/fal-result/:requestId', auth, postController.getFalResult);
 
 module.exports = router;
