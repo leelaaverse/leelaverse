@@ -25,7 +25,7 @@ const MyGenerations = ({ user }) => {
             }
 
             const response = await fetch(
-                `${ 'http://localhost:3000'}/api/posts/my-generations?page=${currentPage}&limit=12`,
+                `${import.meta.env.VITE_API_URL}/api/posts/my-generations?page=${currentPage}&limit=12`,
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`,
