@@ -4,6 +4,7 @@ import Icon from './Icon';
 import CreatePostModal from './CreatePostModal';
 import FeedPost from './FeedPost';
 import FeedShort from './FeedShort';
+import MyGenerations from './MyGenerations';
 import { mockPosts, mockSuggestedUsers, mockCurrentUser } from '../data/mockData';
 import logoImage from '../assets/logo.png';
 
@@ -419,6 +420,9 @@ const Dashboard = ({ user, onLogout }) => {
                     </div>
                 );
 
+            case 'my-creations':
+                return <MyGenerations user={currentUser} />;
+
             case 'settings':
                 return (
                     <div className="space-y-6">
@@ -659,13 +663,18 @@ const Dashboard = ({ user, onLogout }) => {
                                 </h3>
                                 <div className="space-y-1">
                                     {[
+                                        { icon: 'wand', label: 'My AI Creations', badge: null, action: 'my-creations' },
                                         { icon: 'heart', label: 'Liked Posts', badge: '12' },
                                         { icon: 'bookmark', label: 'Saved Items', badge: '36' },
                                         { icon: 'star', label: 'Featured', badge: '2' },
                                         { icon: 'clock', label: 'Recent' },
                                         { icon: 'trending-up', label: 'Trending' },
                                     ].map((item, i) => (
-                                        <button key={i} className="flex items-center justify-between w-full p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-colors group">
+                                        <button
+                                            key={i}
+                                            onClick={() => item.action && setActiveTab(item.action)}
+                                            className="flex items-center justify-between w-full p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-colors group"
+                                        >
                                             <div className="flex items-center gap-3">
                                                 <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center group-hover:bg-purple-200 dark:group-hover:bg-purple-900/50 transition-colors">
                                                     <Icon name={item.icon} className="w-4 h-4 text-purple-600 dark:text-purple-400" />

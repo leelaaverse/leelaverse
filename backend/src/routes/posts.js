@@ -40,6 +40,27 @@ router.post('/', postController.createPost);
 router.get('/feed', postController.getFeedPosts);
 
 /**
+ * @route   GET /api/posts/my-generations
+ * @desc    Get all AI-generated images that haven't been posted yet
+ * @access  Private
+ */
+router.get('/my-generations', auth, postController.getMyGenerations);
+
+/**
+ * @route   GET /api/posts/fal-status/:requestId
+ * @desc    Get FAL AI request status directly
+ * @access  Private
+ */
+router.get('/fal-status/:requestId', auth, postController.getFalStatus);
+
+/**
+ * @route   GET /api/posts/fal-result/:requestId
+ * @desc    Get FAL AI result directly
+ * @access  Private
+ */
+router.get('/fal-result/:requestId', auth, postController.getFalResult);
+
+/**
  * @route   GET /api/posts/user/:userId
  * @desc    Get posts by user
  * @access  Public
@@ -59,19 +80,5 @@ router.get('/:postId', postController.getPost);
  * @access  Private
  */
 router.delete('/:postId', auth, postController.deletePost);
-
-/**
- * @route   GET /api/posts/fal-status/:requestId
- * @desc    Get FAL AI request status directly
- * @access  Private
- */
-router.get('/fal-status/:requestId', auth, postController.getFalStatus);
-
-/**
- * @route   GET /api/posts/fal-result/:requestId
- * @desc    Get FAL AI result directly
- * @access  Private
- */
-router.get('/fal-result/:requestId', auth, postController.getFalResult);
 
 module.exports = router;
