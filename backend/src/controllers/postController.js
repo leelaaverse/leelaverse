@@ -800,3 +800,68 @@ exports.getFalResult = async (req, res) => {
 		});
 	}
 };
+
+/**
+ * Get My AI Generations (Not Posted)
+ * GET /api/posts/my-generations
+ */
+exports.getMyGenerations = async (req, res) => {
+	try {
+		// Extract user ID - handles both User object and JWT payload
+		const userId = req.user?._id || req.user?.id || req.user?.userId;
+
+		if (!userId) {
+			return res.status(401).json({
+				success: false,
+				message: 'User not authenticated'
+			});
+		}
+
+		console.log('Fetching generations for user:', userId);
+
+		// Query parameters for pagination
+		const page = parseInt(req.query.page) || 1;
+		const limit = parseInt(req.query.limit) || 20;
+		const skip = (page - 1) * limit;
+
+		// Find all completed AI generations that haven't been posted yet
+		const generations = await AIGeneration.find({
+			user: userId,
+			status: 'completed',
+			post: { $exists: false } // No post associated
+		})
+			.sort({ createdAt: -1 }) // Most recent first
+			.skip(skip)
+			.limit(limit)
+			.select('prompt model resultUrl thumbnailUrl parameters createdAt type userRating');
+
+		// Get total count for pagination
+		const total = await AIGeneration.countDocuments({
+			user: userId,
+			status: 'completed',
+			post: { $exists: false }
+		});
+
+		res.json({
+			success: true,
+			message: 'AI generations retrieved successfully',
+			data: {
+				generations,
+				pagination: {
+					currentPage: page,
+					totalPages: Math.ceil(total / limit),
+					totalItems: total,
+					itemsPerPage: limit
+				}
+			}
+		});
+
+	} catch (error) {
+		console.error('Get my generations error:', error);
+		res.status(500).json({
+			success: false,
+			message: 'Failed to fetch AI generations',
+			error: error.message
+		});
+	}
+};
