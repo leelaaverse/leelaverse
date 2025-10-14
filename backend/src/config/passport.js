@@ -73,13 +73,24 @@ passport.use(new GoogleStrategy({
 		// Ensure we have non-empty names
 		if (!firstName.trim()) firstName = 'OAuth';
 		if (!lastName.trim()) lastName = 'User';		// Generate a unique username based on email or Google ID
-		let username = email ? email.split('@')[0] : `user${profile.id}`;
+		// Sanitize username to only contain letters, numbers, and underscores
+		let baseUsername = email ? email.split('@')[0] : `user${profile.id}`;
+		// Replace dots, hyphens, and other special characters with underscores
+		baseUsername = baseUsername.replace(/[^a-zA-Z0-9_]/g, '_');
+		// Remove consecutive underscores and trim underscores from start/end
+		baseUsername = baseUsername.replace(/_+/g, '_').replace(/^_+|_+$/g, '');
+		// Ensure minimum length
+		if (baseUsername.length < 3) {
+			baseUsername = `user_${profile.id}`;
+		}
+
+		let username = baseUsername;
 
 		// Ensure username is unique
 		let usernameExists = await User.findOne({ username });
 		let counter = 1;
 		while (usernameExists) {
-			username = `${email ? email.split('@')[0] : `user${profile.id}`}${counter}`;
+			username = `${baseUsername}${counter}`;
 			usernameExists = await User.findOne({ username });
 			counter++;
 		}

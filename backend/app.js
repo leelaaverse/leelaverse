@@ -17,6 +17,7 @@ const { generalLimiter } = require('./src/middleware/rateLimiter');
 // Import routes
 const authRoutes = require('./src/routes/auth');
 const oauthRoutes = require('./src/routes/oauth');
+const postRoutes = require('./src/routes/posts');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -49,6 +50,7 @@ app.use(helmet());
 const allowedOrigins = [
     'https://www.leelaaverse.com',
     'http://localhost:5173',
+    'http://localhost:5174',
     'http://localhost:3000',
     'http://127.0.0.1:5173'
 ];
@@ -171,6 +173,7 @@ app.get('/', (req, res) => {
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/oauth', oauthRoutes);
+app.use('/api/posts', postRoutes);
 
 // Handle 404 errors
 app.use('*', (req, res) => {
