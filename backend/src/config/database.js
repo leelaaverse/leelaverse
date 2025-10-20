@@ -1,41 +1,44 @@
-const mongoose = require('mongoose');
+const { PrismaClient } = require('@prisma/client');
+
+// Initialize Prisma Client
+const prisma = new PrismaClient({
+    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+});
 
 const connectDB = async () => {
     try {
-        // Check if MONGODB_URI is provided
-        if (!process.env.MONGODB_URI) {
-            console.warn('⚠️  MONGODB_URI not found in environment variables. Using local MongoDB...');
-            process.env.MONGODB_URI = 'mongodb://localhost:27017/leelaverse';
+        // Check if DATABASE_URL is provided
+        if (!process.env.DATABASE_URL) {
+            console.warn('⚠️  DATABASE_URL not found in environment variables.');
+            throw new Error('DATABASE_URL is required for Prisma connection');
         }
 
-        const conn = await mongoose.connect(process.env.MONGODB_URI);
+        // Test the connection
+        await prisma.$connect();
+        console.log('✅ PostgreSQL Connected via Prisma (Supabase)');
 
-        console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
-
-        // Handle connection events
-        mongoose.connection.on('error', (err) => {
-            console.error('❌ MongoDB connection error:', err);
-        });
-
-        mongoose.connection.on('disconnected', () => {
-            console.log('🔌 MongoDB disconnected');
-        });
-
-        // Graceful close
-        process.on('SIGINT', async () => {
-            await mongoose.connection.close();
-            console.log('🔌 MongoDB connection closed through app termination');
+        // Graceful shutdown handlers
+        const gracefulShutdown = async (signal) => {
+            console.log(`\n🔌 ${signal} received, closing Prisma connection...`);
+            await prisma.$disconnect();
+            console.log('🔌 Prisma connection closed');
             process.exit(0);
-        });
+        };
+
+        process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+        process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
     } catch (error) {
         console.error('❌ Database connection failed:', error.message);
-        console.log('💡 Make sure MongoDB is running or check your MONGODB_URI');
-        // Don't exit in development, continue without database
+        console.log('💡 Make sure your DATABASE_URL is correct and Supabase is accessible');
+
+        // Don't exit in development, but log the error
         if (process.env.NODE_ENV === 'production') {
+            await prisma.$disconnect();
             process.exit(1);
         }
     }
 };
 
 module.exports = connectDB;
+module.exports.prisma = prisma;
