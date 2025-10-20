@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const UserService = require('../services/UserService');
 
 // Middleware to verify JWT token
 const auth = async (req, res, next) => {
@@ -15,15 +15,7 @@ const auth = async (req, res, next) => {
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'mock-jwt-secret');
 
-        // Mock mode when database is not available
-        const mongoose = require('mongoose');
-        if (mongoose.connection.readyState !== 1) {
-            console.log('🔐 Using mock authentication mode');
-            req.user = decoded; // Use the JWT payload directly
-            return next();
-        }
-
-        const user = await User.findById(decoded.userId);
+        const user = await UserService.findById(decoded.id);
 
         if (!user) {
             return res.status(401).json({
@@ -40,10 +32,10 @@ const auth = async (req, res, next) => {
         }
 
         if (user.isBanned) {
-            if (user.banExpiresAt && user.banExpiresAt > Date.now()) {
+            if (user.banExpiresAt && new Date(user.banExpiresAt) > new Date()) {
                 return res.status(403).json({
                     success: false,
-                    message: `Account is banned until ${user.banExpiresAt.toDateString()}`
+                    message: `Account is banned until ${new Date(user.banExpiresAt).toDateString()}`
                 });
             } else if (!user.banExpiresAt) {
                 return res.status(403).json({
@@ -53,7 +45,9 @@ const auth = async (req, res, next) => {
             }
         }
 
-        req.user = user;
+        // Remove password from user object
+        const { password, ...userWithoutPassword } = user;
+        req.user = userWithoutPassword;
         next();
     } catch (error) {
         if (error.name === 'JsonWebTokenError') {

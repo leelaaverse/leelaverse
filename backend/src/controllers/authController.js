@@ -1,7 +1,7 @@
-const User = require('../models/User');
+const UserService = require('../services/UserService');
+const prisma = require('../config/prisma');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const mongoose = require('mongoose');
 
 class AuthController {
     constructor() {
@@ -32,58 +32,41 @@ class AuthController {
                 ip: req.ip
             });
 
-            // Mock mode when database is not available
-            if (mongoose.connection.readyState !== 1) {
-                console.log('🚫 Database not available, using mock authentication');
-                return await this.mockRegister(req, res);
+            // Check if user already exists
+            const existingUserByEmail = await UserService.findByEmail(email);
+            if (existingUserByEmail) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'User with this email already exists'
+                });
             }
 
-            // Check if user already exists
-            const existingUser = await User.findOne({
-                $or: [{ email }, { username }]
-            });
-
-            if (existingUser) {
-                if (existingUser.email === email) {
-                    return res.status(400).json({
-                        success: false,
-                        message: 'User with this email already exists'
-                    });
-                }
-                if (existingUser.username === username) {
-                    return res.status(400).json({
-                        success: false,
-                        message: 'Username is already taken'
-                    });
-                }
+            const existingUserByUsername = await UserService.findByUsername(username);
+            if (existingUserByUsername) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Username is already taken'
+                });
             }
 
             // Create new user
-            const user = new User({
+            const user = await UserService.createUser({
                 username,
-                email,
+                email: email.toLowerCase(),
                 password,
-                firstName: firstName || '',
+                firstName: firstName || 'User',
                 lastName: lastName || ''
             });
 
-            await user.save();
-
             // Generate tokens
-            const accessToken = user.generateAccessToken();
-            const refreshToken = user.generateRefreshToken();
+            const accessToken = UserService.generateAccessToken(user.id);
+            const refreshToken = UserService.generateRefreshToken(user.id);
 
-            // Add refresh token to user's tokens array
-            user.refreshTokens.push({
-                token: refreshToken,
-                createdAt: new Date()
-            });
-            await user.save();
+            // Store refresh token
+            await UserService.storeRefreshToken(user.id, refreshToken);
 
             // Remove password from response
-            const userResponse = user.toObject();
-            delete userResponse.password;
-            delete userResponse.refreshTokens;
+            const { password: _, ...userResponse } = user;
 
             res.status(201).json({
                 success: true,
@@ -98,24 +81,12 @@ class AuthController {
         } catch (error) {
             console.error('Registration error:', error);
 
-            // Handle Mongoose validation errors
-            if (error.name === 'ValidationError') {
-                const errors = Object.values(error.errors).map(err => ({
-                    field: err.path,
-                    message: err.message
-                }));
-
-                return res.status(400).json({
-                    success: false,
-                    message: 'Validation failed',
-                    errors: errors
-                });
-            }
-
-            // Handle duplicate key errors
-            if (error.code === 11000) {
-                const field = Object.keys(error.keyPattern)[0];
-                const message = field === 'email' ? 'Email is already registered' : 'Username is already taken';
+            // Handle Prisma unique constraint errors
+            if (error.code === 'P2002') {
+                const field = error.meta?.target?.[0] || 'field';
+                const message = field === 'email' 
+                    ? 'Email is already registered' 
+                    : `${field} is already taken`;
 
                 return res.status(400).json({
                     success: false,
@@ -146,14 +117,8 @@ class AuthController {
                 ip: clientIP
             });
 
-            // Mock mode when database is not available
-            if (mongoose.connection.readyState !== 1) {
-                console.log('🚫 Database not available, using mock authentication');
-                return await this.mockLogin(req, res);
-            }
-
-            // Find user by email and include password field
-            const user = await User.findOne({ email }).select('+password');
+            // Find user by email
+            const user = await UserService.findByEmail(email);
 
             if (!user) {
                 return res.status(401).json({
@@ -163,8 +128,10 @@ class AuthController {
             }
 
             // Check if account is locked
-            if (user.lockUntil && user.lockUntil > Date.now()) {
-                const lockTimeRemaining = Math.ceil((user.lockUntil - Date.now()) / (1000 * 60));
+            if (UserService.isAccountLocked(user)) {
+                const lockTimeRemaining = Math.ceil(
+                    (new Date(user.lockUntil) - Date.now()) / (1000 * 60)
+                );
                 return res.status(423).json({
                     success: false,
                     message: `Account is locked. Try again in ${lockTimeRemaining} minutes.`
@@ -173,10 +140,10 @@ class AuthController {
 
             // Check if account is banned
             if (user.isBanned) {
-                if (user.banExpiresAt && user.banExpiresAt > Date.now()) {
+                if (user.banExpiresAt && new Date(user.banExpiresAt) > new Date()) {
                     return res.status(403).json({
                         success: false,
-                        message: `Account is banned until ${user.banExpiresAt.toDateString()}`
+                        message: `Account is banned until ${new Date(user.banExpiresAt).toDateString()}`
                     });
                 } else if (!user.banExpiresAt) {
                     return res.status(403).json({
@@ -187,18 +154,11 @@ class AuthController {
             }
 
             // Check password
-            const isMatch = await user.comparePassword(password);
+            const isMatch = await UserService.comparePassword(password, user.password);
 
             if (!isMatch) {
                 // Increment failed attempts
-                user.loginAttempts += 1;
-
-                // Lock account if too many failed attempts
-                if (user.loginAttempts >= 5) {
-                    user.lockUntil = Date.now() + (30 * 60 * 1000); // Lock for 30 minutes
-                }
-
-                await user.save();
+                await UserService.incrementLoginAttempts(user.id);
 
                 return res.status(401).json({
                     success: false,
@@ -207,33 +167,18 @@ class AuthController {
             }
 
             // Successful login - reset failed attempts and update last login
-            user.loginAttempts = 0;
-            user.lockUntil = undefined;
-            user.lastLogin = new Date();
-            user.lastActiveAt = new Date();
+            await UserService.resetLoginAttempts(user.id);
+            await UserService.updateLastLogin(user.id);
 
             // Generate tokens
-            const accessToken = user.generateAccessToken();
-            const refreshToken = user.generateRefreshToken();
+            const accessToken = UserService.generateAccessToken(user.id);
+            const refreshToken = UserService.generateRefreshToken(user.id);
 
-            // Add refresh token to user's tokens array
-            user.refreshTokens.push({
-                token: refreshToken,
-                createdAt: new Date()
-            });
-
-            // Limit number of refresh tokens (keep only 5 most recent)
-            if (user.refreshTokens.length > 5) {
-                user.refreshTokens = user.refreshTokens.slice(-5);
-            }
-
-            await user.save();
+            // Store refresh token
+            await UserService.storeRefreshToken(user.id, refreshToken);
 
             // Remove sensitive data from response
-            const userResponse = user.toObject();
-            delete userResponse.password;
-            delete userResponse.refreshTokens;
-            delete userResponse.loginAttempts;
+            const { password: _, ...userResponse } = user;
 
             res.json({
                 success: true,
@@ -254,64 +199,14 @@ class AuthController {
         }
     }
 
-    // Refresh access token
-    async refreshToken(req, res) {
-        try {
-            const user = req.user;
-            const oldRefreshToken = req.refreshToken;
-
-            // Remove old refresh token
-            user.refreshTokens = user.refreshTokens.filter(
-                tokenObj => tokenObj.token !== oldRefreshToken
-            );
-
-            // Generate new tokens
-            const accessToken = user.generateAccessToken();
-            const refreshToken = user.generateRefreshToken();
-
-            // Add new refresh token
-            user.refreshTokens.push({
-                token: refreshToken,
-                createdAt: new Date()
-            });
-
-            await user.save();
-
-            res.json({
-                success: true,
-                message: 'Token refreshed successfully',
-                data: {
-                    accessToken,
-                    refreshToken
-                }
-            });
-
-        } catch (error) {
-            console.error('Token refresh error:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Server error during token refresh'
-            });
-        }
-    }
-
     // Logout user
     async logout(req, res) {
         try {
-            const user = req.user;
             const refreshToken = req.body.refreshToken;
 
             if (refreshToken) {
-                // Remove specific refresh token
-                user.refreshTokens = user.refreshTokens.filter(
-                    tokenObj => tokenObj.token !== refreshToken
-                );
-            } else {
-                // Remove all refresh tokens (logout from all devices)
-                user.refreshTokens = [];
+                await UserService.deleteRefreshToken(refreshToken);
             }
-
-            await user.save();
 
             res.json({
                 success: true,
@@ -330,11 +225,9 @@ class AuthController {
     // Logout from all devices
     async logoutAll(req, res) {
         try {
-            const user = req.user;
+            const userId = req.user.id;
 
-            // Remove all refresh tokens
-            user.refreshTokens = [];
-            await user.save();
+            await UserService.deleteAllRefreshTokens(userId);
 
             res.json({
                 success: true,
@@ -350,50 +243,68 @@ class AuthController {
         }
     }
 
-    // Get current user profile
-    async getProfile(req, res) {
+    // Refresh access token
+    async refreshToken(req, res) {
         try {
-            const user = req.user;
+            const { refreshToken } = req.body;
 
-            // Mock mode when database is not available
-            if (!user.save) {
-                // This is a mock user from JWT token
-                const mockUser = {
-                    _id: user.userId,
-                    username: user.email?.split('@')[0] || 'mockuser',
-                    email: user.email,
-                    firstName: 'Mock',
-                    lastName: 'User',
-                    createdAt: new Date(),
-                    profile: {
-                        firstName: 'Mock',
-                        lastName: 'User'
-                    }
-                };
-
-                return res.json({
-                    success: true,
-                    data: {
-                        user: mockUser
-                    }
+            if (!refreshToken) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Refresh token is required'
                 });
             }
 
-            // Update last active timestamp
-            user.lastActiveAt = new Date();
-            await user.save();
+            // Verify refresh token
+            const decoded = UserService.verifyRefreshToken(refreshToken);
 
-            // Remove sensitive data from response
-            const userResponse = user.toObject();
-            delete userResponse.password;
-            delete userResponse.refreshTokens;
-            delete userResponse.loginAttempts;
+            // Check if refresh token exists in database
+            const tokenRecord = await UserService.findRefreshToken(refreshToken);
+
+            if (!tokenRecord) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Invalid refresh token'
+                });
+            }
+
+            // Generate new access token
+            const accessToken = UserService.generateAccessToken(decoded.id);
 
             res.json({
                 success: true,
+                message: 'Token refreshed successfully',
                 data: {
-                    user: userResponse
+                    accessToken
                 }
+            });
+
+        } catch (error) {
+            console.error('Refresh token error:', error);
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid or expired refresh token'
+            });
+        }
+    }
+
+    // Get user profile
+    async getProfile(req, res) {
+        try {
+            const userId = req.user.id;
+
+            const user = await UserService.getUserProfile(userId);
+
+            if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'User not found'
+                });
+            }
+
+            res.json({
+                success: true,
+                data: { user }
             });
 
         } catch (error) {
@@ -408,33 +319,48 @@ class AuthController {
     // Update user profile
     async updateProfile(req, res) {
         try {
-            const user = req.user;
-            const updates = req.body;
+            const userId = req.user.id;
+            const {
+                firstName,
+                lastName,
+                bio,
+                location,
+                website,
+                avatar,
+                coverImage,
+                phoneNumber,
+                dateOfBirth,
+                twitterLink,
+                instagramLink,
+                linkedinLink,
+                githubLink,
+                discordLink
+            } = req.body;
 
-            // Update profile fields
-            if (updates.firstName !== undefined) user.profile.firstName = updates.firstName;
-            if (updates.lastName !== undefined) user.profile.lastName = updates.lastName;
-            if (updates.bio !== undefined) user.profile.bio = updates.bio;
-            if (updates.location !== undefined) user.profile.location = updates.location;
-            if (updates.website !== undefined) user.profile.website = updates.website;
-            if (updates.socialLinks) {
-                user.profile.socialLinks = { ...user.profile.socialLinks, ...updates.socialLinks };
-            }
+            const updateData = {};
+            if (firstName !== undefined) updateData.firstName = firstName;
+            if (lastName !== undefined) updateData.lastName = lastName;
+            if (bio !== undefined) updateData.bio = bio;
+            if (location !== undefined) updateData.location = location;
+            if (website !== undefined) updateData.website = website;
+            if (avatar !== undefined) updateData.avatar = avatar;
+            if (coverImage !== undefined) updateData.coverImage = coverImage;
+            if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber;
+            if (dateOfBirth !== undefined) updateData.dateOfBirth = new Date(dateOfBirth);
+            if (twitterLink !== undefined) updateData.twitterLink = twitterLink;
+            if (instagramLink !== undefined) updateData.instagramLink = instagramLink;
+            if (linkedinLink !== undefined) updateData.linkedinLink = linkedinLink;
+            if (githubLink !== undefined) updateData.githubLink = githubLink;
+            if (discordLink !== undefined) updateData.discordLink = discordLink;
 
-            await user.save();
+            const user = await UserService.updateUser(userId, updateData);
 
-            // Remove sensitive data from response
-            const userResponse = user.toObject();
-            delete userResponse.password;
-            delete userResponse.refreshTokens;
-            delete userResponse.loginAttempts;
+            const { password: _, ...userResponse } = user;
 
             res.json({
                 success: true,
                 message: 'Profile updated successfully',
-                data: {
-                    user: userResponse
-                }
+                data: { user: userResponse }
             });
 
         } catch (error) {
@@ -449,31 +375,41 @@ class AuthController {
     // Change password
     async changePassword(req, res) {
         try {
-            // Get user with password field explicitly
-            const user = await User.findById(req.user._id || req.user.id).select('+password');
+            const userId = req.user.id;
             const { currentPassword, newPassword } = req.body;
 
+            const user = await UserService.findById(userId);
+
+            if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'User not found'
+                });
+            }
+
             // Verify current password
-            const isMatch = await user.comparePassword(currentPassword);
+            const isMatch = await UserService.comparePassword(currentPassword, user.password);
+
             if (!isMatch) {
-                return res.status(400).json({
+                return res.status(401).json({
                     success: false,
                     message: 'Current password is incorrect'
                 });
             }
 
+            // Hash new password
+            const bcrypt = require('bcryptjs');
+            const hashedPassword = await bcrypt.hash(newPassword, 10);
+
             // Update password
-            user.password = newPassword;
-            user.passwordChangedAt = new Date();
+            await UserService.updateUser(userId, { password: hashedPassword });
 
-            // Remove all refresh tokens (force re-login on all devices)
-            user.refreshTokens = [];
-
-            await user.save();
+            // Logout from all devices
+            await UserService.deleteAllRefreshTokens(userId);
 
             res.json({
                 success: true,
-                message: 'Password changed successfully. Please log in again.'
+                message: 'Password changed successfully. Please login again.'
             });
 
         } catch (error) {
@@ -490,80 +426,84 @@ class AuthController {
         try {
             const { email } = req.body;
 
-            const user = await User.findOne({ email });
+            const user = await UserService.findByEmail(email);
+
             if (!user) {
-                // Don't reveal if email exists for security
+                // Don't reveal if user exists
                 return res.json({
                     success: true,
-                    message: 'If an account with that email exists, a password reset link has been sent.'
+                    message: 'If the email exists, a password reset link has been sent'
                 });
             }
 
             // Generate reset token
-            const resetToken = crypto.randomBytes(32).toString('hex');
-            user.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-            user.passwordResetExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+            const resetToken = UserService.generatePasswordResetToken();
+            const resetTokenExpires = new Date(Date.now() + 3600000); // 1 hour
 
-            await user.save();
+            await UserService.updateUser(user.id, {
+                passwordResetToken: resetToken,
+                passwordResetExpires: resetTokenExpires
+            });
 
-            // TODO: Send email with reset token
-            // For now, we'll just return the token (remove this in production)
+            // TODO: Send email with reset link
             console.log('Password reset token:', resetToken);
 
             res.json({
                 success: true,
-                message: 'Password reset link has been sent to your email.',
-                // Remove this in production:
-                resetToken: resetToken
+                message: 'If the email exists, a password reset link has been sent'
             });
 
         } catch (error) {
-            console.error('Password reset request error:', error);
+            console.error('Request password reset error:', error);
             res.status(500).json({
                 success: false,
-                message: 'Server error while processing password reset request'
+                message: 'Server error while requesting password reset'
             });
         }
     }
 
-    // Reset password with token
+    // Reset password
     async resetPassword(req, res) {
         try {
-            const { token, password } = req.body;
+            const { token, newPassword } = req.body;
 
-            // Hash the token to compare with stored hash
-            const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
-
-            const user = await User.findOne({
-                passwordResetToken: hashedToken,
-                passwordResetExpires: { $gt: Date.now() }
+            const user = await prisma.user.findFirst({
+                where: {
+                    passwordResetToken: token,
+                    passwordResetExpires: {
+                        gt: new Date()
+                    }
+                }
             });
 
             if (!user) {
                 return res.status(400).json({
                     success: false,
-                    message: 'Token is invalid or has expired'
+                    message: 'Invalid or expired reset token'
                 });
             }
 
+            // Hash new password
+            const bcrypt = require('bcryptjs');
+            const hashedPassword = await bcrypt.hash(newPassword, 10);
+
             // Update password and clear reset token
-            user.password = password;
-            user.passwordResetToken = undefined;
-            user.passwordResetExpires = undefined;
-            user.passwordChangedAt = new Date();
+            await UserService.updateUser(user.id, {
+                password: hashedPassword,
+                passwordResetToken: null,
+                passwordResetExpires: null
+            });
 
-            // Remove all refresh tokens (force re-login on all devices)
-            user.refreshTokens = [];
-
-            await user.save();
+            // Logout from all devices
+            await UserService.deleteAllRefreshTokens(user.id);
 
             res.json({
                 success: true,
-                message: 'Password has been reset successfully. Please log in with your new password.'
+                message: 'Password reset successful. Please login with your new password.'
             });
 
         } catch (error) {
-            console.error('Password reset error:', error);
+            console.error('Reset password error:', error);
             res.status(500).json({
                 success: false,
                 message: 'Server error while resetting password'
@@ -571,47 +511,36 @@ class AuthController {
         }
     }
 
-    // Mock authentication methods for development without database
-    mockLogin(req, res) {
-        const { email, password } = req.body;
+    // Mock register (for testing without database)
+    async mockRegister(req, res) {
+        const { username, email, password } = req.body;
 
-        // Simple mock validation
-        if (!email || !password) {
-            return res.status(400).json({
-                success: false,
-                message: 'Email and password are required'
-            });
-        }
-
-        // Generate mock JWT tokens
         const mockUser = {
-            _id: 'mock-user-id',
-            username: email.split('@')[0],
-            email: email,
+            id: 'mock-user-id-' + Date.now(),
+            username,
+            email,
             firstName: 'Mock',
             lastName: 'User',
-            createdAt: new Date(),
-            profile: {
-                firstName: 'Mock',
-                lastName: 'User'
-            }
+            role: 'user',
+            isEmailVerified: false,
+            createdAt: new Date().toISOString()
         };
 
         const accessToken = jwt.sign(
-            { userId: mockUser._id, email: mockUser.email },
-            process.env.JWT_SECRET || 'mock-jwt-secret',
+            { id: mockUser.id },
+            process.env.JWT_SECRET || 'mock-secret',
             { expiresIn: '15m' }
         );
 
         const refreshToken = jwt.sign(
-            { userId: mockUser._id },
+            { id: mockUser.id },
             process.env.JWT_REFRESH_SECRET || 'mock-refresh-secret',
             { expiresIn: '7d' }
         );
 
-        res.json({
+        res.status(201).json({
             success: true,
-            message: 'Login successful (mock mode)',
+            message: 'Mock registration successful (database not available)',
             data: {
                 user: mockUser,
                 accessToken,
@@ -620,46 +549,36 @@ class AuthController {
         });
     }
 
-    mockRegister(req, res) {
-        const { username, email, password, firstName, lastName } = req.body;
+    // Mock login (for testing without database)
+    async mockLogin(req, res) {
+        const { email } = req.body;
 
-        // Simple mock validation
-        if (!email || !password || !username) {
-            return res.status(400).json({
-                success: false,
-                message: 'Email, username and password are required'
-            });
-        }
-
-        // Generate mock user
         const mockUser = {
-            _id: 'mock-user-id-' + Date.now(),
-            username: username,
-            email: email,
-            firstName: firstName || '',
-            lastName: lastName || '',
-            createdAt: new Date(),
-            profile: {
-                firstName: firstName || '',
-                lastName: lastName || ''
-            }
+            id: 'mock-user-id-123',
+            username: 'mockuser',
+            email,
+            firstName: 'Mock',
+            lastName: 'User',
+            role: 'user',
+            isEmailVerified: true,
+            createdAt: new Date().toISOString()
         };
 
         const accessToken = jwt.sign(
-            { userId: mockUser._id, email: mockUser.email },
-            process.env.JWT_SECRET || 'mock-jwt-secret',
+            { id: mockUser.id },
+            process.env.JWT_SECRET || 'mock-secret',
             { expiresIn: '15m' }
         );
 
         const refreshToken = jwt.sign(
-            { userId: mockUser._id },
+            { id: mockUser.id },
             process.env.JWT_REFRESH_SECRET || 'mock-refresh-secret',
             { expiresIn: '7d' }
         );
 
-        res.status(201).json({
+        res.json({
             success: true,
-            message: 'User registered successfully (mock mode)',
+            message: 'Mock login successful (database not available)',
             data: {
                 user: mockUser,
                 accessToken,

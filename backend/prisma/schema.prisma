@@ -1,0 +1,590 @@
+// Prisma Schema for Leelaverse - Migrated from MongoDB
+// Using PostgreSQL with Supabase
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================
+// USER MODEL
+// ============================================
+model User {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Basic Information
+  firstName String  @default("User")
+  lastName  String  @default("OAuth")
+  username  String  @unique
+  email     String  @unique
+  password  String?
+
+  // Profile
+  avatar          String?
+  bio             String?
+  location        String?
+  website         String?
+  coverImage      String?
+  phoneNumber     String?  @unique
+  dateOfBirth     DateTime?
+  twitterLink     String?
+  instagramLink   String?
+  linkedinLink    String?
+  githubLink      String?
+  discordLink     String?
+
+  // OAuth
+  googleId      String?   @unique
+  oauthProviders String[] // ['google', 'github', 'discord']
+
+  // Role & Verification
+  role              String   @default("user") // 'user', 'admin', 'moderator'
+  isEmailVerified   Boolean  @default(false)
+  emailVerificationToken   String?
+  emailVerificationExpires DateTime?
+
+  // Password Reset
+  passwordResetToken   String?
+  passwordResetExpires DateTime?
+
+  // Security
+  lastLogin    DateTime?
+  loginAttempts Int      @default(0)
+  lockUntil    DateTime?
+
+  // Account Status
+  isActive     Boolean   @default(true)
+  isBanned     Boolean   @default(false)
+  banReason    String?
+  banExpiresAt DateTime?
+
+  // AI Creator Stats
+  totalCreations Int     @default(0)
+  totalEarnings  Decimal @default(0) @db.Decimal(10, 2)
+
+  // Coin System
+  coinBalance Int @default(100) // Starting balance
+  totalCoinsEarned Int @default(0)
+  totalCoinsSpent  Int @default(0)
+
+  // Subscription
+  subscriptionTier       String?   // 'free', 'basic', 'pro', 'enterprise'
+  subscriptionStatus     String?   // 'active', 'cancelled', 'expired'
+  subscriptionStartDate  DateTime?
+  subscriptionEndDate    DateTime?
+  subscriptionRenewalDate DateTime?
+
+  // Usage Limits
+  monthlyGenerationsUsed Int @default(0)
+  monthlyGenerationsLimit Int @default(50)
+  dailyGenerationsUsed   Int @default(0)
+  dailyGenerationsLimit  Int @default(10)
+  generationResetDate    DateTime?
+
+  // Settings
+  notificationSettings Json? // Stored as JSONB
+  privacySettings      Json?
+  displaySettings      Json?
+
+  // Verification Documents
+  verificationStatus   String?   @default("unverified") // 'unverified', 'pending', 'verified', 'rejected'
+  verificationDocuments String[] // URLs to documents
+  verifiedAt           DateTime?
+
+  // Relations
+  posts                Post[]
+  aiGenerations        AIGeneration[]
+  comments             Comment[]
+  likes                Like[]
+  saves                Save[]
+  stories              Story[]
+  coinTransactions     CoinTransaction[]
+  notificationsReceived Notification[] @relation("NotificationRecipient")
+  notificationsSent    Notification[] @relation("NotificationSender")
+
+  // Followers/Following relationships
+  followers            Follow[] @relation("UserFollowers")
+  following            Follow[] @relation("UserFollowing")
+
+  // Refresh Tokens
+  refreshTokens        RefreshToken[]
+
+  @@index([email])
+  @@index([username])
+  @@index([googleId])
+  @@index([createdAt])
+}
+
+// ============================================
+// REFRESH TOKEN MODEL
+// ============================================
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@index([userId])
+  @@index([token])
+}
+
+// ============================================
+// POST MODEL
+// ============================================
+model Post {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Author
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  // Content Type
+  type     String // 'image', 'video', 'text', 'short'
+  category String // 'short', 'normal-video', 'image-post', 'text-post', 'image-text-post'
+
+  // Text Content
+  caption String?
+  title   String?
+
+  // Media
+  mediaUrl     String?
+  thumbnailUrl String?
+  mediaType    String? // 'image/jpeg', 'image/png', 'video/mp4', etc.
+
+  // AI Generation
+  aiGenerated Boolean @default(false)
+  aiModel     String?
+  aiPrompt    String?
+  aiEnhancedPrompt String?
+  aiStyle     String?
+  aiAspectRatio String?
+  aiSteps     Int?
+  aiGenerationTime Int?
+  aiCost      Decimal? @db.Decimal(10, 2)
+  aiSeed      String?
+
+  // Engagement Stats
+  likesCount    Int @default(0)
+  commentsCount Int @default(0)
+  sharesCount   Int @default(0)
+  savesCount    Int @default(0)
+  viewsCount    Int @default(0)
+
+  // Tags
+  tags String[]
+
+  // Location
+  locationName String?
+  locationLat  Decimal? @db.Decimal(10, 7)
+  locationLng  Decimal? @db.Decimal(10, 7)
+
+  // Visibility
+  visibility String @default("public") // 'public', 'followers', 'private'
+
+  // Moderation
+  isApproved      Boolean  @default(true)
+  isFlagged       Boolean  @default(false)
+  flagReason      String?
+  moderatedBy     String?
+  moderatedAt     DateTime?
+
+  // Monetization
+  isPremium       Boolean @default(false)
+  premiumPrice    Decimal? @db.Decimal(10, 2)
+  purchaseCount   Int     @default(0)
+
+  // Scheduling
+  isScheduled     Boolean   @default(false)
+  scheduledFor    DateTime?
+  publishedAt     DateTime  @default(now())
+
+  // Relations
+  comments        Comment[]
+  likes           Like[]
+  saves           Save[]
+  aiGeneration    AIGeneration?
+  coinTransactions CoinTransaction[]
+  notifications   Notification[]
+
+  @@index([authorId])
+  @@index([type])
+  @@index([category])
+  @@index([aiGenerated])
+  @@index([createdAt])
+  @@index([publishedAt])
+  @@index([visibility])
+}
+
+// ============================================
+// AI GENERATION MODEL
+// ============================================
+model AIGeneration {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // User
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Generation Type
+  type  String // 'image', 'video', 'text-enhancement'
+  model String // 'DALL-E 3', 'FLUX Schnell', 'FLUX.1 SRPO', etc.
+
+  // Input
+  prompt         String
+  enhancedPrompt String?
+
+  // Parameters
+  style        String?
+  aspectRatio  String?
+  steps        Int?
+  seed         String?
+  quality      String?
+
+  // Output
+  resultUrl    String?
+  thumbnailUrl String?
+
+  // FAL AI Tracking
+  falRequestId String?
+
+  // Related Post
+  postId String? @unique
+  post   Post?   @relation(fields: [postId], references: [id], onDelete: SetNull)
+
+  // Performance
+  generationTime Int?
+  cost           Decimal? @db.Decimal(10, 2)
+
+  // Status
+  status       String  @default("pending") // 'pending', 'processing', 'completed', 'failed'
+  errorMessage String?
+
+  // User Feedback
+  userRating Int? // 1-5
+
+  // Relations
+  coinTransactions CoinTransaction[]
+  notifications    Notification[]
+
+  @@index([userId])
+  @@index([type])
+  @@index([model])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================
+// COMMENT MODEL
+// ============================================
+model Comment {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Post Reference
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  // Author
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  // Content
+  text String
+
+  // Reply Structure
+  parentCommentId String?
+  parentComment   Comment?  @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: Cascade)
+  replies         Comment[] @relation("CommentReplies")
+  replyLevel      Int       @default(0)
+
+  // Engagement
+  likesCount   Int @default(0)
+  repliesCount Int @default(0)
+
+  // Moderation
+  isEdited    Boolean   @default(false)
+  editedAt    DateTime?
+  isHidden    Boolean   @default(false)
+  isFlagged   Boolean   @default(false)
+  flagReason  String?
+
+  // Relations
+  likes         Like[]
+  notifications Notification[]
+
+  @@index([postId])
+  @@index([authorId])
+  @@index([parentCommentId])
+  @@index([createdAt])
+}
+
+// ============================================
+// LIKE MODEL
+// ============================================
+model Like {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  // User
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Polymorphic Reference (Post or Comment)
+  postId    String?
+  post      Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  commentId String?
+  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@unique([userId, commentId])
+  @@index([userId])
+  @@index([postId])
+  @@index([commentId])
+}
+
+// ============================================
+// FOLLOW MODEL
+// ============================================
+model Follow {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  // Follower
+  followerId String
+  follower   User   @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+
+  // Following
+  followingId String
+  following   User   @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  // Settings
+  notificationsEnabled Boolean @default(true)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+  @@index([createdAt])
+}
+
+// ============================================
+// SAVE MODEL
+// ============================================
+model Save {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  // User
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Post
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  // Collection
+  collection String @default("Saved Items")
+  notes      String?
+
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
+  @@index([collection])
+}
+
+// ============================================
+// STORY MODEL
+// ============================================
+model Story {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  expiresAt DateTime // Stories expire after 24 hours
+
+  // Author
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  // Content
+  type            String // 'image', 'video', 'text'
+  mediaUrl        String?
+  thumbnailUrl    String?
+  text            String?
+  backgroundColor String?
+
+  // AI Details
+  aiGenerated Boolean @default(false)
+  aiActivity  String? // 'Training Model', 'Live Streaming', etc.
+
+  // Engagement
+  viewsCount Int      @default(0)
+  views      StoryView[]
+
+  // Duration
+  duration Int @default(5) // seconds
+
+  // Visibility
+  visibility String @default("public") // 'public', 'followers', 'close-friends'
+
+  @@index([authorId])
+  @@index([createdAt])
+  @@index([expiresAt])
+}
+
+// ============================================
+// STORY VIEW MODEL
+// ============================================
+model StoryView {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  storyId String
+  story   Story  @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  viewerId String
+
+  @@unique([storyId, viewerId])
+  @@index([storyId])
+  @@index([viewerId])
+}
+
+// ============================================
+// COIN TRANSACTION MODEL
+// ============================================
+model CoinTransaction {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  // User
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Transaction Type
+  type String // 'earn', 'spend', 'purchase', 'gift', 'reward', 'refund', 'daily_bonus', 'achievement'
+
+  // Amount
+  amount       Int
+  balanceAfter Int
+
+  // Description
+  description String
+
+  // Related Entity
+  postId         String?
+  post           Post?         @relation(fields: [postId], references: [id], onDelete: SetNull)
+  aiGenerationId String?
+  aiGeneration   AIGeneration? @relation(fields: [aiGenerationId], references: [id], onDelete: SetNull)
+
+  // Payment Details (for purchases)
+  paymentMethod   String?
+  paymentProvider String?
+  transactionId   String?
+
+  // Status
+  status String @default("completed") // 'pending', 'completed', 'failed', 'refunded'
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([status])
+}
+
+// ============================================
+// NOTIFICATION MODEL
+// ============================================
+model Notification {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  // Recipient
+  recipientId String
+  recipient   User   @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  // Sender
+  senderId String?
+  sender   User?   @relation("NotificationSender", fields: [senderId], references: [id], onDelete: SetNull)
+
+  // Type
+  type String // 'like', 'comment', 'reply', 'follow', 'mention', 'share', 'post', 'group_invite', 'achievement', 'coin_earned', 'ai_generation_complete'
+
+  // Related Entity
+  postId         String?
+  post           Post?         @relation(fields: [postId], references: [id], onDelete: SetNull)
+  commentId      String?
+  comment        Comment?      @relation(fields: [commentId], references: [id], onDelete: SetNull)
+  aiGenerationId String?
+  aiGeneration   AIGeneration? @relation(fields: [aiGenerationId], references: [id], onDelete: SetNull)
+
+  // Content
+  message String
+  link    String?
+
+  // Status
+  isRead   Boolean   @default(false)
+  readAt   DateTime?
+
+  @@index([recipientId])
+  @@index([senderId])
+  @@index([type])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+// ============================================
+// TAG MODEL
+// ============================================
+model Tag {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  name        String  @unique
+  slug        String  @unique
+  description String?
+  category    String? // 'ai-model', 'style', 'theme', 'technique'
+  usageCount  Int     @default(0)
+  isOfficial  Boolean @default(false)
+
+  @@index([name])
+  @@index([slug])
+  @@index([category])
+  @@index([usageCount])
+}
+
+// ============================================
+// GROUP MODEL (for future use)
+// ============================================
+model Group {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name        String
+  description String?
+  avatar      String?
+  coverImage  String?
+  category    String?
+
+  // Settings
+  visibility  String  @default("public") // 'public', 'private', 'secret'
+  isOfficial  Boolean @default(false)
+
+  // Stats
+  membersCount Int @default(0)
+  postsCount   Int @default(0)
+
+  @@index([name])
+  @@index([category])
+  @@index([visibility])
+}

@@ -5,8 +5,9 @@ const session = require('express-session');
 const path = require('path');
 require('dotenv').config();
 
-// Import database connection
+// Import database connection (Prisma)
 const connectDB = require('./src/config/database');
+const prisma = require('./src/config/prisma');
 
 // Import passport configuration
 require('./src/config/passport');
@@ -230,16 +231,18 @@ app.use((error, req, res, next) => {
 });
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
+process.on('SIGTERM', async () => {
     console.log('SIGTERM received, shutting down gracefully');
+    await prisma.$disconnect();
     server.close(() => {
         console.log('Process terminated');
         process.exit(0);
     });
 });
 
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
     console.log('SIGINT received, shutting down gracefully');
+    await prisma.$disconnect();
     server.close(() => {
         console.log('Process terminated');
         process.exit(0);
