@@ -157,8 +157,9 @@ model Post {
   caption String?
   title   String?
 
-  // Media
-  mediaUrl     String?
+  // Media (Single or Multiple)
+  mediaUrl     String? // Single media URL (backward compatibility)
+  mediaUrls    String[] // Multiple media URLs for image galleries
   thumbnailUrl String?
   mediaType    String? // 'image/jpeg', 'image/png', 'video/mp4', etc.
 

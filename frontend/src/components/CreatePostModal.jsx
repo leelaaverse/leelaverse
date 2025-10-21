@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import Icon from './Icon';
+import ImageGrid from './ImageGrid';
 
 const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
     const { user, accessToken } = useAuth();
@@ -21,6 +22,12 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
     const [generatedImageUrl, setGeneratedImageUrl] = useState(null);
     const [enhancedPrompt, setEnhancedPrompt] = useState('');
     const [isEnhancing, setIsEnhancing] = useState(false);
+
+    // Multiple images support
+    const [numImages, setNumImages] = useState(1); // 1-4 images to generate
+    const [generatedImages, setGeneratedImages] = useState([]); // Array of generated image URLs
+    const [generationIds, setGenerationIds] = useState([]); // Array of generation request IDs
+    const [aiGenerationIds, setAiGenerationIds] = useState([]); // Array of AI generation DB IDs
     const [agentAnalysis, setAgentAnalysis] = useState(null);
     const [uploadedFile, setUploadedFile] = useState(null);
     const [filePreview, setFilePreview] = useState(null);
@@ -102,9 +109,9 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
         setSuccessMessage(null);
     };
 
-    // Poll generation status
+    // Poll generation status for multiple images
     useEffect(() => {
-        if (!generationId || !isGenerating) return;
+        if (!generationIds || generationIds.length === 0 || !isGenerating) return;
 
         const pollInterval = setInterval(async () => {
             try {
@@ -113,45 +120,55 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
                     throw new Error('No authentication token found. Please login.');
                 }
 
-                const response = await fetch(`${API_URL}/api/posts/generation/${generationId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`
-                    }
-                });
+                // Poll all generation requests
+                const pollPromises = generationIds.map(reqId =>
+                    fetch(`${API_URL}/api/posts/generation/${reqId}`, {
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`
+                        }
+                    }).then(r => r.json())
+                );
 
-                const data = await response.json();
+                const results = await Promise.all(pollPromises);
 
-                if (data.success) {
-                    // Update progress based on status
-                    if (data.status === 'processing' || data.status === 'in_progress') {
-                        setGenerationProgress(50);
-                        setGenerationMessage('Generating image...');
-                    } else if (data.status === 'completed') {
-                        setGenerationProgress(100);
-                        setGenerationMessage('Generation complete!');
-                        setGeneratedImageUrl(data.imageUrl);
-                        setFilePreview(data.imageUrl);
-                        setIsGenerating(false);
-                        setSuccessMessage('🎉 Image generated successfully!');
+                // Count completed, processing, and failed
+                const completed = results.filter(r => r.success && r.status === 'completed');
+                const processing = results.filter(r => r.success && (r.status === 'processing' || r.status === 'in_progress'));
+                const failed = results.filter(r => !r.success || r.status === 'failed');
 
-                        // Clear success message after 3 seconds
-                        setTimeout(() => setSuccessMessage(null), 3000);
+                // Update progress
+                const progress = Math.floor((completed.length / generationIds.length) * 100);
+                setGenerationProgress(progress);
+                setGenerationMessage(`Generated ${completed.length}/${generationIds.length} image(s)...`);
 
-                        clearInterval(pollInterval);
-                    } else if (data.status === 'failed') {
-                        setError(data.message || 'Generation failed');
-                        setIsGenerating(false);
-                        clearInterval(pollInterval);
-                    }
-                } else {
-                    if (data.status === 'failed') {
-                        setError(data.message || 'Generation failed');
+                // Collect completed images
+                const completedImages = completed.map(r => r.imageUrl).filter(Boolean);
+                setGeneratedImages(completedImages);
+
+                // If all completed
+                if (completed.length === generationIds.length) {
+                    setGenerationProgress(100);
+                    setGenerationMessage('All images generated!');
+                    setIsGenerating(false);
+                    setSuccessMessage(`🎉 ${completed.length} image(s) generated successfully!`);
+
+                    // Clear success message after 3 seconds
+                    setTimeout(() => setSuccessMessage(null), 3000);
+
+                    clearInterval(pollInterval);
+                }
+
+                // If any failed
+                if (failed.length > 0) {
+                    setError(`${failed.length} generation(s) failed`);
+                    if (completed.length === 0) {
                         setIsGenerating(false);
                         clearInterval(pollInterval);
                     }
                 }
+
             } catch (error) {
-                console.error('Error polling generation status:', error);
+                console.error('Polling error:', error);
                 setError('Failed to check generation status');
                 setIsGenerating(false);
                 clearInterval(pollInterval);
@@ -159,7 +176,7 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
         }, 3000); // Poll every 3 seconds
 
         return () => clearInterval(pollInterval);
-    }, [generationId, isGenerating, API_URL]);
+    }, [generationIds, isGenerating, API_URL, accessToken]);
 
     // Generate Image with FAL AI
     const handleGenerateImage = async () => {
@@ -171,7 +188,9 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
         setIsGenerating(true);
         setError(null);
         setGenerationProgress(0);
-        setGenerationMessage('Starting generation...');
+        setGenerationMessage(`Starting generation of ${numImages} image(s)...`);
+        setGeneratedImages([]); // Clear previous images
+        setGenerationIds([]); // Clear previous IDs
 
         try {
             // Check if user is authenticated
@@ -187,7 +206,7 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
                 return;
             }
 
-            console.log('Making image generation request with user:', user.username || user.email);
+            console.log(`Making image generation request for ${numImages} image(s) with user:`, user.username || user.email);
 
             // Determine steps and guidance based on selected model
             const modelConfig = {
@@ -218,13 +237,14 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
                     'Authorization': `Bearer ${accessToken}`
                 },
                 body: JSON.stringify({
-                    prompt: prompt.trim(), // Use exact user prompt, no enhancement
+                    prompt: prompt.trim(),
                     imageSize: aspectRatio,
                     style,
                     aspectRatio,
                     selectedModel,
                     numInferenceSteps: config.numInferenceSteps,
-                    guidanceScale: config.guidanceScale
+                    guidanceScale: config.guidanceScale,
+                    numImages: numImages // NEW: Number of images to generate
                 })
             });
 
@@ -232,8 +252,16 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
             console.log('API Response:', data);
 
             if (data.success) {
-                setGenerationId(data.requestId); // Use the FAL requestId for polling
-                setGenerationMessage('Image generation started...');
+                // Store all generation request IDs for polling
+                const requestIds = data.generations.map(g => g.requestId);
+                const aiGenIds = data.generations.map(g => g.aiGenerationId);
+
+                setGenerationIds(requestIds);
+                setAiGenerationIds(aiGenIds);
+                setGenerationMessage(`Generating ${data.count} image(s)...`);
+
+                console.log('Generation IDs:', requestIds);
+                console.log('AI Generation DB IDs:', aiGenIds);
             } else {
                 throw new Error(data.message || 'Failed to start generation');
             }
@@ -298,7 +326,7 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
         }
     };
 
-    // Create Post
+    // Create Post with Multiple Images Support
     const handleCreatePost = async () => {
         // Validate based on post type
         if (postType === 'text' && !caption.trim() && filePreview !== 'text-generated') {
@@ -306,7 +334,7 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
             return;
         }
 
-        if ((postType === 'auto' || postType === 'image' || postType === 'upload-image') && !generatedImageUrl && !uploadedFile) {
+        if ((postType === 'auto' || postType === 'image' || postType === 'upload-image') && generatedImages.length === 0 && !generatedImageUrl && !uploadedFile) {
             setError('Please generate or upload an image');
             return;
         }
@@ -318,6 +346,7 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
 
         setIsPosting(true);
         setError(null);
+        setGenerationMessage('Uploading images to cloud storage...');
 
         try {
             // Use the access token from auth context
@@ -327,39 +356,47 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
 
             // Determine post category and type
             let category = 'text-post';
-            let type = 'user-generated';
+            let type = 'content';
+            const hasImages = generatedImages.length > 0 || generatedImageUrl || uploadedFile;
 
-            if (generatedImageUrl && generatedImageUrl !== 'text-generated') {
+            if (hasImages) {
                 category = caption.trim() ? 'image-text-post' : 'image-post';
-                type = 'ai-generated';
-            } else if (uploadedFile) {
-                const isVideo = uploadedFile.type.startsWith('video/');
-                category = caption.trim() ? (isVideo ? 'video-text-post' : 'image-text-post') : (isVideo ? 'video-post' : 'image-post');
-                type = 'user-generated';
+                type = generatedImages.length > 0 ? 'content' : 'content';
             } else if (filePreview === 'text-generated' || postType === 'text') {
                 category = 'text-post';
-                type = filePreview === 'text-generated' ? 'ai-generated' : 'user-generated';
+                type = 'content';
+            }
+
+            // Prepare image URLs array (for multiple images)
+            let imageUrls = [];
+            if (generatedImages.length > 0) {
+                imageUrls = generatedImages; // Use generated images
+            } else if (generatedImageUrl && generatedImageUrl !== 'text-generated') {
+                imageUrls = [generatedImageUrl]; // Legacy single image
             }
 
             const postData = {
-                caption: caption.trim(),
+                caption: caption.trim() || null,
+                title: null,
                 type,
                 category,
-                imageUrl: generatedImageUrl && generatedImageUrl !== 'text-generated' ? generatedImageUrl : null,
-                aiGenerated: !!(generatedImageUrl && generatedImageUrl !== 'text-generated') || filePreview === 'text-generated',
-                aiDetails: ((generatedImageUrl && generatedImageUrl !== 'text-generated') || filePreview === 'text-generated') ? {
+                imageUrls: imageUrls, // NEW: Send array of image URLs
+                aiGenerationIds: aiGenerationIds, // NEW: Link to AI Generation records
+                aiGenerated: imageUrls.length > 0,
+                aiDetails: imageUrls.length > 0 ? {
                     model: selectedModel,
-                    prompt,
-                    enhancedPrompt,
-                    style,
-                    aspectRatio,
-                    steps: 28,
-                    cost: getCost(),
-                    contentType: postType
+                    prompt: prompt.trim(),
+                    enhancedPrompt: enhancedPrompt || null,
+                    style: style || null,
+                    aspectRatio: aspectRatio || '16:9',
+                    steps: selectedModel === 'flux-schnell' ? 4 : 28
                 } : {},
-                visibility: 'public',
-                status: 'published'
+                tags: [],
+                visibility: 'public'
             };
+
+            console.log('Creating post with data:', postData);
+            setGenerationMessage('Creating post...');
 
             const response = await fetch(`${API_URL}/api/posts`, {
                 method: 'POST',
@@ -374,12 +411,14 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
 
             if (data.success) {
                 // Success! Close modal and refresh feed
-                alert('Post created successfully!');
-                handleCloseModal();
-                // Optionally trigger feed refresh
-                if (window.location.pathname === '/dashboard') {
-                    window.location.reload();
-                }
+                setSuccessMessage('🎉 Post created successfully!');
+                setTimeout(() => {
+                    handleCloseModal();
+                    // Optionally trigger feed refresh
+                    if (window.location.pathname === '/dashboard') {
+                        window.location.reload();
+                    }
+                }, 1500);
             } else {
                 throw new Error(data.message || 'Failed to create post');
             }
@@ -388,6 +427,7 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
             setError(error.message || 'Failed to create post');
         } finally {
             setIsPosting(false);
+            setGenerationMessage('');
         }
     };
 
@@ -723,6 +763,31 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
 
                                     {showAdvanced && (
                                         <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl animate-slideDown">
+                                            {/* Number of Images Selector */}
+                                            <div>
+                                                <label className="block text-xs cabin-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                    Number of Images (1-4)
+                                                </label>
+                                                <div className="grid grid-cols-4 gap-2">
+                                                    {[1, 2, 3, 4].map((count) => (
+                                                        <button
+                                                            key={count}
+                                                            onClick={() => setNumImages(count)}
+                                                            disabled={isGenerating}
+                                                            className={`py-2 px-3 rounded-lg text-sm cabin-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed ${numImages === count
+                                                                ? 'bg-purple-600 text-white shadow-md'
+                                                                : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+                                                                }`}
+                                                        >
+                                                            {count}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                    Generate multiple variations at once
+                                                </p>
+                                            </div>
+
                                             <div>
                                                 <label className="block text-xs cabin-medium text-gray-700 dark:text-gray-300 mb-2">
                                                     Aspect Ratio
@@ -831,8 +896,50 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
                                 </div>
                             )}
 
-                            {/* Generated Image Preview - Full Display */}
-                            {filePreview && filePreview !== 'text-generated' && !isGenerating && (
+                            {/* Generated Images Preview - Multiple Image Support */}
+                            {generatedImages.length > 0 && !isGenerating && (
+                                <div className="mb-4 group">
+                                    <div className="relative rounded-2xl overflow-hidden border-2 border-purple-500 dark:border-purple-600 shadow-2xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 p-4">
+                                        {/* Image Grid */}
+                                        <ImageGrid
+                                            images={generatedImages}
+                                            className="mb-4"
+                                            onImageClick={(idx) => window.open(generatedImages[idx], '_blank')}
+                                        />
+
+                                        {/* Info Bar */}
+                                        <div className="flex items-center justify-between p-3 bg-black/5 dark:bg-black/20 rounded-lg">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                                                    <Icon name="sparkles" className="w-4 h-4 text-white" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm cabin-semibold text-gray-900 dark:text-white">
+                                                        {generatedImages.length} Image{generatedImages.length > 1 ? 's' : ''} Generated
+                                                    </p>
+                                                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                                                        {aspectRatio} • {selectedModel === 'flux-schnell' ? 'FLUX Schnell' : 'FLUX SRPO'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => {
+                                                    setGeneratedImages([]);
+                                                    setGenerationIds([]);
+                                                    setAiGenerationIds([]);
+                                                }}
+                                                className="p-2 bg-red-500/90 hover:bg-red-600 text-white rounded-lg transition-all hover:scale-105 shadow-lg"
+                                                title="Clear all images"
+                                            >
+                                                <Icon name="trash-2" className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Legacy single image support (fallback) */}
+                            {filePreview && filePreview !== 'text-generated' && !isGenerating && generatedImages.length === 0 && (
                                 <div className="mb-4 group">
                                     <div className="relative rounded-2xl overflow-hidden border-2 border-purple-500 dark:border-purple-600 shadow-2xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800">
                                         {/* Image Container with proper aspect ratio */}
@@ -1264,8 +1371,9 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
                         )}
 
                         {/* Post Button - Always available when content is ready */}
-                        {((filePreview && filePreview !== 'text-generated') || // Image/video generated or uploaded
-                            (filePreview === 'text-generated') || // Text generated  
+                        {((generatedImages.length > 0) || // NEW: Multiple generated images
+                            (filePreview && filePreview !== 'text-generated') || // Image/video generated or uploaded
+                            (filePreview === 'text-generated') || // Text generated
                             (postType === 'text' && caption.trim()) || // Manual text post
                             uploadedFile) && // File uploaded
                             !isGenerating && (
@@ -1277,12 +1385,12 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
                                     {isPosting ? (
                                         <>
                                             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                            Posting...
+                                            <span>Uploading & Posting...</span>
                                         </>
                                     ) : (
                                         <>
                                             <Icon name="send" className="w-5 h-5" />
-                                            Post
+                                            <span>Post {generatedImages.length > 1 ? `${generatedImages.length} Images` : ''}</span>
                                         </>
                                     )}
                                 </button>
