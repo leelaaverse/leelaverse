@@ -1,16 +1,22 @@
 {
-  "name": "leelaverse-backend",
+  "name": "backend",
   "version": "1.0.0",
+  "description": "A scalable Node.js/Express backend API for the Leelaverse platform with JWT authentication, supabase integration, and comprehensive user management.",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
   "main": "app.js",
   "scripts": {
+    "dev": "node app.js",
     "start": "node app.js",
-    "dev": "nodemon app.js",
-    "build": "echo 'No build step required'",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:studio": "prisma studio",
+    "prisma:push": "prisma db push",
+    "prisma:seed": "node src/utils/seedUserCredits.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "ISC",
-  "description": "Leelaverse Backend API",
   "dependencies": {
     "@fal-ai/client": "^1.6.2",
     "@prisma/client": "^6.2.0",
@@ -31,7 +37,6 @@
     "passport-google-oauth20": "^2.0.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2",
     "prisma": "^6.2.0"
   }
 }
