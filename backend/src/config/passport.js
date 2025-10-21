@@ -1,17 +1,15 @@
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const User = require('../models/User');
+const prisma = require('../models');
 
 // Validate OAuth environment variables
 if (!process.env.GOOGLE_CLIENT_ID) {
 	console.error('❌ GOOGLE_CLIENT_ID environment variable is required');
-	console.error('Please add GOOGLE_CLIENT_ID to your Vercel environment variables');
 	process.exit(1);
 }
 
 if (!process.env.GOOGLE_CLIENT_SECRET) {
 	console.error('❌ GOOGLE_CLIENT_SECRET environment variable is required');
-	console.error('Please add GOOGLE_CLIENT_SECRET to your Vercel environment variables');
 	process.exit(1);
 }
 
@@ -31,8 +29,10 @@ passport.use(new GoogleStrategy({
 			givenName: profile.name?.givenName,
 			familyName: profile.name?.familyName,
 			name: profile.name
-		});		// Check if user already exists with this Google ID
-		let user = await User.findOne({ 'oauth.googleId': profile.id });
+		});
+
+		// Check if user already exists with this Google ID
+		let user = await prisma.user.findUnique({ where: { googleId: profile.id } });
 
 		if (user) {
 			console.log('🔄 Existing OAuth user found:', user.email);
@@ -41,14 +41,18 @@ passport.use(new GoogleStrategy({
 
 		// Check if user exists with the same email
 		const email = profile.emails[0]?.value;
-		user = await User.findOne({ email });
+		user = await prisma.user.findUnique({ where: { email } });
 
 		if (user) {
 			// Link Google account to existing user
 			console.log('🔗 Linking Google account to existing user:', user.email);
-			user.oauth.googleId = profile.id;
-			user.oauth.providers.push('google');
-			await user.save();
+			user = await prisma.user.update({
+				where: { id: user.id },
+				data: {
+					googleId: profile.id,
+					oauthProviders: user.oauthProviders ? [...user.oauthProviders, 'google'] : ['google'],
+				}
+			});
 			return done(null, user);
 		}
 
@@ -72,7 +76,9 @@ passport.use(new GoogleStrategy({
 
 		// Ensure we have non-empty names
 		if (!firstName.trim()) firstName = 'OAuth';
-		if (!lastName.trim()) lastName = 'User';		// Generate a unique username based on email or Google ID
+		if (!lastName.trim()) lastName = 'User';
+
+		// Generate a unique username based on email or Google ID
 		// Sanitize username to only contain letters, numbers, and underscores
 		let baseUsername = email ? email.split('@')[0] : `user${profile.id}`;
 		// Replace dots, hyphens, and other special characters with underscores
@@ -87,32 +93,29 @@ passport.use(new GoogleStrategy({
 		let username = baseUsername;
 
 		// Ensure username is unique
-		let usernameExists = await User.findOne({ username });
+		let usernameExists = await prisma.user.findUnique({ where: { username } });
 		let counter = 1;
 		while (usernameExists) {
 			username = `${baseUsername}${counter}`;
-			usernameExists = await User.findOne({ username });
+			usernameExists = await prisma.user.findUnique({ where: { username } });
 			counter++;
 		}
 
-		user = new User({
-			username,
-			email: email || `${profile.id}@google.oauth`,
-			firstName,
-			lastName,
-			oauth: {
+		user = await prisma.user.create({
+			data: {
+				username,
+				email: email || `${profile.id}@google.oauth`,
+				firstName,
+				lastName,
 				googleId: profile.id,
-				providers: ['google']
-			},
-			profile: {
+				oauthProviders: ['google'],
 				avatar: profile.photos[0]?.value || '',
-				bio: 'Joined via Google OAuth'
-			},
-			isEmailVerified: true, // Google emails are pre-verified
-			password: undefined // No password for OAuth users
+				bio: 'Joined via Google OAuth',
+				isEmailVerified: true,
+				password: null
+			}
 		});
 
-		await user.save();
 		console.log('✅ New OAuth user created:', user.email);
 
 		return done(null, user);
@@ -124,13 +127,13 @@ passport.use(new GoogleStrategy({
 
 // Serialize user for session
 passport.serializeUser((user, done) => {
-	done(null, user._id);
+	done(null, user.id);
 });
 
 // Deserialize user from session
 passport.deserializeUser(async (id, done) => {
 	try {
-		const user = await User.findById(id);
+		const user = await prisma.user.findUnique({ where: { id } });
 		done(null, user);
 	} catch (error) {
 		done(error, null);

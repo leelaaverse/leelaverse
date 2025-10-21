@@ -1,8 +1,7 @@
-const { Post, User, AIGeneration, CoinTransaction } = require('../models');
+const prisma = require('../models');
 const { fal } = require("@fal-ai/client");
 const cloudinary = require('cloudinary').v2;
 const axios = require('axios');
-const mongoose = require('mongoose');
 
 // Configure Cloudinary
 cloudinary.config({
@@ -22,9 +21,8 @@ fal.config({
  */
 exports.generateImage = async (req, res) => {
 	try {
-		// Create a test user ID that's a valid ObjectId for development
-		const testUserId = new mongoose.Types.ObjectId('507f1f77bcf86cd799439011');
-		const userId = req.user?.id || req.user?._id || testUserId;
+		// Use authenticated user ID or default test ID
+		const userId = req.user?.id || 'test-user-id';
 
 		const {
 			prompt,
@@ -263,8 +261,7 @@ exports.getGenerationResult = async (req, res) => {
  */
 exports.createPostFromGeneration = async (req, res) => {
 	try {
-		const testUserId = new mongoose.Types.ObjectId('507f1f77bcf86cd799439011');
-		const userId = req.user?.id || req.user?._id || testUserId;
+		const userId = req.user?.id || 'test-user-id';
 
 		const {
 			requestId,
@@ -286,7 +283,9 @@ exports.createPostFromGeneration = async (req, res) => {
 		}
 
 		// Find the AI Generation record
-		const aiGeneration = await AIGeneration.findOne({ falRequestId: requestId });
+		const aiGeneration = await prisma.aIGeneration.findFirst({
+			where: { falRequestId: requestId }
+		});
 		if (!aiGeneration) {
 			return res.status(404).json({
 				success: false,
@@ -397,8 +396,7 @@ async function uploadToCloudinary(imageUrl, userId) {
  */
 exports.createPost = async (req, res) => {
 	try {
-		const testUserId = new mongoose.Types.ObjectId('507f1f77bcf86cd799439011');
-		const userId = req.user?.id || req.user?._id || testUserId;
+		const userId = req.user?.id || 'test-user-id';
 		const {
 			caption,
 			title,

@@ -1,10 +1,9 @@
 /**
- * Database Helper Utilities
+ * Database Helper Utilities for Prisma
  * Common operations for maintaining data consistency
  */
 
-const { User, Post, Comment, Like, Follow, Save } = require('../models');
-const mongoose = require('mongoose');
+const prisma = require('../config/prisma');
 
 /**
  * Update user statistics
@@ -14,100 +13,48 @@ const updateUserStats = {
 	 * Increment user's post count
 	 */
 	async incrementPostCount(userId, value = 1) {
-		return await User.findByIdAndUpdate(
-			userId,
-			{ $inc: { 'stats.postsCount': value } },
-			{ new: true }
-		);
-	},
-
-	/**
-	 * Increment user's follower count
-	 */
-	async incrementFollowerCount(userId, value = 1) {
-		return await User.findByIdAndUpdate(
-			userId,
-			{ $inc: { 'stats.followersCount': value } },
-			{ new: true }
-		);
-	},
-
-	/**
-	 * Increment user's following count
-	 */
-	async incrementFollowingCount(userId, value = 1) {
-		return await User.findByIdAndUpdate(
-			userId,
-			{ $inc: { 'stats.followingCount': value } },
-			{ new: true }
-		);
-	},
-
-	/**
-	 * Increment user's likes received count
-	 */
-	async incrementLikesReceivedCount(userId, value = 1) {
-		return await User.findByIdAndUpdate(
-			userId,
-			{ $inc: { 'stats.likesReceivedCount': value } },
-			{ new: true }
-		);
+		return await prisma.user.update({
+			where: { id: userId },
+			data: {
+				totalCreations: {
+					increment: value
+				}
+			}
+		});
 	},
 
 	/**
 	 * Recalculate all stats for a user
 	 */
 	async recalculateUserStats(userId) {
-		const session = await mongoose.startSession();
-		session.startTransaction();
-
-		try {
-			const postsCount = await Post.countDocuments({
-				author: userId,
-				deletedAt: null
-			});
-
-			const followersCount = await Follow.countDocuments({
-				following: userId
-			});
-
-			const followingCount = await Follow.countDocuments({
-				follower: userId
-			});
-
-			// Count likes on user's posts
-			const posts = await Post.find({
-				author: userId,
-				deletedAt: null
-			}).select('_id');
-
-			const postIds = posts.map(p => p._id);
-			const likesReceivedCount = await Like.countDocuments({
-				targetModel: 'Post',
-				targetId: { $in: postIds }
-			});
-
-			await User.findByIdAndUpdate(
-				userId,
-				{
-					$set: {
-						'stats.postsCount': postsCount,
-						'stats.followersCount': followersCount,
-						'stats.followingCount': followingCount,
-						'stats.likesReceivedCount': likesReceivedCount
-					}
+		const [postsCount, followersCount, followingCount, totalEarnings] = await Promise.all([
+			prisma.post.count({
+				where: { authorId: userId }
+			}),
+			prisma.follow.count({
+				where: { followingId: userId }
+			}),
+			prisma.follow.count({
+				where: { followerId: userId }
+			}),
+			prisma.coinTransaction.aggregate({
+				where: {
+					userId,
+					type: 'earn'
 				},
-				{ session }
-			);
+				_sum: {
+					amount: true
+				}
+			})
+		]);
 
-			await session.commitTransaction();
-			return { postsCount, followersCount, followingCount, likesReceivedCount };
-		} catch (error) {
-			await session.abortTransaction();
-			throw error;
-		} finally {
-			session.endSession();
-		}
+		return await prisma.user.update({
+			where: { id: userId },
+			data: {
+				totalCreations: postsCount,
+				totalEarnings: totalEarnings._sum.amount || 0
+			}
+		});
 	}
 };
 
@@ -118,352 +65,513 @@ const updatePostStats = {
 	/**
 	 * Increment post's like count
 	 */
-	async incrementLikes(postId, value = 1) {
-		return await Post.findByIdAndUpdate(
-			postId,
-			{ $inc: { 'stats.likes': value } },
-			{ new: true }
-		);
+	async incrementLikeCount(postId, value = 1) {
+		return await prisma.post.update({
+			where: { id: postId },
+			data: {
+				likesCount: {
+					increment: value
+				}
+			}
+		});
 	},
 
 	/**
 	 * Increment post's comment count
 	 */
-	async incrementComments(postId, value = 1) {
-		return await Post.findByIdAndUpdate(
-			postId,
-			{ $inc: { 'stats.comments': value } },
-			{ new: true }
-		);
+	async incrementCommentCount(postId, value = 1) {
+		return await prisma.post.update({
+			where: { id: postId },
+			data: {
+				commentsCount: {
+					increment: value
+				}
+			}
+		});
 	},
 
 	/**
 	 * Increment post's share count
 	 */
-	async incrementShares(postId, value = 1) {
-		return await Post.findByIdAndUpdate(
-			postId,
-			{ $inc: { 'stats.shares': value } },
-			{ new: true }
-		);
+	async incrementShareCount(postId, value = 1) {
+		return await prisma.post.update({
+			where: { id: postId },
+			data: {
+				sharesCount: {
+					increment: value
+				}
+			}
+		});
 	},
 
 	/**
 	 * Increment post's save count
 	 */
-	async incrementSaves(postId, value = 1) {
-		return await Post.findByIdAndUpdate(
-			postId,
-			{ $inc: { 'stats.saves': value } },
-			{ new: true }
-		);
+	async incrementSaveCount(postId, value = 1) {
+		return await prisma.post.update({
+			where: { id: postId },
+			data: {
+				savesCount: {
+					increment: value
+				}
+			}
+		});
 	},
 
 	/**
 	 * Increment post's view count
 	 */
-	async incrementViews(postId, value = 1) {
-		return await Post.findByIdAndUpdate(
-			postId,
-			{ $inc: { 'stats.views': value } },
-			{ new: true }
-		);
+	async incrementViewCount(postId, value = 1) {
+		return await prisma.post.update({
+			where: { id: postId },
+			data: {
+				viewsCount: {
+					increment: value
+				}
+			}
+		});
 	},
 
 	/**
 	 * Recalculate all stats for a post
 	 */
 	async recalculatePostStats(postId) {
-		const likes = await Like.countDocuments({
-			targetModel: 'Post',
-			targetId: postId
-		});
+		const [likesCount, commentsCount, savesCount] = await Promise.all([
+			prisma.like.count({
+				where: { postId }
+			}),
+			prisma.comment.count({
+				where: { postId }
+			}),
+			prisma.save.count({
+				where: { postId }
+			})
+		]);
 
-		const comments = await Comment.countDocuments({
-			post: postId,
-			deletedAt: null
+		return await prisma.post.update({
+			where: { id: postId },
+			data: {
+				likesCount,
+				commentsCount,
+				savesCount
+			}
 		});
-
-		const saves = await Save.countDocuments({
-			post: postId
-		});
-
-		return await Post.findByIdAndUpdate(
-			postId,
-			{
-				$set: {
-					'stats.likes': likes,
-					'stats.comments': comments,
-					'stats.saves': saves
-				}
-			},
-			{ new: true }
-		);
 	}
 };
 
 /**
- * Like/Unlike operations with transaction
+ * Update comment statistics
  */
-const likeOperations = {
+const updateCommentStats = {
 	/**
-	 * Like a post or comment
+	 * Increment comment's like count
 	 */
-	async likeTarget(userId, targetModel, targetId) {
-		const session = await mongoose.startSession();
-		session.startTransaction();
-
-		try {
-			// Check if already liked
-			const existingLike = await Like.findOne({
-				user: userId,
-				targetModel,
-				targetId
-			});
-
-			if (existingLike) {
-				throw new Error('Already liked');
-			}
-
-			// Create like
-			await Like.create([{ user: userId, targetModel, targetId }], { session });
-
-			// Update stats
-			if (targetModel === 'Post') {
-				await Post.findByIdAndUpdate(
-					targetId,
-					{ $inc: { 'stats.likes': 1 } },
-					{ session }
-				);
-
-				// Update author's likes received count
-				const post = await Post.findById(targetId).session(session);
-				if (post) {
-					await User.findByIdAndUpdate(
-						post.author,
-						{ $inc: { 'stats.likesReceivedCount': 1 } },
-						{ session }
-					);
+	async incrementLikeCount(commentId, value = 1) {
+		return await prisma.comment.update({
+			where: { id: commentId },
+			data: {
+				likesCount: {
+					increment: value
 				}
-			} else if (targetModel === 'Comment') {
-				await Comment.findByIdAndUpdate(
-					targetId,
-					{ $inc: { likes: 1 } },
-					{ session }
-				);
 			}
-
-			await session.commitTransaction();
-			return { success: true };
-		} catch (error) {
-			await session.abortTransaction();
-			throw error;
-		} finally {
-			session.endSession();
-		}
+		});
 	},
 
 	/**
-	 * Unlike a post or comment
+	 * Increment comment's reply count
 	 */
-	async unlikeTarget(userId, targetModel, targetId) {
-		const session = await mongoose.startSession();
-		session.startTransaction();
-
-		try {
-			// Remove like
-			const like = await Like.findOneAndDelete({
-				user: userId,
-				targetModel,
-				targetId
-			}).session(session);
-
-			if (!like) {
-				throw new Error('Like not found');
-			}
-
-			// Update stats
-			if (targetModel === 'Post') {
-				await Post.findByIdAndUpdate(
-					targetId,
-					{ $inc: { 'stats.likes': -1 } },
-					{ session }
-				);
-
-				// Update author's likes received count
-				const post = await Post.findById(targetId).session(session);
-				if (post) {
-					await User.findByIdAndUpdate(
-						post.author,
-						{ $inc: { 'stats.likesReceivedCount': -1 } },
-						{ session }
-					);
+	async incrementReplyCount(commentId, value = 1) {
+		return await prisma.comment.update({
+			where: { id: commentId },
+			data: {
+				repliesCount: {
+					increment: value
 				}
-			} else if (targetModel === 'Comment') {
-				await Comment.findByIdAndUpdate(
-					targetId,
-					{ $inc: { likes: -1 } },
-					{ session }
-				);
 			}
+		});
+	},
 
-			await session.commitTransaction();
-			return { success: true };
-		} catch (error) {
-			await session.abortTransaction();
-			throw error;
-		} finally {
-			session.endSession();
-		}
+	/**
+	 * Recalculate all stats for a comment
+	 */
+	async recalculateCommentStats(commentId) {
+		const [likesCount, repliesCount] = await Promise.all([
+			prisma.like.count({
+				where: { commentId }
+			}),
+			prisma.comment.count({
+				where: { parentCommentId: commentId }
+			})
+		]);
+
+		return await prisma.comment.update({
+			where: { id: commentId },
+			data: {
+				likesCount,
+				repliesCount
+			}
+		});
 	}
 };
 
 /**
- * Follow/Unfollow operations with transaction
+ * Coin transaction helpers
  */
-const followOperations = {
+const coinHelpers = {
+	/**
+	 * Award coins to a user with transaction
+	 */
+	async awardCoins(userId, amount, description, relatedEntityId = null, relatedEntityType = null) {
+		return await prisma.$transaction(async (tx) => {
+			// Get current user
+			const user = await tx.user.findUnique({
+				where: { id: userId },
+				select: { coinBalance: true }
+			});
+
+			const newBalance = user.coinBalance + amount;
+
+			// Update user balance
+			await tx.user.update({
+				where: { id: userId },
+				data: {
+					coinBalance: newBalance,
+					totalCoinsEarned: {
+						increment: amount
+					}
+				}
+			});
+
+			// Create transaction record
+			const transactionData = {
+				userId,
+				type: 'earn',
+				amount,
+				balanceAfter: newBalance,
+				description,
+				status: 'completed'
+			};
+
+			if (relatedEntityType === 'post' && relatedEntityId) {
+				transactionData.postId = relatedEntityId;
+			} else if (relatedEntityType === 'aiGeneration' && relatedEntityId) {
+				transactionData.aiGenerationId = relatedEntityId;
+			}
+
+			const transaction = await tx.coinTransaction.create({
+				data: transactionData
+			});
+
+			return { user, transaction };
+		});
+	},
+
+	/**
+	 * Deduct coins from a user with transaction
+	 */
+	async deductCoins(userId, amount, description, relatedEntityId = null, relatedEntityType = null) {
+		return await prisma.$transaction(async (tx) => {
+			// Get current user
+			const user = await tx.user.findUnique({
+				where: { id: userId },
+				select: { coinBalance: true }
+			});
+
+			if (user.coinBalance < amount) {
+				throw new Error('Insufficient coin balance');
+			}
+
+			const newBalance = user.coinBalance - amount;
+
+			// Update user balance
+			await tx.user.update({
+				where: { id: userId },
+				data: {
+					coinBalance: newBalance,
+					totalCoinsSpent: {
+						increment: amount
+					}
+				}
+			});
+
+			// Create transaction record
+			const transactionData = {
+				userId,
+				type: 'spend',
+				amount,
+				balanceAfter: newBalance,
+				description,
+				status: 'completed'
+			};
+
+			if (relatedEntityType === 'post' && relatedEntityId) {
+				transactionData.postId = relatedEntityId;
+			} else if (relatedEntityType === 'aiGeneration' && relatedEntityId) {
+				transactionData.aiGenerationId = relatedEntityId;
+			}
+
+			const transaction = await tx.coinTransaction.create({
+				data: transactionData
+			});
+
+			return { user, transaction };
+		});
+	},
+
+	/**
+	 * Get user's coin balance
+	 */
+	async getBalance(userId) {
+		const user = await prisma.user.findUnique({
+			where: { id: userId },
+			select: {
+				coinBalance: true,
+				totalCoinsEarned: true,
+				totalCoinsSpent: true
+			}
+		});
+
+		return user;
+	},
+
+	/**
+	 * Get user's transaction history
+	 */
+	async getTransactionHistory(userId, limit = 50, offset = 0) {
+		return await prisma.coinTransaction.findMany({
+			where: { userId },
+			orderBy: { createdAt: 'desc' },
+			take: limit,
+			skip: offset,
+			include: {
+				post: {
+					select: {
+						id: true,
+						type: true,
+						caption: true
+					}
+				},
+				aiGeneration: {
+					select: {
+						id: true,
+						type: true,
+						model: true
+					}
+				}
+			}
+		});
+	}
+};
+
+/**
+ * Follow/Unfollow helpers
+ */
+const followHelpers = {
 	/**
 	 * Follow a user
 	 */
 	async followUser(followerId, followingId) {
-		const session = await mongoose.startSession();
-		session.startTransaction();
-
-		try {
-			// Check if already following
-			const existingFollow = await Follow.findOne({
-				follower: followerId,
-				following: followingId
-			});
-
-			if (existingFollow) {
-				throw new Error('Already following');
+		// Check if already following
+		const existing = await prisma.follow.findUnique({
+			where: {
+				followerId_followingId: {
+					followerId,
+					followingId
+				}
 			}
+		});
 
-			// Create follow
-			await Follow.create([{
-				follower: followerId,
-				following: followingId
-			}], { session });
-
-			// Update stats
-			await User.findByIdAndUpdate(
-				followerId,
-				{ $inc: { 'stats.followingCount': 1 } },
-				{ session }
-			);
-
-			await User.findByIdAndUpdate(
-				followingId,
-				{ $inc: { 'stats.followersCount': 1 } },
-				{ session }
-			);
-
-			await session.commitTransaction();
-			return { success: true };
-		} catch (error) {
-			await session.abortTransaction();
-			throw error;
-		} finally {
-			session.endSession();
+		if (existing) {
+			throw new Error('Already following this user');
 		}
+
+		// Create follow relationship
+		return await prisma.follow.create({
+			data: {
+				followerId,
+				followingId
+			}
+		});
 	},
 
 	/**
 	 * Unfollow a user
 	 */
 	async unfollowUser(followerId, followingId) {
-		const session = await mongoose.startSession();
-		session.startTransaction();
-
-		try {
-			// Remove follow
-			const follow = await Follow.findOneAndDelete({
-				follower: followerId,
-				following: followingId
-			}).session(session);
-
-			if (!follow) {
-				throw new Error('Not following');
+		return await prisma.follow.delete({
+			where: {
+				followerId_followingId: {
+					followerId,
+					followingId
+				}
 			}
+		});
+	},
 
-			// Update stats
-			await User.findByIdAndUpdate(
-				followerId,
-				{ $inc: { 'stats.followingCount': -1 } },
-				{ session }
-			);
+	/**
+	 * Check if user is following another user
+	 */
+	async isFollowing(followerId, followingId) {
+		const follow = await prisma.follow.findUnique({
+			where: {
+				followerId_followingId: {
+					followerId,
+					followingId
+				}
+			}
+		});
 
-			await User.findByIdAndUpdate(
-				followingId,
-				{ $inc: { 'stats.followersCount': -1 } },
-				{ session }
-			);
+		return !!follow;
+	},
 
-			await session.commitTransaction();
-			return { success: true };
-		} catch (error) {
-			await session.abortTransaction();
-			throw error;
-		} finally {
-			session.endSession();
-		}
+	/**
+	 * Get followers
+	 */
+	async getFollowers(userId, limit = 50, offset = 0) {
+		return await prisma.follow.findMany({
+			where: { followingId: userId },
+			take: limit,
+			skip: offset,
+			include: {
+				follower: {
+					select: {
+						id: true,
+						username: true,
+						firstName: true,
+						lastName: true,
+						avatar: true,
+						bio: true
+					}
+				}
+			},
+			orderBy: { createdAt: 'desc' }
+		});
+	},
+
+	/**
+	 * Get following
+	 */
+	async getFollowing(userId, limit = 50, offset = 0) {
+		return await prisma.follow.findMany({
+			where: { followerId: userId },
+			take: limit,
+			skip: offset,
+			include: {
+				following: {
+					select: {
+						id: true,
+						username: true,
+						firstName: true,
+						lastName: true,
+						avatar: true,
+						bio: true
+					}
+				}
+			},
+			orderBy: { createdAt: 'desc' }
+		});
 	}
 };
 
 /**
- * Soft delete operations
+ * Notification helpers
  */
-const softDelete = {
+const notificationHelpers = {
 	/**
-	 * Soft delete a post
+	 * Create a notification
 	 */
-	async deletePost(postId, userId) {
-		const post = await Post.findOne({ _id: postId, author: userId });
-
-		if (!post) {
-			throw new Error('Post not found or unauthorized');
-		}
-
-		post.deletedAt = new Date();
-		await post.save();
-
-		// Decrement user's post count
-		await User.findByIdAndUpdate(
-			userId,
-			{ $inc: { 'stats.postsCount': -1 } }
-		);
-
-		return post;
+	async createNotification(data) {
+		return await prisma.notification.create({
+			data
+		});
 	},
 
 	/**
-	 * Restore a soft-deleted post
+	 * Mark notification as read
 	 */
-	async restorePost(postId, userId) {
-		const post = await Post.findOne({ _id: postId, author: userId });
+	async markAsRead(notificationId) {
+		return await prisma.notification.update({
+			where: { id: notificationId },
+			data: {
+				isRead: true,
+				readAt: new Date()
+			}
+		});
+	},
 
-		if (!post) {
-			throw new Error('Post not found or unauthorized');
+	/**
+	 * Mark all user notifications as read
+	 */
+	async markAllAsRead(userId) {
+		return await prisma.notification.updateMany({
+			where: {
+				recipientId: userId,
+				isRead: false
+			},
+			data: {
+				isRead: true,
+				readAt: new Date()
+			}
+		});
+	},
+
+	/**
+	 * Get user notifications
+	 */
+	async getUserNotifications(userId, limit = 50, offset = 0, unreadOnly = false) {
+		const where = {
+			recipientId: userId
+		};
+
+		if (unreadOnly) {
+			where.isRead = false;
 		}
 
-		post.deletedAt = null;
-		await post.save();
+		return await prisma.notification.findMany({
+			where,
+			take: limit,
+			skip: offset,
+			orderBy: { createdAt: 'desc' },
+			include: {
+				sender: {
+					select: {
+						id: true,
+						username: true,
+						firstName: true,
+						lastName: true,
+						avatar: true
+					}
+				},
+				post: {
+					select: {
+						id: true,
+						type: true,
+						caption: true,
+						mediaUrl: true
+					}
+				}
+			}
+		});
+	},
 
-		// Increment user's post count
-		await User.findByIdAndUpdate(
-			userId,
-			{ $inc: { 'stats.postsCount': 1 } }
-		);
-
-		return post;
+	/**
+	 * Get unread notification count
+	 */
+	async getUnreadCount(userId) {
+		return await prisma.notification.count({
+			where: {
+				recipientId: userId,
+				isRead: false
+			}
+		});
 	}
 };
 
 module.exports = {
 	updateUserStats,
 	updatePostStats,
-	likeOperations,
-	followOperations,
-	softDelete
+	updateCommentStats,
+	coinHelpers,
+	followHelpers,
+	notificationHelpers
 };

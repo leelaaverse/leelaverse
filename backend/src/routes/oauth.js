@@ -1,6 +1,7 @@
 const express = require('express');
 const passport = require('../config/passport');
-const User = require('../models/User');
+const prisma = require('../models');
+const UserService = require('../services/UserService');
 const jwt = require('jsonwebtoken');
 
 const router = express.Router();
@@ -23,27 +24,23 @@ router.get('/google/callback',
 			console.log('🎉 OAuth callback successful for user:', user.email);
 
 			// Generate JWT tokens
-			const accessToken = user.generateAccessToken();
-			const refreshToken = user.generateRefreshToken();
+			const accessToken = UserService.generateAccessToken(user.id);
+			const refreshToken = UserService.generateRefreshToken(user.id);
 
-			// Add refresh token to user's tokens array
-			user.refreshTokens.push({
-				token: refreshToken,
-				createdAt: new Date()
-			});
-			await user.save();
+			// Store refresh token
+			await UserService.storeRefreshToken(user.id, refreshToken);
 
 			// Determine redirect URL based on environment
 			const frontendURL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 			// Create success redirect with tokens as query parameters
 			const redirectURL = `${frontendURL}/auth/callback?success=true&access_token=${accessToken}&refresh_token=${refreshToken}&user=${encodeURIComponent(JSON.stringify({
-				id: user._id,
+				id: user.id,
 				email: user.email,
 				username: user.username,
 				firstName: user.firstName,
 				lastName: user.lastName,
-				avatar: user.profile?.avatar || user.avatar
+				avatar: user.avatar
 			}))}`;
 
 			console.log('🔄 Redirecting to:', frontendURL);
@@ -71,7 +68,9 @@ router.post('/verify-oauth-token', async (req, res) => {
 
 		// Verify the JWT token
 		const decoded = jwt.verify(access_token, process.env.JWT_SECRET);
-		const user = await User.findById(decoded.userId);
+		const user = await prisma.user.findUnique({
+			where: { id: decoded.id }
+		});
 
 		if (!user) {
 			return res.status(404).json({
@@ -81,9 +80,7 @@ router.post('/verify-oauth-token', async (req, res) => {
 		}
 
 		// Remove sensitive information
-		const userResponse = user.toObject();
-		delete userResponse.password;
-		delete userResponse.refreshTokens;
+		const { password, ...userResponse } = user;
 
 		res.json({
 			success: true,
@@ -118,14 +115,15 @@ router.post('/logout-oauth', async (req, res) => {
 
 		const accessToken = authHeader.substring(7);
 		const decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
-		const user = await User.findById(decoded.userId);
 
-		if (user && refresh_token) {
-			// Remove specific refresh token
-			user.refreshTokens = user.refreshTokens.filter(
-				tokenObj => tokenObj.token !== refresh_token
-			);
-			await user.save();
+		if (refresh_token) {
+			// Delete the specific refresh token
+			await prisma.refreshToken.deleteMany({
+				where: {
+					userId: decoded.id,
+					token: refresh_token
+				}
+			});
 		}
 
 		res.json({
