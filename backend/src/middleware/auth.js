@@ -105,16 +105,8 @@ const verifyRefreshToken = async (req, res, next) => {
 
         const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || 'mock-refresh-secret');
 
-        // Mock mode when database is not available
-        const mongoose = require('mongoose');
-        if (mongoose.connection.readyState !== 1) {
-            console.log('🔐 Using mock refresh token verification');
-            req.user = decoded; // Use the JWT payload directly
-            req.refreshToken = refreshToken;
-            return next();
-        }
-
-        const user = await User.findById(decoded.userId);
+        // Find the user by ID from the decoded token
+        const user = await UserService.findById(decoded.id);
 
         if (!user) {
             return res.status(401).json({
@@ -123,10 +115,8 @@ const verifyRefreshToken = async (req, res, next) => {
             });
         }
 
-        // Check if refresh token exists in user's tokens array
-        const tokenExists = user.refreshTokens.some(
-            tokenObj => tokenObj.token === refreshToken
-        );
+        // Check if refresh token exists in database
+        const tokenExists = await UserService.findRefreshToken(refreshToken);
 
         if (!tokenExists) {
             return res.status(401).json({
@@ -169,7 +159,7 @@ const optionalAuth = async (req, res, next) => {
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findById(decoded.userId);
+        const user = await UserService.findById(decoded.id);
 
         if (user && user.isActive && !user.isBanned) {
             req.user = user;
