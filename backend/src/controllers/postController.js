@@ -21,8 +21,8 @@ fal.config({
  */
 exports.generateImage = async (req, res) => {
 	try {
-		// Use authenticated user ID or default test ID
-		const userId = req.user?.id || 'test-user-id';
+		// Use authenticated user ID or fallback to existing user
+		const userId = req.user?.id || 'cmh0b61s30000oadwipl47rkk'; // mainikhilhun
 
 		const {
 			prompt,
@@ -31,7 +31,8 @@ exports.generateImage = async (req, res) => {
 			guidanceScale,
 			style,
 			aspectRatio,
-			selectedModel
+			selectedModel,
+			numImages = 1 // Number of images to generate (1-4)
 		} = req.body;
 
 		// Validate prompt
@@ -41,6 +42,11 @@ exports.generateImage = async (req, res) => {
 				message: 'Prompt is required'
 			});
 		}
+
+		// Validate numImages
+		const imageCount = Math.min(Math.max(parseInt(numImages) || 1, 1), 4);
+		console.log(`Generating ${imageCount} image(s)`);
+
 
 		// Map image size to FAL format
 		const sizeMap = {
@@ -105,37 +111,47 @@ exports.generateImage = async (req, res) => {
 			inputParams.acceleration = 'regular';
 		}
 
-		// Submit request to FAL AI Queue to get request_id
-		const { request_id } = await fal.queue.submit(falModel, {
-			input: inputParams
-		});
+		// Generate multiple images by submitting multiple requests
+		const generations = [];
 
-		// Create AI Generation record with FAL request_id
-		const aiGeneration = await AIGeneration.create({
-			user: userId,
-			type: 'image',
-			model: modelName,
-			prompt: prompt.trim(), // Store exact user prompt
-			parameters: {
-				style: style || '',
-				aspectRatio: aspectRatio || '16:9',
-				steps: finalSteps,
-				quality: guidanceScale || defaultGuidance
-			},
-			status: 'processing',
-			falRequestId: request_id
-		});
+		for (let i = 0; i < imageCount; i++) {
+			// Submit request to FAL AI Queue to get request_id
+			const { request_id } = await fal.queue.submit(falModel, {
+				input: inputParams
+			});
 
-		console.log('Created AI Generation record:', aiGeneration._id);
-		console.log('FAL Request ID:', request_id);
+			// Create AI Generation record with FAL request_id using Prisma
+			const aiGeneration = await prisma.aIGeneration.create({
+				data: {
+					userId: userId,
+					type: 'image',
+					model: modelName,
+					prompt: prompt.trim(),
+					style: style || null,
+					aspectRatio: aspectRatio || '16:9',
+					steps: finalSteps,
+					quality: (guidanceScale || defaultGuidance).toString(),
+					status: 'processing',
+					falRequestId: request_id
+				}
+			});
 
-		// Return the FAL request_id for tracking
+			console.log(`Created AI Generation record ${i + 1}/${imageCount}:`, aiGeneration.id);
+			console.log('FAL Request ID:', request_id);
+
+			generations.push({
+				requestId: request_id,
+				aiGenerationId: aiGeneration.id
+			});
+		}
+
+		// Return array of request IDs for tracking
 		res.json({
 			success: true,
-			message: 'Image generation started',
-			requestId: request_id, // This is the FAL request_id
-			aiGenerationId: aiGeneration._id,
-			estimatedTime: '15-30 seconds'
+			message: `${imageCount} image generation(s) started`,
+			generations: generations,
+			count: imageCount,
+			estimatedTime: '15-30 seconds per image'
 		});
 
 	} catch (error) {
@@ -159,8 +175,7 @@ exports.getGenerationResult = async (req, res) => {
 		console.log('Checking generation status for request:', requestId);
 
 		// Find the AI Generation record to determine which model was used
-		const aiGeneration = await AIGeneration.findOne({ falRequestId: requestId });
-
+		const aiGeneration = await prisma.aIGeneration.findFirst({ where: { falRequestId: requestId } });
 		if (!aiGeneration) {
 			return res.status(404).json({
 				success: false,
@@ -196,14 +211,14 @@ exports.getGenerationResult = async (req, res) => {
 			console.log('Result data:', result.data);
 
 			// Update AI Generation record
-			await AIGeneration.findOneAndUpdate(
-				{ falRequestId: requestId },
-				{
+			await prisma.aIGeneration.updateMany({
+				where: { falRequestId: requestId },
+				data: {
 					resultUrl: result.data.images[0]?.url,
 					status: 'completed',
-					'parameters.seed': result.data.seed?.toString()
+					seed: result.data.seed?.toString()
 				}
-			);
+			});
 
 			return res.json({
 				success: true,
@@ -218,13 +233,13 @@ exports.getGenerationResult = async (req, res) => {
 
 		// If failed
 		if (status.status === "FAILED") {
-			await AIGeneration.findOneAndUpdate(
-				{ falRequestId: requestId },
-				{
+			await prisma.aIGeneration.updateMany({
+				where: { falRequestId: requestId },
+				data: {
 					status: 'failed',
 					errorMessage: 'Generation failed'
 				}
-			);
+			});
 
 			return res.json({
 				success: false,
@@ -256,95 +271,85 @@ exports.getGenerationResult = async (req, res) => {
 };
 
 /**
- * Create Post from Generated Image
+ * Create Post from Generated Images (Multiple Support)
  * POST /api/posts/create-from-generation
  */
 exports.createPostFromGeneration = async (req, res) => {
 	try {
-		const userId = req.user?.id || 'test-user-id';
+		// Use authenticated user ID or fallback to existing user
+		const userId = req.user?.id || 'cmh0b61s30000oadwipl47rkk'; // mainikhilhun
 
 		const {
-			requestId,
+			aiGenerationIds = [], // Array of AI generation IDs
 			caption,
 			title,
 			type = 'content',
 			category = 'image-post',
 			tags = [],
-			visibility = 'public',
-			status = 'published'
+			visibility = 'public'
 		} = req.body;
 
 		// Validate required fields
-		if (!requestId) {
+		if (!aiGenerationIds || aiGenerationIds.length === 0) {
 			return res.status(400).json({
 				success: false,
-				message: 'Request ID is required'
+				message: 'At least one AI generation ID is required'
 			});
 		}
 
-		// Find the AI Generation record
-		const aiGeneration = await prisma.aIGeneration.findFirst({
-			where: { falRequestId: requestId }
+		console.log(`Creating post from ${aiGenerationIds.length} AI generation(s)`);
+
+		// Find all AI Generation records
+		const aiGenerations = await prisma.aIGeneration.findMany({
+			where: {
+				id: { in: aiGenerationIds },
+				userId: userId
+			}
 		});
-		if (!aiGeneration) {
+
+		if (aiGenerations.length === 0) {
 			return res.status(404).json({
 				success: false,
-				message: 'Generation not found'
+				message: 'No generations found'
 			});
 		}
 
-		if (aiGeneration.status !== 'completed' || !aiGeneration.resultUrl) {
+		// Check if all generations are completed
+		const incompleteGens = aiGenerations.filter(g => g.status !== 'completed' || !g.resultUrl);
+		if (incompleteGens.length > 0) {
 			return res.status(400).json({
 				success: false,
-				message: 'Generation is not completed or has no result'
+				message: `${incompleteGens.length} generation(s) are not completed or have no result`
 			});
 		}
 
-		// Upload image to Cloudinary
-		const uploadResult = await uploadToCloudinary(aiGeneration.resultUrl, userId);
-		const cloudinaryUrl = uploadResult.secure_url;
-		const thumbnailUrl = uploadResult.secure_url.replace('/upload/', '/upload/w_400,h_400,c_fill/');
+		// Upload all images to Cloudinary
+		const imageUrls = aiGenerations.map(g => g.resultUrl);
 
-		// Create post
-		const post = await Post.create({
-			author: userId,
+		// Use the createPost function with these images
+		const postData = {
+			caption: caption || `AI generated image${aiGenerations.length > 1 ? 's' : ''}: ${aiGenerations[0].prompt}`,
+			title: title || 'AI Generated Image',
 			type,
 			category,
-			caption: caption || `AI generated image: ${aiGeneration.prompt}`,
-			title: title || 'AI Generated Image',
-			mediaUrl: cloudinaryUrl,
-			thumbnailUrl,
-			mediaType: 'image/jpeg',
+			imageUrls,
+			aiGenerationIds,
 			aiGenerated: true,
 			aiDetails: {
-				model: aiGeneration.model, // Use the actual model from AI Generation record
-				prompt: aiGeneration.prompt,
-				style: aiGeneration.parameters?.style || '',
-				aspectRatio: aiGeneration.parameters?.aspectRatio || '16:9',
-				steps: aiGeneration.parameters?.steps || 28,
-				seed: aiGeneration.parameters?.seed || '',
-				requestId: requestId
+				model: aiGenerations[0].model,
+				prompt: aiGenerations[0].prompt,
+				style: aiGenerations[0].style,
+				aspectRatio: aiGenerations[0].aspectRatio,
+				steps: aiGenerations[0].steps,
+				seed: aiGenerations[0].seed
 			},
 			tags: tags.map(tag => tag.toLowerCase().trim()),
-			visibility,
-			status
-		});
+			visibility
+		};
 
-		// Link AI Generation to Post
-		await AIGeneration.findByIdAndUpdate(aiGeneration._id, {
-			post: post._id
-		});
-
-		// Populate author details (create a basic user object for test)
-		const populatedPost = await Post.findById(post._id).populate('author', 'username avatar verified');
-
-		console.log('Post created successfully:', post._id);
-
-		res.status(201).json({
-			success: true,
-			message: 'Post created successfully from generated image',
-			post: populatedPost
-		});
+		// Reuse createPost logic
+		req.body = postData;
+		return await exports.createPost(req, res);
 
 	} catch (error) {
 		console.error('Create post from generation error:', error);
@@ -391,32 +396,27 @@ async function uploadToCloudinary(imageUrl, userId) {
 }
 
 /**
- * Create Post
+ * Create Post with Multiple Images Support (Prisma)
  * POST /api/posts
  */
 exports.createPost = async (req, res) => {
 	try {
-		const userId = req.user?.id || 'test-user-id';
+		// Use authenticated user ID or fallback to existing user
+		const userId = req.user?.id || 'cmh0b61s30000oadwipl47rkk'; // mainikhilhun
 		const {
 			caption,
 			title,
-			type,
-			category,
-			imageUrl, // From FAL AI
+			type = 'content',
+			category = 'image-post',
+			imageUrls = [], // Array of image URLs from FAL AI or direct URLs
+			aiGenerationIds = [], // Array of AI generation IDs to link
 			aiGenerated = false,
 			aiDetails = {},
 			tags = [],
-			visibility = 'public',
-			status = 'published'
+			visibility = 'public'
 		} = req.body;
 
-		// Validate required fields
-		if (!type || !category) {
-			return res.status(400).json({
-				success: false,
-				message: 'Post type and category are required'
-			});
-		}
+		console.log('Creating post:', { userId, category, imageCount: imageUrls.length, aiGenerated });
 
 		// Validate content based on category
 		if (category === 'text-post' && !caption) {
@@ -426,77 +426,114 @@ exports.createPost = async (req, res) => {
 			});
 		}
 
-		if ((category === 'image-post' || category === 'image-text-post') && !imageUrl) {
+		if ((category === 'image-post' || category === 'image-text-post') && imageUrls.length === 0) {
 			return res.status(400).json({
 				success: false,
-				message: 'Image is required for image posts'
+				message: 'At least one image is required for image posts'
 			});
 		}
 
-		let cloudinaryUrl = null;
+		let cloudinaryUrls = [];
 		let thumbnailUrl = null;
 
-		// Upload image to Cloudinary if provided
-		if (imageUrl) {
-			const uploadResult = await uploadToCloudinary(imageUrl, userId);
-			cloudinaryUrl = uploadResult.secure_url;
-			thumbnailUrl = uploadResult.secure_url.replace('/upload/', '/upload/w_400,h_400,c_fill/');
+		// Upload images to Cloudinary if provided
+		if (imageUrls.length > 0) {
+			console.log(`Uploading ${imageUrls.length} image(s) to Cloudinary...`);
+
+			for (let i = 0; i < imageUrls.length; i++) {
+				try {
+					const uploadResult = await uploadToCloudinary(imageUrls[i], userId);
+					cloudinaryUrls.push(uploadResult.secure_url);
+					console.log(`Uploaded image ${i + 1}/${imageUrls.length} to Cloudinary`);
+
+					// Use first image as thumbnail
+					if (i === 0) {
+						thumbnailUrl = uploadResult.secure_url.replace('/upload/', '/upload/w_400,h_400,c_fill/');
+					}
+				} catch (uploadError) {
+					console.error(`Failed to upload image ${i + 1}:`, uploadError);
+					throw new Error(`Failed to upload image ${i + 1}: ${uploadError.message}`);
+				}
+			}
 		}
 
-		// Create post
-		const post = await Post.create({
-			author: userId,
-			type,
-			category,
-			caption,
-			title,
-			mediaUrl: cloudinaryUrl,
-			thumbnailUrl,
-			mediaType: cloudinaryUrl ? 'image/jpeg' : null,
-			aiGenerated,
-			aiDetails: aiGenerated ? {
-				model: aiDetails.model || 'FLUX.1 SRPO',
-				prompt: aiDetails.prompt || '',
-				enhancedPrompt: aiDetails.enhancedPrompt || '',
-				style: aiDetails.style || '',
-				aspectRatio: aiDetails.aspectRatio || '16:9',
-				steps: aiDetails.steps || 28,
-				generationTime: aiDetails.generationTime || 0,
-				// cost: aiDetails.cost || 10,  // COMMENTED OUT - TO BE IMPLEMENTED LATER
-				seed: aiDetails.seed || ''
-			} : {},
+		// Prepare post data
+		const postData = {
+			authorId: userId,
+			type: type,
+			category: category,
+			caption: caption || null,
+			title: title || null,
+			mediaUrls: cloudinaryUrls, // Store multiple URLs
+			mediaUrl: cloudinaryUrls[0] || null, // First image for backward compatibility
+			thumbnailUrl: thumbnailUrl,
+			mediaType: cloudinaryUrls.length > 0 ? 'image/jpeg' : null,
+			aiGenerated: aiGenerated,
 			tags: tags.map(tag => tag.toLowerCase().trim()),
-			visibility,
-			status
+			visibility: visibility
+		};
+
+		// Add AI details if applicable
+		if (aiGenerated && aiDetails) {
+			postData.aiModel = aiDetails.model || null;
+			postData.aiPrompt = aiDetails.prompt || null;
+			postData.aiEnhancedPrompt = aiDetails.enhancedPrompt || null;
+			postData.aiStyle = aiDetails.style || null;
+			postData.aiAspectRatio = aiDetails.aspectRatio || null;
+			postData.aiSteps = aiDetails.steps || null;
+			postData.aiGenerationTime = aiDetails.generationTime || null;
+			postData.aiSeed = aiDetails.seed || null;
+		}
+
+		// Create post using Prisma
+		const post = await prisma.post.create({
+			data: postData,
+			include: {
+				author: {
+					select: {
+						id: true,
+						username: true,
+						firstName: true,
+						lastName: true,
+						avatar: true,
+						verificationStatus: true
+					}
+				}
+			}
 		});
 
-		// ============================================
-		// USER STATS UPDATE COMMENTED OUT - TO BE IMPLEMENTED LATER
-		// ============================================
-		// if (userId.toString() !== testUserId.toString()) {
-		// 	await User.findByIdAndUpdate(userId, {
-		// 		$inc: {
-		// 			'stats.postsCount': 1,
-		// 			totalCreations: 1
-		// 		}
-		// 	});
-		// }
-		// ============================================
+		console.log('Post created successfully:', post.id);
 
-		// Link AI Generation to Post if applicable
-		if (aiGenerated && aiDetails.aiGenerationId) {
-			await AIGeneration.findByIdAndUpdate(aiDetails.aiGenerationId, {
-				post: post._id
+		// Link AI Generations to Post if provided
+		if (aiGenerated && aiGenerationIds.length > 0) {
+			await prisma.aIGeneration.updateMany({
+				where: {
+					id: { in: aiGenerationIds }
+				},
+				data: {
+					postId: post.id
+				}
 			});
+			console.log(`Linked ${aiGenerationIds.length} AI generation(s) to post`);
 		}
 
-		// Populate author details
-		await post.populate('author', 'username avatar verified');
+		// Update user stats (increment posts count)
+		await prisma.user.update({
+			where: { id: userId },
+			data: {
+				postsCount: {
+					increment: 1
+				},
+				totalCreations: {
+					increment: 1
+				}
+			}
+		});
 
 		res.status(201).json({
 			success: true,
 			message: 'Post created successfully',
-			post
+			post: post
 		});
 
 	} catch (error) {
@@ -806,7 +843,7 @@ exports.getFalResult = async (req, res) => {
 exports.getMyGenerations = async (req, res) => {
 	try {
 		// Extract user ID - handles both User object and JWT payload
-		const userId = req.user?._id || req.user?.id || req.user?.userId;
+		const userId = req.user?.id || req.user?.userId;
 
 		if (!userId) {
 			return res.status(401).json({
@@ -822,22 +859,41 @@ exports.getMyGenerations = async (req, res) => {
 		const limit = parseInt(req.query.limit) || 20;
 		const skip = (page - 1) * limit;
 
-		// Find all completed AI generations that haven't been posted yet
-		const generations = await AIGeneration.find({
-			user: userId,
-			status: 'completed',
-			post: { $exists: false } // No post associated
-		})
-			.sort({ createdAt: -1 }) // Most recent first
-			.skip(skip)
-			.limit(limit)
-			.select('prompt model resultUrl thumbnailUrl parameters createdAt type userRating');
+		// Find all completed AI generations that haven't been posted yet using Prisma
+		const generations = await prisma.aIGeneration.findMany({
+			where: {
+				userId: userId,
+				status: 'completed',
+				postId: null // No post associated
+			},
+			orderBy: {
+				createdAt: 'desc' // Most recent first
+			},
+			skip: skip,
+			take: limit,
+			select: {
+				id: true,
+				prompt: true,
+				model: true,
+				resultUrl: true,
+				thumbnailUrl: true,
+				style: true,
+				aspectRatio: true,
+				steps: true,
+				quality: true,
+				seed: true,
+				createdAt: true,
+				type: true
+			}
+		});
 
 		// Get total count for pagination
-		const total = await AIGeneration.countDocuments({
-			user: userId,
-			status: 'completed',
-			post: { $exists: false }
+		const total = await prisma.aIGeneration.count({
+			where: {
+				userId: userId,
+				status: 'completed',
+				postId: null
+			}
 		});
 
 		res.json({
