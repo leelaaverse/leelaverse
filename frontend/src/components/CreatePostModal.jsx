@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import Icon from './Icon';
 import ImageGrid from './ImageGrid';
 
-const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
+const CreatePostModal = ({ isOpen, onClose, currentUser, onPostCreated }) => {
     const { user, accessToken } = useAuth();
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -412,12 +412,14 @@ const CreatePostModal = ({ isOpen, onClose, currentUser }) => {
             if (data.success) {
                 // Success! Close modal and refresh feed
                 setSuccessMessage('🎉 Post created successfully!');
+
+                // Call the refresh callback if provided
+                if (onPostCreated) {
+                    onPostCreated();
+                }
+
                 setTimeout(() => {
                     handleCloseModal();
-                    // Optionally trigger feed refresh
-                    if (window.location.pathname === '/dashboard') {
-                        window.location.reload();
-                    }
                 }, 1500);
             } else {
                 throw new Error(data.message || 'Failed to create post');
