@@ -202,8 +202,14 @@ export const mockCurrentUser = {
     id: 'current',
     username: 'leelaverse_user',
     name: 'Creative Explorer',
+    firstName: 'Creative Explorer',
     avatar: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=100&h=100&fit=crop&crop=face',
-    followers: 1247,
+    profileWallTheme: 'gradient-purple',
+    bio: 'AI artist and creative enthusiast exploring the boundaries of digital art 🎨✨',
+    location: 'San Francisco, CA',
+    website: 'https://myportfolio.com',
+    followers: '1.2K',
     following: 892,
-    posts: 156
+    posts: 156,
+    verificationStatus: 'verified'
 };

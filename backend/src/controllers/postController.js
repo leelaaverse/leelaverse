@@ -424,6 +424,8 @@ exports.createPost = async (req, res) => {
 			type = 'content',
 			category = 'image-post',
 			imageUrls = [], // Array of image URLs from FAL AI or direct URLs
+			videoUrls = [], // Array of video URLs for mixed media
+			mediaItems = [], // Mixed media array: [{type: 'image'|'video', url: string}]
 			aiGenerationIds = [], // Array of AI generation IDs to link
 			aiGenerated = false,
 			aiDetails = {},
@@ -487,6 +489,11 @@ exports.createPost = async (req, res) => {
 			tags: tags.map(tag => tag.toLowerCase().trim()),
 			visibility: visibility
 		};
+
+		// Add mixed media items if provided (store as JSON)
+		if (mediaItems && mediaItems.length > 0) {
+			postData.mediaItems = mediaItems;
+		}
 
 		// Add AI details if applicable
 		if (aiGenerated && aiDetails) {
