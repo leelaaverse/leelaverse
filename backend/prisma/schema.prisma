@@ -27,26 +27,26 @@ model User {
   password  String?
 
   // Profile
-  avatar          String?
-  bio             String?
-  location        String?
-  website         String?
-  coverImage      String?
-  phoneNumber     String?  @unique
-  dateOfBirth     DateTime?
-  twitterLink     String?
-  instagramLink   String?
-  linkedinLink    String?
-  githubLink      String?
-  discordLink     String?
+  avatar        String?
+  bio           String?
+  location      String?
+  website       String?
+  coverImage    String?
+  phoneNumber   String?   @unique
+  dateOfBirth   DateTime?
+  twitterLink   String?
+  instagramLink String?
+  linkedinLink  String?
+  githubLink    String?
+  discordLink   String?
 
   // OAuth
-  googleId      String?   @unique
+  googleId       String?  @unique
   oauthProviders String[] // ['google', 'github', 'discord']
 
   // Role & Verification
-  role              String   @default("user") // 'user', 'admin', 'moderator'
-  isEmailVerified   Boolean  @default(false)
+  role                     String    @default("user") // 'user', 'admin', 'moderator'
+  isEmailVerified          Boolean   @default(false)
   emailVerificationToken   String?
   emailVerificationExpires DateTime?
 
@@ -55,9 +55,9 @@ model User {
   passwordResetExpires DateTime?
 
   // Security
-  lastLogin    DateTime?
-  loginAttempts Int      @default(0)
-  lockUntil    DateTime?
+  lastLogin     DateTime?
+  loginAttempts Int       @default(0)
+  lockUntil     DateTime?
 
   // Account Status
   isActive     Boolean   @default(true)
@@ -70,23 +70,23 @@ model User {
   totalEarnings  Decimal @default(0) @db.Decimal(10, 2)
 
   // Coin System
-  coinBalance Int @default(100) // Starting balance
+  coinBalance      Int @default(100) // Starting balance
   totalCoinsEarned Int @default(0)
   totalCoinsSpent  Int @default(0)
 
   // Subscription
-  subscriptionTier       String?   // 'free', 'basic', 'pro', 'enterprise'
-  subscriptionStatus     String?   // 'active', 'cancelled', 'expired'
-  subscriptionStartDate  DateTime?
-  subscriptionEndDate    DateTime?
+  subscriptionTier        String? // 'free', 'basic', 'pro', 'enterprise'
+  subscriptionStatus      String? // 'active', 'cancelled', 'expired'
+  subscriptionStartDate   DateTime?
+  subscriptionEndDate     DateTime?
   subscriptionRenewalDate DateTime?
 
   // Usage Limits
-  monthlyGenerationsUsed Int @default(0)
-  monthlyGenerationsLimit Int @default(50)
-  dailyGenerationsUsed   Int @default(0)
-  dailyGenerationsLimit  Int @default(10)
-  generationResetDate    DateTime?
+  monthlyGenerationsUsed  Int       @default(0)
+  monthlyGenerationsLimit Int       @default(50)
+  dailyGenerationsUsed    Int       @default(0)
+  dailyGenerationsLimit   Int       @default(10)
+  generationResetDate     DateTime?
 
   // Settings
   notificationSettings Json? // Stored as JSONB
@@ -94,27 +94,27 @@ model User {
   displaySettings      Json?
 
   // Verification Documents
-  verificationStatus   String?   @default("unverified") // 'unverified', 'pending', 'verified', 'rejected'
+  verificationStatus    String?   @default("unverified") // 'unverified', 'pending', 'verified', 'rejected'
   verificationDocuments String[] // URLs to documents
-  verifiedAt           DateTime?
+  verifiedAt            DateTime?
 
   // Relations
-  posts                Post[]
-  aiGenerations        AIGeneration[]
-  comments             Comment[]
-  likes                Like[]
-  saves                Save[]
-  stories              Story[]
-  coinTransactions     CoinTransaction[]
-  notificationsReceived Notification[] @relation("NotificationRecipient")
-  notificationsSent    Notification[] @relation("NotificationSender")
+  posts                 Post[]
+  aiGenerations         AIGeneration[]
+  comments              Comment[]
+  likes                 Like[]
+  saves                 Save[]
+  stories               Story[]
+  coinTransactions      CoinTransaction[]
+  notificationsReceived Notification[]    @relation("NotificationRecipient")
+  notificationsSent     Notification[]    @relation("NotificationSender")
 
   // Followers/Following relationships
-  followers            Follow[] @relation("UserFollowers")
-  following            Follow[] @relation("UserFollowing")
+  followers Follow[] @relation("UserFollowers")
+  following Follow[] @relation("UserFollowing")
 
   // Refresh Tokens
-  refreshTokens        RefreshToken[]
+  refreshTokens RefreshToken[]
 
   @@index([email])
   @@index([username])
@@ -163,17 +163,20 @@ model Post {
   thumbnailUrl String?
   mediaType    String? // 'image/jpeg', 'image/png', 'video/mp4', etc.
 
+  // Mixed Media Support (Images + Videos in same post)
+  mediaItems Json? // Array of {type: 'image'|'video', url: string, thumbnail?: string}
+
   // AI Generation
-  aiGenerated Boolean @default(false)
-  aiModel     String?
-  aiPrompt    String?
+  aiGenerated      Boolean  @default(false)
+  aiModel          String?
+  aiPrompt         String?
   aiEnhancedPrompt String?
-  aiStyle     String?
-  aiAspectRatio String?
-  aiSteps     Int?
+  aiStyle          String?
+  aiAspectRatio    String?
+  aiSteps          Int?
   aiGenerationTime Int?
-  aiCost      Decimal? @db.Decimal(10, 2)
-  aiSeed      String?
+  aiCost           Decimal? @db.Decimal(10, 2)
+  aiSeed           String?
 
   // Engagement Stats
   likesCount    Int @default(0)
@@ -194,29 +197,29 @@ model Post {
   visibility String @default("public") // 'public', 'followers', 'private'
 
   // Moderation
-  isApproved      Boolean  @default(true)
-  isFlagged       Boolean  @default(false)
-  flagReason      String?
-  moderatedBy     String?
-  moderatedAt     DateTime?
+  isApproved  Boolean   @default(true)
+  isFlagged   Boolean   @default(false)
+  flagReason  String?
+  moderatedBy String?
+  moderatedAt DateTime?
 
   // Monetization
-  isPremium       Boolean @default(false)
-  premiumPrice    Decimal? @db.Decimal(10, 2)
-  purchaseCount   Int     @default(0)
+  isPremium     Boolean  @default(false)
+  premiumPrice  Decimal? @db.Decimal(10, 2)
+  purchaseCount Int      @default(0)
 
   // Scheduling
-  isScheduled     Boolean   @default(false)
-  scheduledFor    DateTime?
-  publishedAt     DateTime  @default(now())
+  isScheduled  Boolean   @default(false)
+  scheduledFor DateTime?
+  publishedAt  DateTime  @default(now())
 
   // Relations
-  comments        Comment[]
-  likes           Like[]
-  saves           Save[]
-  aiGeneration    AIGeneration?
+  comments         Comment[]
+  likes            Like[]
+  saves            Save[]
+  aiGenerations    AIGeneration[] // Multiple AI generations can link to one post
   coinTransactions CoinTransaction[]
-  notifications   Notification[]
+  notifications    Notification[]
 
   @@index([authorId])
   @@index([type])
@@ -248,11 +251,11 @@ model AIGeneration {
   enhancedPrompt String?
 
   // Parameters
-  style        String?
-  aspectRatio  String?
-  steps        Int?
-  seed         String?
-  quality      String?
+  style       String?
+  aspectRatio String?
+  steps       Int?
+  seed        String?
+  quality     String?
 
   // Output
   resultUrl    String?
@@ -261,8 +264,8 @@ model AIGeneration {
   // FAL AI Tracking
   falRequestId String?
 
-  // Related Post
-  postId String? @unique
+  // Related Post (Multiple generations can link to same post)
+  postId String?
   post   Post?   @relation(fields: [postId], references: [id], onDelete: SetNull)
 
   // Performance
@@ -317,11 +320,11 @@ model Comment {
   repliesCount Int @default(0)
 
   // Moderation
-  isEdited    Boolean   @default(false)
-  editedAt    DateTime?
-  isHidden    Boolean   @default(false)
-  isFlagged   Boolean   @default(false)
-  flagReason  String?
+  isEdited   Boolean   @default(false)
+  editedAt   DateTime?
+  isHidden   Boolean   @default(false)
+  isFlagged  Boolean   @default(false)
+  flagReason String?
 
   // Relations
   likes         Like[]
@@ -397,7 +400,7 @@ model Save {
   post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   // Collection
-  collection String @default("Saved Items")
+  collection String  @default("Saved Items")
   notes      String?
 
   @@unique([userId, postId])
@@ -430,7 +433,7 @@ model Story {
   aiActivity  String? // 'Training Model', 'Live Streaming', etc.
 
   // Engagement
-  viewsCount Int      @default(0)
+  viewsCount Int         @default(0)
   views      StoryView[]
 
   // Duration
@@ -533,8 +536,8 @@ model Notification {
   link    String?
 
   // Status
-  isRead   Boolean   @default(false)
-  readAt   DateTime?
+  isRead Boolean   @default(false)
+  readAt DateTime?
 
   @@index([recipientId])
   @@index([senderId])
@@ -578,8 +581,8 @@ model Group {
   category    String?
 
   // Settings
-  visibility  String  @default("public") // 'public', 'private', 'secret'
-  isOfficial  Boolean @default(false)
+  visibility String  @default("public") // 'public', 'private', 'secret'
+  isOfficial Boolean @default(false)
 
   // Stats
   membersCount Int @default(0)

@@ -1,52 +1,108 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import Icon from './Icon';
 import ImageGrid from './ImageGrid';
 
-const CreatePostModal = ({ isOpen, onClose, currentUser, onPostCreated }) => {
+const CreatePostModal = ({ isOpen, onClose, currentUser, onPostCreated, prefilledData }) => {
     const { user, accessToken } = useAuth();
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
+    // UI State
     const [mode, setMode] = useState('manual'); // manual, agent
+    const [postType, setPostType] = useState('auto'); // auto, image, video, upload
+    const [showAdvanced, setShowAdvanced] = useState(false);
+
+    // Content
     const [prompt, setPrompt] = useState('');
     const [caption, setCaption] = useState('');
-    const [postType, setPostType] = useState('auto'); // auto, image, video, text, upload-image, upload-video
+
+    // AI Settings
     const [selectedModel, setSelectedModel] = useState('flux-schnell');
-    const [showAdvanced, setShowAdvanced] = useState(false);
     const [aspectRatio, setAspectRatio] = useState('16:9');
     const [style, setStyle] = useState('auto');
+    const [numImages, setNumImages] = useState(1);
+
+    // Generation State
     const [isGenerating, setIsGenerating] = useState(false);
     const [generationProgress, setGenerationProgress] = useState(0);
     const [generationMessage, setGenerationMessage] = useState('');
-    const [generationId, setGenerationId] = useState(null);
-    const [generatedImageUrl, setGeneratedImageUrl] = useState(null);
-    const [enhancedPrompt, setEnhancedPrompt] = useState('');
-    const [isEnhancing, setIsEnhancing] = useState(false);
 
-    // Multiple images support
-    const [numImages, setNumImages] = useState(1); // 1-4 images to generate
-    const [generatedImages, setGeneratedImages] = useState([]); // Array of generated image URLs
-    const [generationIds, setGenerationIds] = useState([]); // Array of generation request IDs
-    const [aiGenerationIds, setAiGenerationIds] = useState([]); // Array of AI generation DB IDs
-    const [agentAnalysis, setAgentAnalysis] = useState(null);
-    const [uploadedFile, setUploadedFile] = useState(null);
-    const [filePreview, setFilePreview] = useState(null);
+    // Media State - Unified for mixed media support
+    const [mediaItems, setMediaItems] = useState([]); // [{type: 'image'|'video', url: string, thumbnail?: string}]
+    const [generationIds, setGenerationIds] = useState([]);
+    const [aiGenerationIds, setAiGenerationIds] = useState([]);
+
+    // Upload State
+    const [uploadedFiles, setUploadedFiles] = useState([]);
+
+    // Other State
     const [isPosting, setIsPosting] = useState(false);
     const [error, setError] = useState(null);
     const [successMessage, setSuccessMessage] = useState(null);
+    const [enhancedPrompt, setEnhancedPrompt] = useState('');
+    const [isEnhancing, setIsEnhancing] = useState(false);
+    const [agentAnalysis, setAgentAnalysis] = useState(null);
 
+    // Model Dropdown State
+    const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
+    const [modelSearchQuery, setModelSearchQuery] = useState('');
+    const modelDropdownRef = useRef(null);
+
+    // Handle prefilled data
+    useEffect(() => {
+        if (prefilledData && isOpen) {
+            console.log('Loading prefilled data:', prefilledData);
+
+            // Convert existing images to media items
+            if (prefilledData.imageUrls && prefilledData.imageUrls.length > 0) {
+                const imageMediaItems = prefilledData.imageUrls.map(url => ({
+                    type: 'image',
+                    url: url,
+                    thumbnail: url
+                }));
+                setMediaItems(imageMediaItems);
+            }
+
+            if (prefilledData.aiGenerationIds) setAiGenerationIds(prefilledData.aiGenerationIds);
+            if (prefilledData.prompt) setPrompt(prefilledData.prompt);
+            if (prefilledData.selectedModel) setSelectedModel(prefilledData.selectedModel);
+            if (prefilledData.aspectRatio) setAspectRatio(prefilledData.aspectRatio);
+            if (prefilledData.style) setStyle(prefilledData.style);
+
+            setPostType('image');
+        }
+    }, [prefilledData, isOpen]);
+
+    // Image/Video Models
     const imageModels = [
-        { id: 'flux-1-srpo', name: 'FLUX.1 SRPO', icon: 'sparkles', cost: 10, quality: 'Premium' },
-        { id: 'flux-schnell', name: 'FLUX Schnell', icon: 'zap', cost: 5, quality: 'Fast' },
-        { id: 'dalle3', name: 'DALL-E 3', icon: 'image', cost: 10, quality: 'Premium' },
-        { id: 'stable-diffusion', name: 'SD XL', icon: 'zap', cost: 5, quality: 'Fast' },
+        { id: 'flux-schnell', name: 'FLUX Schnell', icon: 'zap', cost: 5, quality: 'Fast', description: 'Quick 4-step generation' },
+        { id: 'flux-1-srpo', name: 'FLUX.1 SRPO', icon: 'sparkles', cost: 10, quality: 'Premium', description: 'High quality 28-step' },
+        { id: 'dalle3', name: 'DALL-E 3', icon: 'image', cost: 10, quality: 'Premium', description: 'OpenAI premium model' },
+        { id: 'stable-diffusion', name: 'Stable Diffusion XL', icon: 'zap', cost: 5, quality: 'Fast', description: 'SD XL turbo' },
     ];
 
     const videoModels = [
-        { id: 'auto', name: 'Auto Select', icon: 'sparkles', description: 'AI picks the best model' },
-        { id: 'runway', name: 'Runway Gen-2', icon: 'video', cost: 25, duration: '4s' },
-        { id: 'pika', name: 'Pika Labs', icon: 'film', cost: 20, duration: '3s' },
+        { id: 'auto', name: 'Auto Select', icon: 'sparkles', cost: 0, description: 'AI picks best model' },
+        { id: 'runway', name: 'Runway Gen-2', icon: 'video', cost: 25, description: '4s video generation' },
+        { id: 'pika', name: 'Pika Labs', icon: 'film', cost: 20, description: '3s video generation' },
     ];
+
+    const allModels = postType === 'video' ? videoModels : imageModels;
+    const filteredModels = allModels.filter(model =>
+        model.name.toLowerCase().includes(modelSearchQuery.toLowerCase()) ||
+        model.description.toLowerCase().includes(modelSearchQuery.toLowerCase())
+    );
+
+    // Click outside to close dropdown
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (modelDropdownRef.current && !modelDropdownRef.current.contains(event.target)) {
+                setModelDropdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     // Agent Mode: Analyze prompt and suggest best configuration
     useEffect(() => {
@@ -85,80 +141,99 @@ const CreatePostModal = ({ isOpen, onClose, currentUser, onPostCreated }) => {
         }, 1500);
     };
 
+    // File Upload Handler - Support multiple files
     const handleFileUpload = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            setUploadedFile(file);
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
 
-            // Create preview
+        const newMediaItems = [];
+        const newUploadedFiles = [];
+
+        files.forEach(file => {
             const reader = new FileReader();
             reader.onloadend = () => {
-                setFilePreview(reader.result);
+                const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
+                newMediaItems.push({
+                    type: mediaType,
+                    url: reader.result,
+                    thumbnail: reader.result,
+                    file: file
+                });
+                newUploadedFiles.push(file);
+
+                // Update state when all files are read
+                if (newMediaItems.length === files.length) {
+                    setMediaItems(prev => [...prev, ...newMediaItems]);
+                    setUploadedFiles(prev => [...prev, ...newUploadedFiles]);
+                }
             };
             reader.readAsDataURL(file);
-        }
+        });
     };
 
-    const clearUpload = () => {
-        setUploadedFile(null);
-        setFilePreview(null);
-        setGeneratedImageUrl(null);
+    const removeMediaItem = (index) => {
+        setMediaItems(prev => prev.filter((_, i) => i !== index));
+        setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const clearAllMedia = () => {
+        setMediaItems([]);
+        setUploadedFiles([]);
+        setGenerationIds([]);
+        setAiGenerationIds([]);
         setGenerationProgress(0);
         setGenerationMessage('');
         setError(null);
-        setSuccessMessage(null);
     };
 
-    // Poll generation status for multiple images
+    // Poll generation status
     useEffect(() => {
         if (!generationIds || generationIds.length === 0 || !isGenerating) return;
 
         const pollInterval = setInterval(async () => {
             try {
-                // Use the access token from auth context
-                if (!accessToken) {
-                    throw new Error('No authentication token found. Please login.');
-                }
+                if (!accessToken) throw new Error('No authentication token');
 
-                // Poll all generation requests
                 const pollPromises = generationIds.map(reqId =>
                     fetch(`${API_URL}/api/posts/generation/${reqId}`, {
-                        headers: {
-                            'Authorization': `Bearer ${accessToken}`
-                        }
+                        headers: { 'Authorization': `Bearer ${accessToken}` }
                     }).then(r => r.json())
                 );
 
                 const results = await Promise.all(pollPromises);
 
-                // Count completed, processing, and failed
                 const completed = results.filter(r => r.success && r.status === 'completed');
                 const processing = results.filter(r => r.success && (r.status === 'processing' || r.status === 'in_progress'));
                 const failed = results.filter(r => !r.success || r.status === 'failed');
 
-                // Update progress
                 const progress = Math.floor((completed.length / generationIds.length) * 100);
                 setGenerationProgress(progress);
                 setGenerationMessage(`Generated ${completed.length}/${generationIds.length} image(s)...`);
 
-                // Collect completed images
-                const completedImages = completed.map(r => r.imageUrl).filter(Boolean);
-                setGeneratedImages(completedImages);
+                // Add completed images as media items
+                const completedImages = completed.map(r => ({
+                    type: 'image',
+                    url: r.imageUrl,
+                    thumbnail: r.imageUrl
+                }));
 
-                // If all completed
+                if (completedImages.length > 0) {
+                    setMediaItems(prev => {
+                        const existingUrls = prev.map(item => item.url);
+                        const newItems = completedImages.filter(item => !existingUrls.includes(item.url));
+                        return [...prev, ...newItems];
+                    });
+                }
+
                 if (completed.length === generationIds.length) {
                     setGenerationProgress(100);
                     setGenerationMessage('All images generated!');
                     setIsGenerating(false);
                     setSuccessMessage(`🎉 ${completed.length} image(s) generated successfully!`);
-
-                    // Clear success message after 3 seconds
                     setTimeout(() => setSuccessMessage(null), 3000);
-
                     clearInterval(pollInterval);
                 }
 
-                // If any failed
                 if (failed.length > 0) {
                     setError(`${failed.length} generation(s) failed`);
                     if (completed.length === 0) {
@@ -166,19 +241,18 @@ const CreatePostModal = ({ isOpen, onClose, currentUser, onPostCreated }) => {
                         clearInterval(pollInterval);
                     }
                 }
-
             } catch (error) {
                 console.error('Polling error:', error);
                 setError('Failed to check generation status');
                 setIsGenerating(false);
                 clearInterval(pollInterval);
             }
-        }, 3000); // Poll every 3 seconds
+        }, 3000);
 
         return () => clearInterval(pollInterval);
     }, [generationIds, isGenerating, API_URL, accessToken]);
 
-    // Generate Image with FAL AI
+    // Generate Image
     const handleGenerateImage = async () => {
         if (!prompt.trim()) {
             setError('Please enter a prompt');
@@ -189,43 +263,19 @@ const CreatePostModal = ({ isOpen, onClose, currentUser, onPostCreated }) => {
         setError(null);
         setGenerationProgress(0);
         setGenerationMessage(`Starting generation of ${numImages} image(s)...`);
-        setGeneratedImages([]); // Clear previous images
-        setGenerationIds([]); // Clear previous IDs
 
         try {
-            // Check if user is authenticated
-            if (!accessToken) {
-                setError('Please login to generate images. Click on the "Login" button in the top navigation.');
+            if (!accessToken || !user) {
+                setError('Please login to generate images');
                 setIsGenerating(false);
                 return;
             }
 
-            if (!user) {
-                setError('User authentication error. Please try logging out and logging back in.');
-                setIsGenerating(false);
-                return;
-            }
-
-            console.log(`Making image generation request for ${numImages} image(s) with user:`, user.username || user.email);
-
-            // Determine steps and guidance based on selected model
             const modelConfig = {
-                'flux-schnell': {
-                    numInferenceSteps: 4,
-                    guidanceScale: 3.5
-                },
-                'flux-1-srpo': {
-                    numInferenceSteps: 28,
-                    guidanceScale: 4.5
-                },
-                'dalle3': {
-                    numInferenceSteps: 50,
-                    guidanceScale: 7.5
-                },
-                'stable-diffusion': {
-                    numInferenceSteps: 20,
-                    guidanceScale: 7.0
-                }
+                'flux-schnell': { numInferenceSteps: 4, guidanceScale: 3.5 },
+                'flux-1-srpo': { numInferenceSteps: 28, guidanceScale: 4.5 },
+                'dalle3': { numInferenceSteps: 50, guidanceScale: 7.5 },
+                'stable-diffusion': { numInferenceSteps: 20, guidanceScale: 7.0 }
             };
 
             const config = modelConfig[selectedModel] || modelConfig['flux-schnell'];
@@ -244,24 +294,18 @@ const CreatePostModal = ({ isOpen, onClose, currentUser, onPostCreated }) => {
                     selectedModel,
                     numInferenceSteps: config.numInferenceSteps,
                     guidanceScale: config.guidanceScale,
-                    numImages: numImages // NEW: Number of images to generate
+                    numImages: numImages
                 })
             });
 
             const data = await response.json();
-            console.log('API Response:', data);
 
             if (data.success) {
-                // Store all generation request IDs for polling
                 const requestIds = data.generations.map(g => g.requestId);
                 const aiGenIds = data.generations.map(g => g.aiGenerationId);
-
-                setGenerationIds(requestIds);
-                setAiGenerationIds(aiGenIds);
+                setGenerationIds(prev => [...prev, ...requestIds]);
+                setAiGenerationIds(prev => [...prev, ...aiGenIds]);
                 setGenerationMessage(`Generating ${data.count} image(s)...`);
-
-                console.log('Generation IDs:', requestIds);
-                console.log('AI Generation DB IDs:', aiGenIds);
             } else {
                 throw new Error(data.message || 'Failed to start generation');
             }
@@ -272,118 +316,47 @@ const CreatePostModal = ({ isOpen, onClose, currentUser, onPostCreated }) => {
         }
     };
 
-    // Generate Video (placeholder for future implementation)
-    const handleGenerateVideo = async () => {
-        if (!prompt.trim()) {
-            setError('Please enter a prompt');
-            return;
-        }
 
-        setError('Video generation is coming soon! For now, please use image generation.');
-    };
 
-    // Generate Text Content
-    const handleGenerateText = async () => {
-        if (!prompt.trim()) {
-            setError('Please enter a prompt');
-            return;
-        }
-
-        setIsGenerating(true);
-        setError(null);
-        setGenerationMessage('Generating text content...');
-
-        try {
-            // Check if user is authenticated
-            if (!accessToken) {
-                setError('Please login to generate text content. Click on the "Login" button in the top navigation.');
-                setIsGenerating(false);
-                return;
-            }
-
-            if (!user) {
-                setError('User authentication error. Please try logging out and logging back in.');
-                setIsGenerating(false);
-                return;
-            }
-
-            // Simulate text generation (replace with actual API call later)
-            setTimeout(() => {
-                const generatedText = `Generated content based on: ${prompt}\n\nThis is a placeholder for AI-generated text content. The actual implementation would call an AI text generation service like GPT or Claude.\n\nThe generated content would be more sophisticated and tailored to the prompt: "${prompt}"`;
-                setCaption(generatedText);
-                setFilePreview('text-generated'); // Use special marker for text
-                setIsGenerating(false);
-                setGenerationMessage('Text generation complete!');
-                setSuccessMessage('✍️ Text content generated successfully!');
-
-                // Clear success message after 3 seconds
-                setTimeout(() => setSuccessMessage(null), 3000);
-            }, 2000);
-        } catch (error) {
-            console.error('Generate text error:', error);
-            setError(error.message || 'Failed to generate text');
-            setIsGenerating(false);
-        }
-    };
-
-    // Create Post with Multiple Images Support
+    // Create Post
     const handleCreatePost = async () => {
-        // Validate based on post type
-        if (postType === 'text' && !caption.trim() && filePreview !== 'text-generated') {
-            setError('Please enter a caption or generate text content');
-            return;
-        }
-
-        if ((postType === 'auto' || postType === 'image' || postType === 'upload-image') && generatedImages.length === 0 && !generatedImageUrl && !uploadedFile) {
-            setError('Please generate or upload an image');
-            return;
-        }
-
-        if ((postType === 'video' || postType === 'upload-video') && !generatedImageUrl && !uploadedFile) {
-            setError('Please generate or upload a video');
+        if (!caption.trim() && mediaItems.length === 0) {
+            setError('Please add content or media');
             return;
         }
 
         setIsPosting(true);
         setError(null);
-        setGenerationMessage('Uploading images to cloud storage...');
+        setGenerationMessage('Creating post...');
 
         try {
-            // Use the access token from auth context
-            if (!accessToken) {
-                throw new Error('No authentication token found. Please login.');
-            }
+            if (!accessToken) throw new Error('Please login to create posts');
 
-            // Determine post category and type
+            // Separate images and videos
+            const imageUrls = mediaItems.filter(item => item.type === 'image').map(item => item.url);
+            const videoUrls = mediaItems.filter(item => item.type === 'video').map(item => item.url);
+
+            // Determine post category
             let category = 'text-post';
-            let type = 'content';
-            const hasImages = generatedImages.length > 0 || generatedImageUrl || uploadedFile;
-
-            if (hasImages) {
+            if (imageUrls.length > 0 && videoUrls.length === 0) {
                 category = caption.trim() ? 'image-text-post' : 'image-post';
-                type = generatedImages.length > 0 ? 'content' : 'content';
-            } else if (filePreview === 'text-generated' || postType === 'text') {
-                category = 'text-post';
-                type = 'content';
-            }
-
-            // Prepare image URLs array (for multiple images)
-            let imageUrls = [];
-            if (generatedImages.length > 0) {
-                imageUrls = generatedImages; // Use generated images
-            } else if (generatedImageUrl && generatedImageUrl !== 'text-generated') {
-                imageUrls = [generatedImageUrl]; // Legacy single image
+            } else if (videoUrls.length > 0) {
+                category = 'normal-video';
+            } else if (imageUrls.length > 0 && videoUrls.length > 0) {
+                category = 'mixed-media-post';
             }
 
             const postData = {
                 caption: caption.trim() || null,
                 title: null,
-                type,
+                type: videoUrls.length > 0 ? 'video' : imageUrls.length > 0 ? 'image' : 'text',
                 category,
-                imageUrls: imageUrls, // NEW: Send array of image URLs
-                aiGenerationIds: aiGenerationIds, // NEW: Link to AI Generation records
-                aiGenerated: imageUrls.length > 0,
-                aiDetails: imageUrls.length > 0 ? {
+                imageUrls: imageUrls,
+                videoUrls: videoUrls,
+                mediaItems: mediaItems, // NEW: Mixed media support
+                aiGenerationIds: aiGenerationIds,
+                aiGenerated: imageUrls.length > 0 && generationIds.length > 0,
+                aiDetails: generationIds.length > 0 ? {
                     model: selectedModel,
                     prompt: prompt.trim(),
                     enhancedPrompt: enhancedPrompt || null,
@@ -396,7 +369,6 @@ const CreatePostModal = ({ isOpen, onClose, currentUser, onPostCreated }) => {
             };
 
             console.log('Creating post with data:', postData);
-            setGenerationMessage('Creating post...');
 
             const response = await fetch(`${API_URL}/api/posts`, {
                 method: 'POST',
@@ -410,17 +382,9 @@ const CreatePostModal = ({ isOpen, onClose, currentUser, onPostCreated }) => {
             const data = await response.json();
 
             if (data.success) {
-                // Success! Close modal and refresh feed
                 setSuccessMessage('🎉 Post created successfully!');
-
-                // Call the refresh callback if provided
-                if (onPostCreated) {
-                    onPostCreated();
-                }
-
-                setTimeout(() => {
-                    handleCloseModal();
-                }, 1500);
+                if (onPostCreated) onPostCreated();
+                setTimeout(() => handleCloseModal(), 1500);
             } else {
                 throw new Error(data.message || 'Failed to create post');
             }
@@ -437,44 +401,29 @@ const CreatePostModal = ({ isOpen, onClose, currentUser, onPostCreated }) => {
         setPrompt('');
         setCaption('');
         setEnhancedPrompt('');
-        setGeneratedImageUrl(null);
-        setFilePreview(null);
-        setUploadedFile(null);
-        setGenerationProgress(0);
-        setGenerationMessage('');
-        setError(null);
-        setSuccessMessage(null);
+        clearAllMedia();
         setIsGenerating(false);
         setIsPosting(false);
-        setGenerationId(null);
+        setError(null);
+        setSuccessMessage(null);
         onClose();
     };
 
     if (!isOpen) return null;
 
+    const selectedModelData = allModels.find(m => m.id === selectedModel);
     const getCost = () => {
         if (mode === 'agent') return 'Auto';
-        if (postType === 'text') return 0;
-        const models = postType === 'video' ? videoModels : imageModels;
-        const model = models.find(m => m.id === selectedModel);
-        return model?.cost || 0;
-    };
-
-    const getImageContainerClass = () => {
-        switch (aspectRatio) {
-            case '1:1': return 'h-64';
-            case '9:16': return 'h-80';
-            case '4:3': return 'h-56';
-            default: return 'h-48'; // 16:9
-        }
+        return selectedModelData?.cost || 0;
     };
 
     const getAspectRatioStyle = () => {
         switch (aspectRatio) {
-            case '1:1': return '1/1';
-            case '9:16': return '9/16';
-            case '4:3': return '4/3';
-            default: return '16/9';
+            case '1:1': return '1 / 1';
+            case '16:9': return '16 / 9';
+            case '9:16': return '9 / 16';
+            case '4:3': return '4 / 3';
+            default: return '16 / 9';
         }
     };
 
@@ -616,32 +565,185 @@ const CreatePostModal = ({ isOpen, onClose, currentUser, onPostCreated }) => {
                         </div>
                     )}
 
+                    {/* Media Preview Section - Moved here after prompt */}
+                    {(postType === 'image' || postType === 'auto') && (
+                        <>
+                            {/* Generation Progress */}
+                            {isGenerating && (
+                                <div className="p-4 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border border-purple-200 dark:border-purple-800 rounded-2xl">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="w-5 h-5 border-2 border-purple-600/30 border-t-purple-600 rounded-full animate-spin"></div>
+                                        <span className="text-sm cabin-semibold text-purple-900 dark:text-purple-200">
+                                            {generationMessage}
+                                        </span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden shadow-inner">
+                                        <div
+                                            className="h-full bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 transition-all duration-300 ease-out bg-[length:200%_100%] animate-[shimmer_2s_infinite]"
+                                            style={{ width: `${generationProgress}%` }}
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between mt-2">
+                                        <p className="text-xs text-purple-600 dark:text-purple-400 cabin-medium">
+                                            {generationProgress}% complete
+                                        </p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            {selectedModel === 'flux-schnell' ? '~10s' : '~30s'}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Media Preview - Show generated images */}
+                            {mediaItems.length > 0 && (
+                                <div>
+                                    <div className="flex items-center justify-between mb-3">
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            Generated Images ({mediaItems.length})
+                                        </label>
+                                        <button
+                                            onClick={clearAllMedia}
+                                            className="text-xs font-medium text-red-600 hover:text-red-700 flex items-center gap-1"
+                                        >
+                                            <Icon name="trash-2" className="w-3 h-3" />
+                                            Clear All
+                                        </button>
+                                    </div>
+
+                                    <div className="relative rounded-xl overflow-hidden border border-purple-300 dark:border-purple-700 bg-white dark:bg-gray-800">
+                                        {/* Compact Image Grid */}
+                                        <div className="p-2">
+                                            {mediaItems.length === 1 && (
+                                                <div
+                                                    className="relative w-full rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-900 cursor-pointer"
+                                                    style={{ maxHeight: '300px' }}
+                                                    onClick={() => window.open(mediaItems[0].url, '_blank')}
+                                                >
+                                                    <img
+                                                        src={mediaItems[0].url}
+                                                        alt="Generated"
+                                                        className="w-full h-full object-contain"
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {mediaItems.length === 2 && (
+                                                <div className="grid grid-cols-2 gap-1">
+                                                    {mediaItems.slice(0, 2).map((item, idx) => (
+                                                        <div
+                                                            key={idx}
+                                                            className="relative rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-900 cursor-pointer"
+                                                            style={{ height: '180px' }}
+                                                            onClick={() => window.open(item.url, '_blank')}
+                                                        >
+                                                            <img
+                                                                src={item.url}
+                                                                alt={`Generated ${idx + 1}`}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {mediaItems.length === 3 && (
+                                                <div className="grid grid-cols-2 gap-1">
+                                                    <div
+                                                        className="relative row-span-2 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-900 cursor-pointer"
+                                                        style={{ height: '250px' }}
+                                                        onClick={() => window.open(mediaItems[0].url, '_blank')}
+                                                    >
+                                                        <img
+                                                            src={mediaItems[0].url}
+                                                            alt="Generated 1"
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    </div>
+                                                    <div className="flex flex-col gap-1">
+                                                        {mediaItems.slice(1, 3).map((item, idx) => (
+                                                            <div
+                                                                key={idx + 1}
+                                                                className="relative rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-900 cursor-pointer"
+                                                                style={{ height: '124.5px' }}
+                                                                onClick={() => window.open(item.url, '_blank')}
+                                                            >
+                                                                <img
+                                                                    src={item.url}
+                                                                    alt={`Generated ${idx + 2}`}
+                                                                    className="w-full h-full object-cover"
+                                                                />
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {mediaItems.length >= 4 && (
+                                                <div className="grid grid-cols-2 gap-1">
+                                                    {mediaItems.slice(0, 4).map((item, idx) => (
+                                                        <div
+                                                            key={idx}
+                                                            className="relative rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-900 cursor-pointer"
+                                                            style={{ height: '150px' }}
+                                                            onClick={() => window.open(item.url, '_blank')}
+                                                        >
+                                                            <img
+                                                                src={item.url}
+                                                                alt={`Generated ${idx + 1}`}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                            {idx === 3 && mediaItems.length > 4 && (
+                                                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                                                    <span className="text-white text-2xl font-bold">+{mediaItems.length - 4}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Info Bar */}
+                                        <div className="px-3 py-2 bg-purple-50 dark:bg-purple-900/20 border-t border-purple-200 dark:border-purple-800">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <Icon name="image" className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                                                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                                                        {mediaItems.filter(m => m.type === 'image').length} Image(s)
+                                                        {mediaItems.filter(m => m.type === 'video').length > 0 &&
+                                                            ` • ${mediaItems.filter(m => m.type === 'video').length} Video(s)`
+                                                        }
+                                                    </span>
+                                                </div>
+                                                <span className="text-xs text-purple-600 dark:text-purple-400">
+                                                    Click to view full size
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    )}
+
                     {/* Manual Mode Controls */}
                     {mode === 'manual' && (
                         <>
-                            {/* Content Type - Minimalist Pills */}
+                            {/* Content Type */}
                             <div>
-                                <label className="block text-sm cabin-medium text-gray-700 dark:text-gray-300 mb-3">
-                                    Content Type
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Content Type</label>
                                 <div className="flex flex-wrap gap-2">
                                     {[
                                         { type: 'auto', icon: 'sparkles', label: 'Auto' },
                                         { type: 'image', icon: 'image', label: 'Generate Image' },
                                         { type: 'video', icon: 'video', label: 'Generate Video' },
-                                        { type: 'upload-image', icon: 'upload', label: 'Upload Image' },
-                                        { type: 'upload-video', icon: 'film', label: 'Upload Video' },
-                                        { type: 'text', icon: 'type', label: 'Text Post' },
+                                        { type: 'upload', icon: 'upload', label: 'Upload Media' },
+                                        { type: 'text', icon: 'type', label: 'Text Only' },
                                     ].map(({ type, icon, label }) => (
                                         <button
                                             key={type}
-                                            onClick={() => {
-                                                setPostType(type);
-                                                if (!type.startsWith('upload')) {
-                                                    clearUpload();
-                                                }
-                                            }}
-                                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl cabin-medium text-sm transition-all ${postType === type
+                                            onClick={() => setPostType(type)}
+                                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${postType === type
                                                 ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30'
                                                 : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                                                 }`}
@@ -833,275 +935,6 @@ const CreatePostModal = ({ isOpen, onClose, currentUser, onPostCreated }) => {
                         </>
                     )}
 
-                    {/* Image Generation Preview Area - Redesigned */}
-                    {(postType === 'image' || postType === 'auto') && (
-                        <div>
-                            <label className="block text-sm cabin-medium text-gray-700 dark:text-gray-300 mb-3">
-                                Generated Image
-                            </label>
-
-                            {/* Generation Progress */}
-                            {isGenerating && (
-                                <div className="mb-4 p-4 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border border-purple-200 dark:border-purple-800 rounded-2xl">
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <div className="w-5 h-5 border-2 border-purple-600/30 border-t-purple-600 rounded-full animate-spin"></div>
-                                        <span className="text-sm cabin-semibold text-purple-900 dark:text-purple-200">
-                                            {generationMessage}
-                                        </span>
-                                    </div>
-                                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden shadow-inner">
-                                        <div
-                                            className="h-full bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 transition-all duration-300 ease-out bg-[length:200%_100%] animate-[shimmer_2s_infinite]"
-                                            style={{ width: `${generationProgress}%` }}
-                                        />
-                                    </div>
-                                    <div className="flex items-center justify-between mt-2">
-                                        <p className="text-xs text-purple-600 dark:text-purple-400 cabin-medium">
-                                            {generationProgress}% complete
-                                        </p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                                            {selectedModel === 'flux-schnell' ? '~10s' : '~30s'}
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Image Generation Skeleton */}
-                            {isGenerating && (
-                                <div className="mb-4 relative rounded-2xl overflow-hidden border-2 border-purple-300 dark:border-purple-700 shadow-xl">
-                                    <div
-                                        className="w-full bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 animate-pulse"
-                                        style={{
-                                            aspectRatio: getAspectRatioStyle(),
-                                            minHeight: '400px'
-                                        }}
-                                    >
-                                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent dark:via-gray-600/30 animate-[shimmer_2s_infinite] bg-[length:200%_100%]"></div>
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
-                                            <div className="relative mb-4">
-                                                <div className="w-20 h-20 bg-gradient-to-br from-purple-400 to-indigo-500 rounded-2xl flex items-center justify-center animate-pulse shadow-lg">
-                                                    <Icon name="image" className="w-10 h-10 text-white" />
-                                                </div>
-                                                <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-400 rounded-full animate-ping"></div>
-                                                <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                                                    <Icon name="zap" className="w-3 h-3 text-white" />
-                                                </div>
-                                            </div>
-                                            <p className="text-base text-gray-700 dark:text-gray-300 cabin-semibold mb-2">
-                                                AI is creating your masterpiece...
-                                            </p>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400 cabin-regular text-center max-w-xs">
-                                                {aspectRatio} • {selectedModel === 'flux-schnell' ? 'FLUX Schnell' : 'FLUX SRPO'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Generated Images Preview - Multiple Image Support */}
-                            {generatedImages.length > 0 && !isGenerating && (
-                                <div className="mb-4 group">
-                                    <div className="relative rounded-2xl overflow-hidden border-2 border-purple-500 dark:border-purple-600 shadow-2xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 p-4">
-                                        {/* Image Grid */}
-                                        <ImageGrid
-                                            images={generatedImages}
-                                            className="mb-4"
-                                            onImageClick={(idx) => window.open(generatedImages[idx], '_blank')}
-                                        />
-
-                                        {/* Info Bar */}
-                                        <div className="flex items-center justify-between p-3 bg-black/5 dark:bg-black/20 rounded-lg">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center">
-                                                    <Icon name="sparkles" className="w-4 h-4 text-white" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm cabin-semibold text-gray-900 dark:text-white">
-                                                        {generatedImages.length} Image{generatedImages.length > 1 ? 's' : ''} Generated
-                                                    </p>
-                                                    <p className="text-xs text-gray-600 dark:text-gray-400">
-                                                        {aspectRatio} • {selectedModel === 'flux-schnell' ? 'FLUX Schnell' : 'FLUX SRPO'}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <button
-                                                onClick={() => {
-                                                    setGeneratedImages([]);
-                                                    setGenerationIds([]);
-                                                    setAiGenerationIds([]);
-                                                }}
-                                                className="p-2 bg-red-500/90 hover:bg-red-600 text-white rounded-lg transition-all hover:scale-105 shadow-lg"
-                                                title="Clear all images"
-                                            >
-                                                <Icon name="trash-2" className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Legacy single image support (fallback) */}
-                            {filePreview && filePreview !== 'text-generated' && !isGenerating && generatedImages.length === 0 && (
-                                <div className="mb-4 group">
-                                    <div className="relative rounded-2xl overflow-hidden border-2 border-purple-500 dark:border-purple-600 shadow-2xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800">
-                                        {/* Image Container with proper aspect ratio */}
-                                        <div
-                                            className="relative w-full bg-black/5 dark:bg-black/20"
-                                            style={{
-                                                aspectRatio: getAspectRatioStyle(),
-                                                minHeight: '400px',
-                                                maxHeight: '600px'
-                                            }}
-                                        >
-                                            <img
-                                                src={filePreview}
-                                                alt="Generated preview"
-                                                className="absolute inset-0 w-full h-full object-contain"
-                                                style={{ imageRendering: 'high-quality' }}
-                                            />
-
-                                            {/* Overlay Controls - Show on Hover */}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                                {/* Top Controls */}
-                                                <div className="absolute top-4 left-4 right-4 flex items-start justify-between">
-                                                    <div className="flex gap-2">
-                                                        <div className="px-3 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 backdrop-blur-md text-white rounded-lg shadow-lg">
-                                                            <p className="text-xs cabin-semibold flex items-center gap-1.5">
-                                                                <Icon name="sparkles" className="w-3.5 h-3.5" />
-                                                                AI Generated
-                                                            </p>
-                                                        </div>
-                                                        <div className="px-3 py-1.5 bg-black/70 backdrop-blur-md text-white rounded-lg shadow-lg">
-                                                            <p className="text-xs cabin-medium">{aspectRatio}</p>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Action Buttons */}
-                                                    <div className="flex gap-2">
-                                                        <button
-                                                            onClick={() => window.open(filePreview, '_blank')}
-                                                            className="p-2.5 bg-white/90 hover:bg-white text-gray-700 rounded-lg transition-all hover:scale-105 shadow-lg"
-                                                            title="Open in new tab"
-                                                        >
-                                                            <Icon name="external-link" className="w-4 h-4" />
-                                                        </button>
-                                                        <button
-                                                            onClick={clearUpload}
-                                                            className="p-2.5 bg-red-500/90 hover:bg-red-600 text-white rounded-lg transition-all hover:scale-105 shadow-lg"
-                                                            title="Remove image"
-                                                        >
-                                                            <Icon name="trash-2" className="w-4 h-4" />
-                                                        </button>
-                                                    </div>
-                                                </div>
-
-                                                {/* Bottom Info */}
-                                                <div className="absolute bottom-4 left-4 right-4">
-                                                    <div className="bg-black/70 backdrop-blur-md rounded-xl p-3 shadow-lg">
-                                                        <div className="flex items-center justify-between text-white">
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center">
-                                                                    <Icon name="cpu" className="w-4 h-4 text-white" />
-                                                                </div>
-                                                                <div>
-                                                                    <p className="text-xs text-gray-300">Model</p>
-                                                                    <p className="text-sm cabin-semibold">
-                                                                        {selectedModel === 'flux-schnell' ? 'FLUX Schnell' : 'FLUX.1 SRPO'}
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                            <div className="text-right">
-                                                                <p className="text-xs text-gray-300">Quality</p>
-                                                                <p className="text-sm cabin-semibold text-green-400">
-                                                                    {selectedModel === 'flux-schnell' ? 'Fast' : 'Premium'}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Info Bar Below Image */}
-                                        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-3">
-                                            <div className="flex items-center justify-between text-white">
-                                                <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                    <Icon name="zap" className="w-4 h-4 flex-shrink-0" />
-                                                    <p className="text-xs cabin-medium truncate">
-                                                        {prompt.length > 60 ? prompt.substring(0, 60) + '...' : prompt}
-                                                    </p>
-                                                </div>
-                                                <div className="flex items-center gap-1 ml-3">
-                                                    <Icon name="check-circle" className="w-4 h-4 text-green-300" />
-                                                    <span className="text-xs cabin-semibold">Ready</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Quick Actions Below Image */}
-                                    <div className="mt-3 flex gap-2">
-                                        <button
-                                            onClick={() => {
-                                                const link = document.createElement('a');
-                                                link.href = filePreview;
-                                                link.download = `leelaverse-${Date.now()}.jpg`;
-                                                link.click();
-                                            }}
-                                            className="flex-1 py-2.5 px-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl cabin-medium text-sm flex items-center justify-center gap-2 transition-all hover:shadow-lg hover:shadow-blue-500/30"
-                                        >
-                                            <Icon name="download" className="w-4 h-4" />
-                                            Download
-                                        </button>
-                                        <button
-                                            onClick={handleGenerateImage}
-                                            className="flex-1 py-2.5 px-4 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-xl cabin-medium text-sm flex items-center justify-center gap-2 transition-all hover:shadow-lg hover:shadow-purple-500/30"
-                                        >
-                                            <Icon name="refresh-cw" className="w-4 h-4" />
-                                            Regenerate
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Empty State - No images generated yet */}
-                            {!filePreview && !isGenerating && (
-                                <div className="mb-4 relative rounded-2xl overflow-hidden border-2 border-dashed border-gray-300 dark:border-gray-600 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-900/50">
-                                    <div
-                                        className="p-12 text-center"
-                                        style={{ minHeight: '400px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
-                                    >
-                                        <div className="relative mb-6">
-                                            <div className="w-24 h-24 bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 rounded-3xl flex items-center justify-center shadow-lg">
-                                                <Icon name="image" className="w-12 h-12 text-purple-400 dark:text-purple-500" />
-                                            </div>
-                                            <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
-                                                <Icon name="sparkles" className="w-5 h-5 text-white" />
-                                            </div>
-                                        </div>
-                                        <h3 className="text-lg cabin-semibold text-gray-900 dark:text-white mb-2">
-                                            Ready to Create Magic?
-                                        </h3>
-                                        <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs mb-6">
-                                            Enter a prompt above and click "Generate Image" to create stunning AI artwork
-                                        </p>
-                                        <div className="flex flex-wrap gap-2 justify-center">
-                                            {['Portrait', 'Landscape', 'Abstract', 'Realistic'].map((suggestion) => (
-                                                <button
-                                                    key={suggestion}
-                                                    onClick={() => setPrompt(`A beautiful ${suggestion.toLowerCase()} scene`)}
-                                                    className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs cabin-medium hover:border-purple-400 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-400 transition-all"
-                                                >
-                                                    {suggestion}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
                     {/* Video Generation Preview Area */}
                     {postType === 'video' && (
                         <div>
@@ -1253,22 +1086,20 @@ const CreatePostModal = ({ isOpen, onClose, currentUser, onPostCreated }) => {
                         </div>
                     )}
 
-                    {/* Caption Input - Only show when content is ready */}
-                    {(filePreview || postType === 'text') && !isGenerating && (
-                        <div className="mb-3">
-                            <textarea
-                                value={caption}
-                                onChange={(e) => setCaption(e.target.value)}
-                                placeholder="Write a caption... (optional)"
-                                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                                rows="3"
-                                maxLength="2200"
-                            />
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">
-                                {caption.length}/2200
-                            </p>
-                        </div>
-                    )}
+                    {/* Caption Input */}
+                    <div className="mb-3">
+                        <textarea
+                            value={caption}
+                            onChange={(e) => setCaption(e.target.value)}
+                            placeholder="Write a caption... (optional)"
+                            className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                            rows="3"
+                            maxLength="2200"
+                        />
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">
+                            {caption.length}/2200
+                        </p>
+                    </div>
 
                     <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
@@ -1292,111 +1123,43 @@ const CreatePostModal = ({ isOpen, onClose, currentUser, onPostCreated }) => {
                         <button
                             onClick={handleCloseModal}
                             disabled={isGenerating || isPosting}
-                            className="flex-1 py-3 px-4 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl cabin-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="py-3 px-4 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl cabin-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Cancel
                         </button>
 
-                        {/* Generate Buttons - Show different buttons based on post type */}
-                        {!filePreview && !isGenerating && (
-                            <>
-                                {/* Generate Image Button */}
-                                {(postType === 'image' || postType === 'auto') && (
-                                    <button
-                                        onClick={handleGenerateImage}
-                                        disabled={
-                                            isGenerating ||
-                                            isPosting ||
-                                            (!prompt.trim() || prompt.length < 5) ||
-                                            !accessToken
-                                        }
-                                        className={`flex-1 py-3 px-4 ${!accessToken
-                                            ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
-                                            : 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-lg hover:shadow-purple-500/30'
-                                            } rounded-xl cabin-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
-                                        title={!accessToken ? 'Please login to generate images' : ''}
-                                    >
-                                        <Icon name="image" className="w-5 h-5" />
-                                        {!accessToken ? 'Login Required' : 'Generate Image'}
-                                    </button>
-                                )}
-
-                                {/* Generate Video Button */}
-                                {postType === 'video' && (
-                                    <button
-                                        onClick={handleGenerateVideo}
-                                        disabled={
-                                            isGenerating ||
-                                            isPosting ||
-                                            (!prompt.trim() || prompt.length < 5) ||
-                                            !accessToken
-                                        }
-                                        className={`flex-1 py-3 px-4 ${!accessToken
-                                            ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
-                                            : 'bg-gradient-to-r from-pink-600 to-purple-600 text-white hover:shadow-lg hover:shadow-pink-500/30'
-                                            } rounded-xl cabin-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
-                                        title={!accessToken ? 'Please login to generate videos' : ''}
-                                    >
-                                        <Icon name="video" className="w-5 h-5" />
-                                        {!accessToken ? 'Login Required' : 'Generate Video'}
-                                    </button>
-                                )}
-
-                                {/* Generate Text Button */}
-                                {postType === 'text' && (
-                                    <button
-                                        onClick={handleGenerateText}
-                                        disabled={
-                                            isGenerating ||
-                                            isPosting ||
-                                            (!prompt.trim() || prompt.length < 5) ||
-                                            !accessToken
-                                        }
-                                        className={`flex-1 py-3 px-4 ${!accessToken
-                                            ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
-                                            : 'bg-gradient-to-r from-green-600 to-teal-600 text-white hover:shadow-lg hover:shadow-green-500/30'
-                                            } rounded-xl cabin-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
-                                        title={!accessToken ? 'Please login to generate text' : ''}
-                                    >
-                                        <Icon name="type" className="w-5 h-5" />
-                                        {!accessToken ? 'Login Required' : 'Generate Text'}
-                                    </button>
-                                )}
-
-                                {/* Upload Types - No Generate Button */}
-                                {(postType === 'upload-image' || postType === 'upload-video') && !uploadedFile && (
-                                    <div className="flex-1 py-3 px-4 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-xl cabin-semibold text-center">
-                                        Upload a file to continue
-                                    </div>
-                                )}
-                            </>
+                        {/* Generate Button - Always available for image generation */}
+                        {!isGenerating && (postType === 'image' || postType === 'auto') && (
+                            <button
+                                onClick={handleGenerateImage}
+                                disabled={!prompt.trim() || !accessToken || isPosting}
+                                className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-semibold hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                <Icon name="sparkles" className="w-5 h-5" />
+                                {mediaItems.length > 0 ? 'Generate More' : 'Generate'}
+                            </button>
                         )}
 
-                        {/* Post Button - Always available when content is ready */}
-                        {((generatedImages.length > 0) || // NEW: Multiple generated images
-                            (filePreview && filePreview !== 'text-generated') || // Image/video generated or uploaded
-                            (filePreview === 'text-generated') || // Text generated
-                            (postType === 'text' && caption.trim()) || // Manual text post
-                            uploadedFile) && // File uploaded
-                            !isGenerating && (
-                                <button
-                                    onClick={handleCreatePost}
-                                    disabled={isPosting}
-                                    className="flex-1 py-3 px-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl cabin-semibold hover:shadow-lg hover:shadow-green-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                                >
-                                    {isPosting ? (
-                                        <>
-                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                            <span>Uploading & Posting...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Icon name="send" className="w-5 h-5" />
-                                            <span>Post {generatedImages.length > 1 ? `${generatedImages.length} Images` : ''}</span>
-                                        </>
-                                    )}
-                                </button>
-                            )}
+                        {/* Post Button - Show when there's content to post */}
+                        {(mediaItems.length > 0 || caption.trim()) && !isGenerating && (
+                            <button
+                                onClick={handleCreatePost}
+                                disabled={isPosting}
+                                className="flex-1 py-3 px-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl cabin-semibold hover:shadow-lg hover:shadow-green-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {isPosting ? (
+                                    <>
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                        <span>Posting...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Icon name="send" className="w-5 h-5" />
+                                        <span>Post {mediaItems.length > 1 ? `(${mediaItems.length})` : ''}</span>
+                                    </>
+                                )}
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>

@@ -6,6 +6,11 @@ import CreatePostModal from './CreatePostModal';
 import FeedPost from './FeedPost';
 import FeedShort from './FeedShort';
 import MyGenerations from './MyGenerations';
+import ImageGrid from './ImageGrid';
+import Profile from './NavOptions/Profile';
+import Shorts from './NavOptions/Shorts';
+import Explore from './NavOptions/Explore';
+import Groups from './NavOptions/Groups';
 import { mockPosts, mockSuggestedUsers, mockCurrentUser } from '../data/mockData';
 import logoImage from '../assets/logo.png';
 
@@ -88,60 +93,6 @@ const Dashboard = ({ user, onLogout }) => {
         };
         fetchPosts();
     };
-
-    // Mock feed data with mixed content
-    const feedData = [
-        {
-            type: 'post',
-            data: {
-                ...mockPosts[0],
-                aiGenerated: true,
-                aiModel: 'DALL-E 3',
-                tags: ['AIArt', 'DigitalCreation', 'GenerativeAI']
-            }
-        },
-        {
-            type: 'short',
-            data: {
-                id: 's1',
-                user: mockCurrentUser,
-                thumbnail: 'https://picsum.photos/400/700',
-                title: 'AI-Generated Dance Animation - Stunning Results!',
-                views: '1.2M',
-                likes: 45000,
-                aiGenerated: true
-            }
-        },
-        {
-            type: 'post',
-            data: {
-                ...mockPosts[1],
-                tags: ['Photography', 'AIEnhanced']
-            }
-        },
-        {
-            type: 'short',
-            data: {
-                id: 's2',
-                user: mockSuggestedUsers[0],
-                thumbnail: 'https://picsum.photos/401/700',
-                title: 'Futuristic Cityscape - AI Architecture',
-                views: '890K',
-                likes: 32000,
-                aiGenerated: true
-            }
-        },
-        {
-            type: 'post',
-            data: {
-                ...mockPosts[2],
-                aiGenerated: true,
-                aiModel: 'Midjourney v6',
-                tags: ['Fantasy', 'AIArt', 'Concept']
-            }
-        },
-    ];
-
     // Render content based on active tab
     const renderContent = () => {
         switch (activeTab) {
@@ -186,8 +137,30 @@ const Dashboard = ({ user, onLogout }) => {
 
                             {/* Loading State */}
                             {loadingPosts && (
-                                <div className="flex items-center justify-center py-12">
-                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {[...Array(6)].map((_, i) => (
+                                        <div
+                                            key={i}
+                                            className={`bg-white dark:bg-gray-800 rounded-3xl overflow-hidden shadow-md border border-gray-100 dark:border-gray-700 ${i === 0 ? 'sm:col-span-2 lg:col-span-2' : ''
+                                                }`}
+                                        >
+                                            {/* Image Skeleton */}
+                                            <div className={`${i === 0 ? 'aspect-[16/9]' : 'aspect-square'} bg-gray-200 dark:bg-gray-700 animate-pulse`}></div>
+                                            {/* Content Skeleton */}
+                                            <div className="p-4 space-y-3">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+                                                    <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                                                </div>
+                                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4"></div>
+                                                <div className="flex justify-between pt-2">
+                                                    <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                                                    <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             )}
 
@@ -237,33 +210,50 @@ const Dashboard = ({ user, onLogout }) => {
 
                                         const hasImages = imageUrls.length > 0;
                                         const isTextPost = post.category === 'text-post' || !hasImages;
+                                        const hasMultipleImages = imageUrls.length > 1;
 
                                         return (
                                             <div
                                                 key={post.id}
-                                                className={`bg-white dark:bg-gray-800 rounded-3xl overflow-hidden shadow-md border border-gray-100 dark:border-gray-700 ${index === 0 ? 'sm:col-span-2 lg:col-span-2' : ''
+                                                className={`bg-white dark:bg-gray-800 rounded-3xl overflow-hidden shadow-md border border-gray-100 dark:border-gray-700 ${index === 0 && hasImages ? 'sm:col-span-2 lg:col-span-2' : ''
                                                     }`}
                                             >
                                                 {/* Image Post */}
                                                 {hasImages && (
-                                                    <div className={`relative ${index === 0 ? 'aspect-[16/9]' : 'aspect-square'}`}>
-                                                        <img
-                                                            src={imageUrls[0]}
-                                                            alt={post.title || post.caption || 'Post image'}
-                                                            className="w-full h-full object-cover"
-                                                        />
+                                                    <div className="relative">
+                                                        {/* Single Image - Full Display */}
+                                                        {!hasMultipleImages && (
+                                                            <div className={`relative ${index === 0 ? 'aspect-[16/9]' : 'aspect-square'}`}>
+                                                                <img
+                                                                    src={imageUrls[0]}
+                                                                    alt={post.title || post.caption || 'Post image'}
+                                                                    className="w-full h-full object-cover"
+                                                                />
+                                                            </div>
+                                                        )}
+
+                                                        {/* Multiple Images - Grid Layout */}
+                                                        {hasMultipleImages && (
+                                                            <div className="p-3">
+                                                                <ImageGrid
+                                                                    images={imageUrls}
+                                                                    onImageClick={(idx) => window.open(imageUrls[idx], '_blank')}
+                                                                />
+                                                            </div>
+                                                        )}
+
                                                         {/* AI Model Badge */}
                                                         {post.aiGenerated && post.aiModel && (
-                                                            <div className="absolute top-3 right-3 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-full text-white text-xs cabin-medium flex items-center gap-1">
+                                                            <div className="absolute top-3 right-3 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-full text-white text-xs cabin-medium flex items-center gap-1 z-10">
                                                                 <Icon name="sparkles" className="w-3 h-3" />
                                                                 {post.aiModel}
                                                             </div>
                                                         )}
                                                         {/* Multiple Images Indicator */}
-                                                        {imageUrls.length > 1 && (
-                                                            <div className="absolute top-3 left-3 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-full text-white text-xs cabin-medium flex items-center gap-1">
+                                                        {hasMultipleImages && (
+                                                            <div className="absolute top-3 left-3 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-full text-white text-xs cabin-medium flex items-center gap-1 z-10">
                                                                 <Icon name="image" className="w-3 h-3" />
-                                                                {imageUrls.length}
+                                                                {imageUrls.length} images
                                                             </div>
                                                         )}
                                                     </div>
@@ -337,64 +327,16 @@ const Dashboard = ({ user, onLogout }) => {
                 );
 
             case 'shorts':
-                return (
-                    <div className="space-y-6">
-                        <div className="text-center py-16">
-                            <Icon name="video" className="w-16 h-16 text-purple-500 mx-auto mb-4" />
-                            <h2 className="text-2xl cabin-semibold text-gray-900 dark:text-white mb-2">Shorts</h2>
-                            <p className="text-gray-600 dark:text-gray-400">Short-form AI-generated videos coming soon</p>
-                        </div>
-                    </div>
-                );
+                return <Shorts />;
 
             case 'explore':
-                return (
-                    <div className="space-y-6">
-                        <div className="text-center py-16">
-                            <Icon name="search" className="w-16 h-16 text-purple-500 mx-auto mb-4" />
-                            <h2 className="text-2xl cabin-semibold text-gray-900 dark:text-white mb-2">Explore</h2>
-                            <p className="text-gray-600 dark:text-gray-400">Discover trending AI content and creators</p>
-                        </div>
-                    </div>
-                );
+                return <Explore />;
 
             case 'groups':
-                return (
-                    <div className="space-y-6">
-                        <div className="text-center py-16">
-                            <Icon name="users" className="w-16 h-16 text-purple-500 mx-auto mb-4" />
-                            <h2 className="text-2xl cabin-semibold text-gray-900 dark:text-white mb-2">Groups</h2>
-                            <p className="text-gray-600 dark:text-gray-400">Join communities of AI creators and enthusiasts</p>
-                        </div>
-                    </div>
-                );
+                return <Groups />;
 
             case 'profile':
-                return (
-                    <div className="space-y-6">
-                        <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-md border border-gray-100 dark:border-gray-700">
-                            <div className="flex items-center gap-6 mb-6">
-                                <img
-                                    src={currentUser.avatar}
-                                    alt={currentUser.username}
-                                    className="w-24 h-24 rounded-full object-cover border-4 border-purple-500"
-                                />
-                                <div>
-                                    <h2 className="text-2xl cabin-semibold text-gray-900 dark:text-white">{currentUser.username}</h2>
-                                    <p className="text-gray-600 dark:text-gray-400">@{currentUser.username.toLowerCase()}</p>
-                                    <div className="flex gap-4 mt-2">
-                                        <span className="text-sm"><strong className="cabin-semibold">{currentUser.posts}</strong> Posts</span>
-                                        <span className="text-sm"><strong className="cabin-semibold">{currentUser.followers}</strong> Followers</span>
-                                        <span className="text-sm"><strong className="cabin-semibold">{currentUser.following}</strong> Following</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="text-center py-8">
-                                <p className="text-gray-600 dark:text-gray-400">Your profile content will appear here</p>
-                            </div>
-                        </div>
-                    </div>
-                );
+                return <Profile currentUser={currentUser} />;
 
             case 'my-creations':
                 return <MyGenerations user={currentUser} />;
@@ -464,8 +406,8 @@ const Dashboard = ({ user, onLogout }) => {
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${activeTab === tab.id
-                                            ? 'bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 shadow-sm cabin-semibold'
-                                            : 'text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-600 cabin-medium'
+                                        ? 'bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 shadow-sm cabin-semibold'
+                                        : 'text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-600 cabin-medium'
                                         }`}
                                 >
                                     <Icon name={tab.icon} className="w-5 h-5" />
@@ -583,8 +525,8 @@ const Dashboard = ({ user, onLogout }) => {
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             className={`flex flex-col items-center px-3 py-2 rounded-xl transition-all ${activeTab === tab.id
-                                    ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
-                                    : 'text-gray-600 dark:text-gray-400'
+                                ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
+                                : 'text-gray-600 dark:text-gray-400'
                                 }`}
                         >
                             <Icon name={tab.icon} className="w-6 h-6" />
