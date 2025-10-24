@@ -10,6 +10,13 @@ cloudinary.config({
 	api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
+// Debug: Log Cloudinary configuration (remove in production)
+console.log('Cloudinary Config:', {
+	cloud_name: process.env.CLOUDINARY_CLOUD_NAME ? '✓ Set' : '✗ Missing',
+	api_key: process.env.CLOUDINARY_API_KEY ? '✓ Set' : '✗ Missing',
+	api_secret: process.env.CLOUDINARY_API_SECRET ? '✓ Set' : '✗ Missing'
+});
+
 // Configure FAL AI
 fal.config({
 	credentials: process.env.FAL_KEY
@@ -366,24 +373,32 @@ exports.createPostFromGeneration = async (req, res) => {
  */
 async function uploadToCloudinary(imageUrl, userId) {
 	try {
+		console.log('Downloading image from FAL:', imageUrl);
 		// Download image from FAL
 		const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
 		const buffer = Buffer.from(response.data);
+		console.log('Image downloaded, size:', buffer.length, 'bytes');
+
+		console.log('Uploading to Cloudinary with config:', {
+			cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+			folder: `leelaverse/posts/${userId}`,
+		});
 
 		// Upload to Cloudinary
 		return new Promise((resolve, reject) => {
 			const uploadStream = cloudinary.uploader.upload_stream(
 				{
 					folder: `leelaverse/posts/${userId}`,
-					resource_type: 'image',
-					transformation: [
-						{ quality: 'auto:good' },
-						{ fetch_format: 'auto' }
-					]
+					resource_type: 'image'
 				},
 				(error, result) => {
-					if (error) reject(error);
-					else resolve(result);
+					if (error) {
+						console.error('Cloudinary upload error:', error);
+						reject(error);
+					} else {
+						console.log('Cloudinary upload success:', result.secure_url);
+						resolve(result);
+					}
 				}
 			);
 
@@ -391,7 +406,7 @@ async function uploadToCloudinary(imageUrl, userId) {
 		});
 	} catch (error) {
 		console.error('Cloudinary upload error:', error);
-		throw new Error('Failed to upload image to storage');
+		throw new Error(`Failed to upload image to storage: ${error.message}`);
 	}
 }
 
@@ -409,6 +424,8 @@ exports.createPost = async (req, res) => {
 			type = 'content',
 			category = 'image-post',
 			imageUrls = [], // Array of image URLs from FAL AI or direct URLs
+			videoUrls = [], // Array of video URLs for mixed media
+			mediaItems = [], // Mixed media array: [{type: 'image'|'video', url: string}]
 			aiGenerationIds = [], // Array of AI generation IDs to link
 			aiGenerated = false,
 			aiDetails = {},
@@ -446,9 +463,9 @@ exports.createPost = async (req, res) => {
 					cloudinaryUrls.push(uploadResult.secure_url);
 					console.log(`Uploaded image ${i + 1}/${imageUrls.length} to Cloudinary`);
 
-					// Use first image as thumbnail
+					// Use first image as thumbnail (just use the same URL without transformation)
 					if (i === 0) {
-						thumbnailUrl = uploadResult.secure_url.replace('/upload/', '/upload/w_400,h_400,c_fill/');
+						thumbnailUrl = uploadResult.secure_url;
 					}
 				} catch (uploadError) {
 					console.error(`Failed to upload image ${i + 1}:`, uploadError);
@@ -472,6 +489,11 @@ exports.createPost = async (req, res) => {
 			tags: tags.map(tag => tag.toLowerCase().trim()),
 			visibility: visibility
 		};
+
+		// Add mixed media items if provided (store as JSON)
+		if (mediaItems && mediaItems.length > 0) {
+			postData.mediaItems = mediaItems;
+		}
 
 		// Add AI details if applicable
 		if (aiGenerated && aiDetails) {
@@ -517,13 +539,10 @@ exports.createPost = async (req, res) => {
 			console.log(`Linked ${aiGenerationIds.length} AI generation(s) to post`);
 		}
 
-		// Update user stats (increment posts count)
+		// Update user stats (increment totalCreations)
 		await prisma.user.update({
 			where: { id: userId },
 			data: {
-				postsCount: {
-					increment: 1
-				},
 				totalCreations: {
 					increment: 1
 				}
@@ -547,7 +566,7 @@ exports.createPost = async (req, res) => {
 };
 
 /**
- * Get User Posts
+ * Get User Posts (Prisma)
  * GET /api/posts/user/:userId
  */
 exports.getUserPosts = async (req, res) => {
@@ -555,24 +574,41 @@ exports.getUserPosts = async (req, res) => {
 		const { userId } = req.params;
 		const { category, page = 1, limit = 20 } = req.query;
 
-		const query = {
-			author: userId,
-			deletedAt: null,
-			status: 'published'
+		const skip = (parseInt(page) - 1) * parseInt(limit);
+
+		const whereClause = {
+			authorId: userId,
+			isApproved: true
 		};
 
 		if (category) {
-			query.category = category;
+			whereClause.category = category;
 		}
 
-		const posts = await Post.find(query)
-			.populate('author', 'username avatar verified')
-			.sort({ createdAt: -1 })
-			.skip((page - 1) * limit)
-			.limit(parseInt(limit))
-			.lean();
+		const posts = await prisma.post.findMany({
+			where: whereClause,
+			include: {
+				author: {
+					select: {
+						id: true,
+						username: true,
+						firstName: true,
+						lastName: true,
+						avatar: true,
+						verificationStatus: true
+					}
+				}
+			},
+			orderBy: {
+				createdAt: 'desc'
+			},
+			skip: skip,
+			take: parseInt(limit)
+		});
 
-		const total = await Post.countDocuments(query);
+		const total = await prisma.post.count({
+			where: whereClause
+		});
 
 		res.json({
 			success: true,
@@ -581,7 +617,7 @@ exports.getUserPosts = async (req, res) => {
 				page: parseInt(page),
 				limit: parseInt(limit),
 				total,
-				pages: Math.ceil(total / limit)
+				pages: Math.ceil(total / parseInt(limit))
 			}
 		});
 
@@ -596,7 +632,7 @@ exports.getUserPosts = async (req, res) => {
 };
 
 /**
- * Get Feed Posts
+ * Get Feed Posts (Prisma)
  * GET /api/posts/feed
  */
 exports.getFeedPosts = async (req, res) => {
@@ -604,24 +640,44 @@ exports.getFeedPosts = async (req, res) => {
 		const userId = req.user?.id;
 		const { category, page = 1, limit = 20 } = req.query;
 
-		const query = {
-			deletedAt: null,
-			status: 'published',
-			visibility: { $in: ['public', 'followers'] }
+		const skip = (parseInt(page) - 1) * parseInt(limit);
+
+		const whereClause = {
+			isApproved: true,
+			visibility: {
+				in: ['public', 'followers']
+			}
 		};
 
 		if (category) {
-			query.category = category;
+			whereClause.category = category;
 		}
 
-		const posts = await Post.find(query)
-			.populate('author', 'username avatar verified stats')
-			.sort({ createdAt: -1 })
-			.skip((page - 1) * limit)
-			.limit(parseInt(limit))
-			.lean();
+		const posts = await prisma.post.findMany({
+			where: whereClause,
+			include: {
+				author: {
+					select: {
+						id: true,
+						username: true,
+						firstName: true,
+						lastName: true,
+						avatar: true,
+						verificationStatus: true,
+						totalCreations: true
+					}
+				}
+			},
+			orderBy: {
+				createdAt: 'desc'
+			},
+			skip: skip,
+			take: parseInt(limit)
+		});
 
-		const total = await Post.countDocuments(query);
+		const total = await prisma.post.count({
+			where: whereClause
+		});
 
 		res.json({
 			success: true,
@@ -630,7 +686,7 @@ exports.getFeedPosts = async (req, res) => {
 				page: parseInt(page),
 				limit: parseInt(limit),
 				total,
-				pages: Math.ceil(total / limit)
+				pages: Math.ceil(total / parseInt(limit))
 			}
 		});
 
@@ -645,18 +701,33 @@ exports.getFeedPosts = async (req, res) => {
 };
 
 /**
- * Get Single Post
+ * Get Single Post (Prisma)
  * GET /api/posts/:postId
  */
 exports.getPost = async (req, res) => {
 	try {
 		const { postId } = req.params;
 
-		const post = await Post.findById(postId)
-			.populate('author', 'username avatar verified stats')
-			.lean();
+		const post = await prisma.post.findUnique({
+			where: {
+				id: postId
+			},
+			include: {
+				author: {
+					select: {
+						id: true,
+						username: true,
+						firstName: true,
+						lastName: true,
+						avatar: true,
+						verificationStatus: true,
+						totalCreations: true
+					}
+				}
+			}
+		});
 
-		if (!post || post.deletedAt) {
+		if (!post) {
 			return res.status(404).json({
 				success: false,
 				message: 'Post not found'
@@ -664,8 +735,13 @@ exports.getPost = async (req, res) => {
 		}
 
 		// Increment views
-		await Post.findByIdAndUpdate(postId, {
-			$inc: { 'stats.views': 1 }
+		await prisma.post.update({
+			where: { id: postId },
+			data: {
+				viewsCount: {
+					increment: 1
+				}
+			}
 		});
 
 		res.json({
@@ -684,7 +760,7 @@ exports.getPost = async (req, res) => {
 };
 
 /**
- * Delete Post
+ * Delete Post (Prisma)
  * DELETE /api/posts/:postId
  */
 exports.deletePost = async (req, res) => {
@@ -692,7 +768,12 @@ exports.deletePost = async (req, res) => {
 		const { postId } = req.params;
 		const userId = req.user.id;
 
-		const post = await Post.findOne({ _id: postId, author: userId });
+		const post = await prisma.post.findFirst({
+			where: {
+				id: postId,
+				authorId: userId
+			}
+		});
 
 		if (!post) {
 			return res.status(404).json({
@@ -701,13 +782,11 @@ exports.deletePost = async (req, res) => {
 			});
 		}
 
-		// Soft delete
-		post.deletedAt = new Date();
-		await post.save();
-
-		// Update user stats
-		await User.findByIdAndUpdate(userId, {
-			$inc: { 'stats.postsCount': -1 }
+		// Delete post (hard delete or you could add a deletedAt field)
+		await prisma.post.delete({
+			where: {
+				id: postId
+			}
 		});
 
 		res.json({
