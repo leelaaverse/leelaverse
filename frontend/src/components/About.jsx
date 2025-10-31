@@ -30,7 +30,7 @@ export default function About() {
                         </h2>
 
                         <p className="cabin-regular text-lg text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
-                            Leelaaverse isn't just another social platform. We're building the Facebook for AI creators,
+                            leelaah isn't just another social platform. We're building the Facebook for AI creators,
                             evolving into the YouTube for AI content. A vibrant, community-driven space where technology
                             meets imagination, and everyone can explore their alternate digital identity.
                         </p>

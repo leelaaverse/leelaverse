@@ -77,7 +77,7 @@ export default function Login({ isOpen, setIsOpen, setIsSignupModalOpen }) {
                             </h2>
 
                             <p className="cabin-regular text-gray-600 dark:text-gray-300">
-                                Sign in to your Leelaaverse account
+                                Sign in to your leelaah account
                             </p>
                         </div>
 

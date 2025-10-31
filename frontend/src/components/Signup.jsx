@@ -318,7 +318,7 @@ export default function Signup({ setCurrentPage }) {
                 {/* Benefits */}
                 <div className="glass rounded-2xl p-6 mt-8">
                     <h4 className="zalando-sans-expanded-primary text-center font-semibold text-gray-900 mb-4">
-                        Why Join Leelaaverse?
+                        Why Join leelaah?
                     </h4>
                     <div className="grid grid-cols-3 gap-4 text-center">
                         <div>

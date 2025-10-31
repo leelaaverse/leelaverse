@@ -31,7 +31,7 @@ export default function HowItWorks() {
                 {/* Section Header */}
                 <div className="text-center mb-16">
                     <h2 className="zalando-sans-expanded-bold text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-4">
-                        How <span className="gradient-text-primary">Leelaaverse</span> Works
+                        How <span className="gradient-text-primary">leelaah</span> Works
                     </h2>
                     <p className="cabin-regular text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
                         From prompt to viral post in 3 simple steps
