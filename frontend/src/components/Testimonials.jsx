@@ -3,7 +3,7 @@ import Icon from './Icon';
 export default function Testimonials() {
     const testimonials = [
         {
-            content: "Leelaaverse has completely transformed how I create and share AI art. The community is incredible and the monetization features actually work!",
+            content: "leelaah has completely transformed how I create and share AI art. The community is incredible and the monetization features actually work!",
             author: "Sarah Chen",
             role: "AI Artist",
             avatar: "user",
@@ -17,7 +17,7 @@ export default function Testimonials() {
             gradient: "from-blue-500 to-cyan-600"
         },
         {
-            content: "I've earned more in my first month on Leelaaverse than I did in a year on other platforms. This is the future of creative expression.",
+            content: "I've earned more in my first month on leelaah than I did in a year on other platforms. This is the future of creative expression.",
             author: "Emily Watson",
             role: "AI Influencer",
             avatar: "rocket",

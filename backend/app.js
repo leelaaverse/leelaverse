@@ -49,7 +49,7 @@ app.use(helmet());
 
 // CORS configuration - Allow multiple origins
 const allowedOrigins = [
-    'https://www.leelaaverse.com',
+    'https://www.leelaah.com',
     'http://localhost:5173',
     'http://localhost:5174',
     'http://localhost:3000',
@@ -122,7 +122,7 @@ app.use('/public', express.static(path.join(__dirname, 'public')));
 app.get('/api/health', (req, res) => {
     res.json({
         success: true,
-        message: 'Leelaverse Backend API is running',
+        message: 'leelaah Backend API is running',
         timestamp: new Date().toISOString(),
         environment: process.env.NODE_ENV || 'development'
     });
@@ -158,7 +158,7 @@ app.post('/api/debug/logs/clear', (req, res) => {
 app.get('/', (req, res) => {
     res.json({
         success: true,
-        message: 'Welcome to Leelaverse Backend API',
+        message: 'Welcome to leelaah Backend API',
         version: '1.0.0',
         endpoints: {
             health: '/api/health',
@@ -250,7 +250,7 @@ process.on('SIGINT', async () => {
 });
 
 const server = app.listen(port, () => {
-    console.log(`🚀 Leelaverse Backend API is running on http://localhost:${port}`);
+    console.log(`🚀 leelaah Backend API is running on http://localhost:${port}`);
     console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`🌐 CORS enabled for: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
 });

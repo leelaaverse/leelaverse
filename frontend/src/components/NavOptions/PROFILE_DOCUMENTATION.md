@@ -1,7 +1,7 @@
 # Profile System Documentation
 
 ## Overview
-The Profile component is a comprehensive user profile system for the Leelaaverse AI social media platform. It supports both viewing your own profile and viewing other users' profiles with different permissions.
+The Profile component is a comprehensive user profile system for the leelaah AI social media platform. It supports both viewing your own profile and viewing other users' profiles with different permissions.
 
 ## Features
 

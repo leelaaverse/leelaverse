@@ -182,7 +182,7 @@ export default function SignupModal({ isOpen, setIsOpen, setIsLoginModalOpen }) 
                             </div>
 
                             <h2 className="zalando-sans-expanded-bold text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                                Join Leelaaverse
+                                Join leelaah
                             </h2>
 
                             <p className="cabin-regular text-gray-600 dark:text-gray-300">

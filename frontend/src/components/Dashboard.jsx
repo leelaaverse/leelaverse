@@ -386,11 +386,11 @@ const Dashboard = ({ user, onLogout }) => {
                         <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveTab('home')}>
                             <img
                                 src={logoImage}
-                                alt="Leelaaverse Logo"
+                                alt="leelaah Logo"
                                 className="h-10 w-10 object-contain rounded-2xl"
                             />
                             <h1 className="text-2xl zalando-sans-expanded-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                                Leelaaverse
+                                leelaah
                             </h1>
                         </div>
 

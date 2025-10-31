@@ -48,7 +48,7 @@ export default function Footer() {
                                     <span className="text-white font-bold text-xl zalando-sans-expanded-bold">L</span>
                                 </div>
                                 <h3 className="zalando-sans-expanded-primary text-2xl font-bold">
-                                    Leelaaverse
+                                    leelaah
                                 </h3>
                             </div>
 
@@ -181,7 +181,7 @@ export default function Footer() {
                 <div className="border-t border-gray-700 py-8">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-400">
                         <div className="cabin-regular">
-                            © {currentYear} Leelaaverse. All rights reserved.
+                            © {currentYear} leelaah. All rights reserved.
                         </div>
 
                         <div className="flex items-center space-x-6">
