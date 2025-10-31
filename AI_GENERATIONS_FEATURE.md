@@ -238,7 +238,7 @@ JWT_SECRET=your_jwt_secret
 ```env
 # API URL
 VITE_API_URL=http://localhost:3000  # Development
-VITE_API_URL=https://api.leelaaverse.com  # Production
+VITE_API_URL=https://api.leelaah.com  # Production
 ```
 
 ## Files Modified

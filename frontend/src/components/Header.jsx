@@ -44,12 +44,12 @@ export default function Header({ currentPage, setCurrentPage, setIsWaitlistModal
                         >
                             <div className="relative">
                                 <div className="w-12 h-12 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
-                                    <img src={Logo} alt="Leelaaverse Logo" className="w-12 h-12 object-contain rounded-2xl" />
+                                    <img src={Logo} alt="leelaah Logo" className="w-12 h-12 object-contain rounded-2xl" />
                                 </div>
                                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full animate-pulse shadow-sm"></div>
                             </div>
                             <h1 className="zalando-sans-expanded-primary text-2xl font-bold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors duration-300">
-                                Leelaaverse
+                                leelaah
                             </h1>
                         </div>
 

@@ -6,31 +6,31 @@ export default function FAQ() {
 
     const faqs = [
         {
-            question: "What makes Leelaaverse different from other social platforms?",
-            answer: "Leelaaverse is exclusively for AI-generated content. Unlike traditional social media, we focus on AI art, creativity, and providing tools for creators to monetize their AI-generated work with minimal platform fees."
+            question: "What makes leelaah different from other social platforms?",
+            answer: "leelaah is exclusively for AI-generated content. Unlike traditional social media, we focus on AI art, creativity, and providing tools for creators to monetize their AI-generated work with minimal platform fees."
         },
         {
-            question: "How do I start creating AI content on Leelaaverse?",
+            question: "How do I start creating AI content on leelaah?",
             answer: "Simply sign up, describe your vision in a prompt, choose from our selection of AI models, and generate your content instantly. Our platform supports multiple AI providers to give you the best creative options."
         },
         {
             question: "What's the commission structure for selling AI art?",
-            answer: "We believe in empowering creators. Leelaaverse takes only 0.05% commission on sales - one of the lowest in the industry. The rest goes directly to you, the creator."
+            answer: "We believe in empowering creators. leelaah takes only 0.05% commission on sales - one of the lowest in the industry. The rest goes directly to you, the creator."
         },
         {
             question: "Can I upload regular photos or videos?",
-            answer: "No, Leelaaverse is AI-only. We maintain quality by accepting only AI-generated images, videos, and text. This ensures a unique, curated experience focused on artificial intelligence creativity."
+            answer: "No, leelaah is AI-only. We maintain quality by accepting only AI-generated images, videos, and text. This ensures a unique, curated experience focused on artificial intelligence creativity."
         },
         {
             question: "How does the voting and trending system work?",
             answer: "Community members can upvote content they love. Our algorithm promotes trending posts and hosts weekly awards for top creators. The more engagement your content gets, the higher it ranks."
         },
         {
-            question: "Is Leelaaverse free to use?",
+            question: "Is leelaah free to use?",
             answer: "Yes! Creating an account and generating AI content is completely free. You only pay when you choose to use premium AI models or features. Selling your art has no upfront costs."
         },
         {
-            question: "When will Leelaaverse officially launch?",
+            question: "When will leelaah officially launch?",
             answer: "We're currently in beta development with early access for waitlist members. The full public launch is planned for Q2 2025. Join our waitlist to be among the first users!"
         },
         {
@@ -52,7 +52,7 @@ export default function FAQ() {
                         Frequently Asked <span className="gradient-text-primary">Questions</span>
                     </h2>
                     <p className="cabin-regular text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-                        Everything you need to know about Leelaaverse
+                        Everything you need to know about leelaah
                     </p>
                 </div>
 
