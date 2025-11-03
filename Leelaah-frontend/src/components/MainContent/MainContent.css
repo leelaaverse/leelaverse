@@ -1,0 +1,20 @@
+.mainContent {
+    min-height: calc(100vh - 200px);
+}
+
+.mainContentRow .col-md-3 {
+    padding-left: 3px;
+    padding-right: 3px;
+}
+
+.mainContentRow .col-md-6 {
+    padding-left: 3px;
+    padding-right: 3px;
+}
+
+.mainContentRow img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+}

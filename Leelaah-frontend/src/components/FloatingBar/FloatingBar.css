@@ -1,0 +1,56 @@
+.floating-bar {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    z-index: 1030;
+}
+
+.f-conatiner {
+    background: linear-gradient(90deg, #949414 -21.19%, #1936c8 100%);
+}
+
+.f-conatiner button {
+    border: none;
+    background-color: transparent;
+    outline: none;
+    padding: 10px;
+}
+
+.f-conatiner button i {
+    color: #fff;
+}
+
+.f-conatiner p {
+    margin: 0;
+    padding: 0;
+    color: #fff;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.f-bar-label {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    margin-top: 0;
+    transition: max-height 0.4s ease-in-out, opacity 0.3s ease-in-out,
+        margin-top 0.4s ease-in-out;
+}
+
+.f-conatiner:hover .f-bar-label {
+    max-height: 50px;
+    opacity: 1;
+    margin-top: 4px;
+}
+
+.f-conatiner div:not(:nth-child(3)) button:hover {
+    background-color: #112f583d;
+    border-radius: 10px;
+}
+
+.generateBtn:hover {
+    padding: 1rem 40px !important;
+    transition: all 0.7s ease-out;
+}
