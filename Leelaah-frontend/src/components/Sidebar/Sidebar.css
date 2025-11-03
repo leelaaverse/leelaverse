@@ -1,0 +1,72 @@
+.offcanvas.offcanvas-end {
+    width: 300px;
+}
+
+.offcanvas {
+    background-color: #383838 !important;
+}
+
+.font-light-2 {
+    color: #cccccc;
+}
+
+.sidenav-items h4 {
+    color: #fff;
+}
+
+.sidenav-items a {
+    text-decoration: none;
+}
+
+.btn-close {
+    color: #fff !important;
+}
+
+.border-bottom_1 {
+    border-bottom: 1px solid #5a5959;
+}
+
+.progress-container {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 10px;
+    background-color: #d3d3d3;
+    border-radius: 10px;
+    position: relative;
+}
+
+.progress-fill {
+    height: 100%;
+    width: 50%;
+    background-color: #9b6cf8;
+    border-radius: 10px;
+}
+
+.progress-text {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.selectheme select {
+    font-size: 14px;
+    border-radius: 5px;
+    border: 1px solid #aeafaf;
+}
+
+.selectlang select {
+    font-size: 14px;
+    border-radius: 5px;
+    border: 1px solid #aeafaf;
+}
+
+.creditscore a {
+    text-decoration: none;
+    color: inherit;
+}
