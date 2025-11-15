@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import GenerateModal from '../GenerateModal/GenerateModal';
 import './FloatingBar.css';
 
-const FloatingBar = () => {
+const FloatingBar = ({ onOpenAuth }) => {
     const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
 
     const handleGenerateClick = () => {
@@ -62,6 +62,7 @@ const FloatingBar = () => {
             <GenerateModal
                 isOpen={isGenerateModalOpen}
                 onClose={handleCloseModal}
+                onOpenAuth={onOpenAuth}
             />
         </>
     );

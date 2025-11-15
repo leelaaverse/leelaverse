@@ -283,8 +283,23 @@ exports.getGenerationResult = async (req, res) => {
  */
 exports.createPostFromGeneration = async (req, res) => {
 	try {
-		// Use authenticated user ID or fallback to existing user
-		const userId = req.user?.id || 'cmh0b61s30000oadwipl47rkk'; // mainikhilhun
+		// MUST have authenticated user - no fallback for post creation
+		const userId = req.user?.id;
+
+		console.log('🔐 Authentication Check:', {
+			hasReqUser: !!req.user,
+			userId: userId,
+			userObject: req.user
+		});
+
+		// Validate user authentication FIRST
+		if (!userId) {
+			console.error('❌ No authenticated user found. Cannot create post.');
+			return res.status(401).json({
+				success: false,
+				message: 'Authentication required. Please log in to create a post.'
+			});
+		}
 
 		const {
 			aiGenerationIds = [], // Array of AI generation IDs
@@ -296,6 +311,12 @@ exports.createPostFromGeneration = async (req, res) => {
 			visibility = 'public'
 		} = req.body;
 
+		console.log('🔍 Request Body Debug:', {
+			receivedVisibility: req.body.visibility,
+			defaultedVisibility: visibility,
+			fullBody: req.body
+		});
+
 		// Validate required fields
 		if (!aiGenerationIds || aiGenerationIds.length === 0) {
 			return res.status(400).json({
@@ -304,9 +325,7 @@ exports.createPostFromGeneration = async (req, res) => {
 			});
 		}
 
-		console.log(`Creating post from ${aiGenerationIds.length} AI generation(s)`);
-
-		// Find all AI Generation records
+		console.log(`Creating post from ${aiGenerationIds.length} AI generation(s)`);		// Find all AI Generation records
 		const aiGenerations = await prisma.aIGeneration.findMany({
 			where: {
 				id: { in: aiGenerationIds },
@@ -354,10 +373,15 @@ exports.createPostFromGeneration = async (req, res) => {
 			visibility
 		};
 
+		console.log('📦 Post Data Being Passed to createPost:', {
+			visibility: postData.visibility,
+			aiGenerated: postData.aiGenerated,
+			imageCount: postData.imageUrls.length
+		});
+
 		// Reuse createPost logic
 		req.body = postData;
 		return await exports.createPost(req, res);
-
 	} catch (error) {
 		console.error('Create post from generation error:', error);
 		res.status(500).json({
@@ -416,8 +440,9 @@ async function uploadToCloudinary(imageUrl, userId) {
  */
 exports.createPost = async (req, res) => {
 	try {
-		// Use authenticated user ID or fallback to existing user
-		const userId = req.user?.id || 'cmh0b61s30000oadwipl47rkk'; // mainikhilhun
+		// Get user ID from request - require authentication for AI-generated posts
+		const userId = req.user?.id;
+
 		const {
 			caption,
 			title,
@@ -433,9 +458,27 @@ exports.createPost = async (req, res) => {
 			visibility = 'public'
 		} = req.body;
 
-		console.log('Creating post:', { userId, category, imageCount: imageUrls.length, aiGenerated });
+		// Require authentication for AI-generated posts (no fallback)
+		if (aiGenerated && !userId) {
+			console.error('❌ Authentication required for AI-generated posts');
+			return res.status(401).json({
+				success: false,
+				message: 'Authentication required to post AI-generated content'
+			});
+		}
 
-		// Validate content based on category
+		// For non-AI posts, use fallback (backward compatibility)
+		const finalUserId = userId || 'cmh0b61s30000oadwipl47rkk';
+
+		console.log('📝 Creating post:', {
+			userId: finalUserId,
+			authenticated: !!userId,
+			category,
+			imageCount: imageUrls.length,
+			aiGenerated,
+			visibility: visibility,
+			receivedVisibility: req.body.visibility
+		});		// Validate content based on category
 		if (category === 'text-post' && !caption) {
 			return res.status(400).json({
 				success: false,
@@ -459,7 +502,7 @@ exports.createPost = async (req, res) => {
 
 			for (let i = 0; i < imageUrls.length; i++) {
 				try {
-					const uploadResult = await uploadToCloudinary(imageUrls[i], userId);
+					const uploadResult = await uploadToCloudinary(imageUrls[i], finalUserId);
 					cloudinaryUrls.push(uploadResult.secure_url);
 					console.log(`Uploaded image ${i + 1}/${imageUrls.length} to Cloudinary`);
 
@@ -476,7 +519,7 @@ exports.createPost = async (req, res) => {
 
 		// Prepare post data
 		const postData = {
-			authorId: userId,
+			authorId: finalUserId,
 			type: type,
 			category: category,
 			caption: caption || null,
@@ -487,10 +530,16 @@ exports.createPost = async (req, res) => {
 			mediaType: cloudinaryUrls.length > 0 ? 'image/jpeg' : null,
 			aiGenerated: aiGenerated,
 			tags: tags.map(tag => tag.toLowerCase().trim()),
-			visibility: visibility
+			visibility: visibility,
+			isApproved: true // Explicitly set to true so posts appear in feed immediately
 		};
 
-		// Add mixed media items if provided (store as JSON)
+		console.log('💾 Final Post Data Before DB Insert:', {
+			visibility: postData.visibility,
+			isApproved: postData.isApproved,
+			authorId: postData.authorId,
+			category: postData.category
+		});		// Add mixed media items if provided (store as JSON)
 		if (mediaItems && mediaItems.length > 0) {
 			postData.mediaItems = mediaItems;
 		}
@@ -524,7 +573,18 @@ exports.createPost = async (req, res) => {
 			}
 		});
 
-		console.log('Post created successfully:', post.id);
+		console.log('✅ Post created successfully!');
+		console.log('📋 Post Details:', {
+			id: post.id,
+			authorId: post.authorId,
+			isApproved: post.isApproved,
+			visibility: post.visibility,
+			category: post.category,
+			hasMediaUrl: !!post.mediaUrl,
+			hasMediaUrls: !!post.mediaUrls,
+			hasThumbnail: !!post.thumbnailUrl,
+			aiGenerated: post.aiGenerated
+		});
 
 		// Link AI Generations to Post if provided
 		if (aiGenerated && aiGenerationIds.length > 0) {
@@ -536,18 +596,20 @@ exports.createPost = async (req, res) => {
 					postId: post.id
 				}
 			});
-			console.log(`Linked ${aiGenerationIds.length} AI generation(s) to post`);
+			console.log(`✅ Linked ${aiGenerationIds.length} AI generation(s) to post`);
 		}
 
 		// Update user stats (increment totalCreations)
 		await prisma.user.update({
-			where: { id: userId },
+			where: { id: finalUserId },
 			data: {
 				totalCreations: {
 					increment: 1
 				}
 			}
 		});
+
+		console.log('✅ Post creation complete! Should appear in feed immediately.');
 
 		res.status(201).json({
 			success: true,
@@ -646,7 +708,8 @@ exports.getPostsCount = async (req, res) => {
 			}
 		});
 
-		const samplePost = await prisma.post.findFirst({
+		// Get the 5 most recent posts to verify data
+		const recentPosts = await prisma.post.findMany({
 			where: { isApproved: true },
 			include: {
 				author: {
@@ -656,22 +719,34 @@ exports.getPostsCount = async (req, res) => {
 						lastName: true
 					}
 				}
-			}
+			},
+			orderBy: [
+				{ createdAt: 'desc' },
+				{ id: 'desc' }
+			],
+			take: 5
 		});
+
+		const now = new Date();
 
 		res.json({
 			success: true,
+			currentServerTime: now.toISOString(),
 			counts: {
 				total: totalPosts,
 				approved: approvedPosts,
 				public: publicPosts
 			},
-			samplePost: samplePost ? {
-				id: samplePost.id,
-				category: samplePost.category,
-				hasImage: !!(samplePost.mediaUrl || samplePost.thumbnailUrl || (samplePost.mediaUrls && samplePost.mediaUrls.length > 0)),
-				author: samplePost.author?.username
-			} : null
+			recentPosts: recentPosts.map(p => ({
+				id: p.id,
+				createdAt: p.createdAt,
+				ageInSeconds: Math.floor((now - new Date(p.createdAt)) / 1000),
+				category: p.category,
+				hasImage: !!(p.mediaUrl || p.thumbnailUrl || (p.mediaUrls && p.mediaUrls.length > 0)),
+				author: p.author?.username,
+				isApproved: p.isApproved,
+				visibility: p.visibility
+			}))
 		});
 	} catch (error) {
 		console.error('Get posts count error:', error);
@@ -717,7 +792,9 @@ exports.getFeedPosts = async (req, res) => {
 		};
 
 		console.log('🔍 Where Clause:', JSON.stringify(whereClause, null, 2));
+		console.log('⏰ Current Server Time:', new Date().toISOString());
 
+		// Force fresh query without caching
 		let posts = await prisma.post.findMany({
 			where: whereClause,
 			include: {
@@ -733,9 +810,10 @@ exports.getFeedPosts = async (req, res) => {
 					}
 				}
 			},
-			orderBy: {
-				createdAt: 'desc'
-			},
+			orderBy: [
+				{ createdAt: 'desc' },
+				{ id: 'desc' } // Secondary sort by ID for consistent ordering
+			],
 			skip: skip,
 			take: parseInt(limit)
 		});
@@ -783,28 +861,51 @@ exports.getFeedPosts = async (req, res) => {
 
 		console.log(`✅ Found ${posts.length} posts (Total: ${total})`);
 
-		// Log first post structure for debugging
+		// Log first and last post for debugging
 		if (posts.length > 0) {
-			console.log('📸 First post structure:', {
+			const now = new Date();
+			const firstPostAge = Math.floor((now - new Date(posts[0].createdAt)) / 1000); // seconds
+			const lastPostAge = Math.floor((now - new Date(posts[posts.length - 1].createdAt)) / 1000);
+
+			console.log('📸 First post (NEWEST):', {
 				id: posts[0].id,
+				createdAt: posts[0].createdAt,
+				ageInSeconds: firstPostAge,
+				ageHumanReadable: firstPostAge < 60 ? `${firstPostAge}s ago` : `${Math.floor(firstPostAge / 60)}m ago`,
 				hasMediaUrl: !!posts[0].mediaUrl,
-				hasMediaUrls: !!posts[0].mediaUrls,
-				hasThumbnail: !!posts[0].thumbnailUrl,
 				category: posts[0].category,
-				authorName: posts[0].author?.username
+				authorName: posts[0].author?.username,
+				isApproved: posts[0].isApproved,
+				visibility: posts[0].visibility
 			});
+			console.log('📸 Last post (OLDEST in this page):', {
+				id: posts[posts.length - 1].id,
+				createdAt: posts[posts.length - 1].createdAt,
+				ageInSeconds: lastPostAge,
+				ageHumanReadable: lastPostAge < 60 ? `${lastPostAge}s ago` : `${Math.floor(lastPostAge / 60)}m ago`,
+				authorName: posts[posts.length - 1].author?.username
+			});
+			console.log('📊 All post IDs with timestamps:', posts.map(p => ({
+				id: p.id.substring(0, 8),
+				created: new Date(p.createdAt).toISOString().substring(11, 19) // HH:MM:SS
+			})));
 		}
 
-		res.json({
+		const response = {
 			success: true,
 			posts,
 			pagination: {
 				page: parseInt(page),
 				limit: parseInt(limit),
 				total,
-				pages: Math.ceil(total / parseInt(limit))
+				pages: Math.ceil(total / parseInt(limit)),
+				hasMore: parseInt(page) < Math.ceil(total / parseInt(limit))
 			}
-		});
+		};
+
+		console.log('📤 Sending response with', response.posts.length, 'posts');
+
+		res.json(response);
 
 	} catch (error) {
 		console.error('❌ Get feed posts error:', error);

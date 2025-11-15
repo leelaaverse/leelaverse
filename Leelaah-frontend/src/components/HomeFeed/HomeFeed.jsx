@@ -104,6 +104,11 @@ const HomeFeed = () => {
         setIsAuthModalOpen(false);
     };
 
+    const handleOpenAuth = (mode = 'signup') => {
+        setAuthMode(mode);
+        setIsAuthModalOpen(true);
+    };
+
     return (
         <div className="home-feed">
             <Navbar
@@ -114,7 +119,7 @@ const HomeFeed = () => {
                 onSignup={handleSignup}
             />
             <MainContent activeTab={activeTab} />
-            <FloatingBar />
+            <FloatingBar onOpenAuth={handleOpenAuth} />
             <Sidebar />
 
             {/* Auth Modal */}

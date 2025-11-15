@@ -75,6 +75,9 @@ const MainContent = ({ activeTab }) => {
 
     // Group posts into rows
     const groupPosts = () => {
+        console.log('🎨 Grouping posts. Total posts available:', posts.length);
+        console.log('📋 Post IDs:', posts.map(p => p.id));
+
         const rows = [];
         let index = 0;
 
@@ -85,23 +88,31 @@ const MainContent = ({ activeTab }) => {
                 posts: posts.slice(0, 2),
             });
             index = 2;
+            console.log('✅ Row 0 (large): 2 posts, indices 0-1');
         } else if (posts.length === 1) {
             rows.push({
                 type: 'large',
                 posts: [posts[0]],
             });
             index = 1;
+            console.log('✅ Row 0 (large): 1 post, index 0');
         }
 
         // Remaining rows: 4 medium posts each
+        let rowNum = 1;
         while (index < posts.length) {
             const rowPosts = posts.slice(index, index + 4);
             rows.push({
                 type: 'medium',
                 posts: rowPosts,
             });
+            console.log(`✅ Row ${rowNum} (medium): ${rowPosts.length} posts, indices ${index}-${index + rowPosts.length - 1}`);
             index += 4;
+            rowNum++;
         }
+
+        console.log('📊 Total rows created:', rows.length);
+        console.log('📊 Total posts in all rows:', rows.reduce((sum, row) => sum + row.posts.length, 0));
 
         return rows;
     };

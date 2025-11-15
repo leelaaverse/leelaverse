@@ -92,17 +92,33 @@ const postsSlice = createSlice({
 
 				const { posts, pagination, page } = action.payload;
 
+				console.log('📥 Redux: Received posts from API:', {
+					page,
+					receivedCount: posts.length,
+					currentStateCount: state.posts.length,
+					pagination
+				});
+
 				if (page === 1) {
 					state.posts = posts;
+					console.log('✅ Redux: Set posts (page 1), new count:', posts.length);
 				} else {
 					// Avoid duplicates
 					const existingIds = new Set(state.posts.map((p) => p.id));
 					const newPosts = posts.filter((p) => !existingIds.has(p.id));
 					state.posts = [...state.posts, ...newPosts];
+					console.log('✅ Redux: Appended posts (page', page, '), added:', newPosts.length, ', total now:', state.posts.length);
 				}
 
 				state.pagination = pagination;
 				state.hasMore = pagination.page < pagination.pages;
+
+				console.log('📊 Redux State Summary:', {
+					totalPosts: state.posts.length,
+					hasMore: state.hasMore,
+					currentPage: state.pagination.page,
+					totalPages: state.pagination.pages
+				});
 			})
 			.addCase(fetchFeedPosts.rejected, (state, action) => {
 				state.loading = false;
