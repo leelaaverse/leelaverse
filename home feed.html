@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LEELA</title>
+    <!-- Include Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
+      integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg sticky-top py-2 bg-mainColor Header">
+      <div class="container-fluid flex-wrap px-4">
+        <!-- Logo -->
+        <a
+          class="navbar-brand d-flex align-items-center order-1 order-lg-1"
+          href="#"
+        >
+          <img
+            src="assets/logo-web.png"
+            alt="LELAA Logo"
+            class="img-fluid"
+            style="max-height: 100px"
+          />
+        </a>
+
+        <!-- Navigation -->
+        <div class="justify-content-center order-3 order-lg-2" id="navbarMain">
+          <ul
+            class="nav nav-pills flex-row bg-dark-2 py-2 px-5 gap-3 rounded-pill flex-wrap justify-content-center mb-2 mb-lg-0"
+            id="pills-tab"
+            role="tablist"
+          >
+            <li class="nav-item" role="presentation">
+              <button
+                class="nav-link active"
+                id="pills-featured-tab"
+                data-bs-toggle="pill"
+                data-bs-target="#pills-featured"
+                type="button"
+                role="tab"
+                aria-controls="pills-featured"
+                aria-selected="true"
+              >
+                Featured
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button
+                class="nav-link"
+                id="pills-trending-tab"
+                data-bs-toggle="pill"
+                data-bs-target="#pills-trending"
+                type="button"
+                role="tab"
+                aria-controls="pills-trending"
+                aria-selected="false"
+              >
+                Trending
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button
+                class="nav-link"
+                id="pills-following-tab"
+                data-bs-toggle="pill"
+                data-bs-target="#pills-following"
+                type="button"
+                role="tab"
+                aria-controls="pills-following"
+                aria-selected="false"
+              >
+                Following
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Right Icons -->
+        <div
+          class="d-flex align-items-center justify-content-end bg-dark-2 px-md-5 py-md-3 px-lg-5 py-lg-3 px-sm-5 py-sm-2 px-3 py-2 rounded-pill navigationRight ms-2 gap-lg-4 gap-md-4 gap-sm-3 gap-3 order-2 order-lg-3"
+        >
+          <button><i class="fa-solid fa-message"></i></button>
+          <button><i class="fa-solid fa-bell"></i></button>
+          <button
+            type="button"
+            data-bs-toggle="offcanvas"
+            data-bs-target="#offcanvasRight"
+            aria-controls="offcanvasRight"
+          >
+            <i class="fa-solid fa-border-all"></i>
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <main class="mainContent tab-content my-4" id="pills-tabContent">
+      <div
+        class="tab-pane fade show active"
+        id="pills-featured"
+        role="tabpanel"
+        aria-labelledby="pills-featured-tab"
+        tabindex="0"
+      >
+        <div class="container-fluid">
+          <div class="row mainContentRow">
+            <div class="col-md-6">
+              <div><img src="assets/Frame_1.png" alt="" width="100%" /></div>
+            </div>
+            <div class="col-md-6">
+              <div><img src="assets/Frame_2.png" alt="" width="100%" /></div>
+            </div>
+          </div>
+          <div class="row mt-3 mainContentRow">
+            <div class="col-md-3">
+              <div><img src="assets/1.png" alt="" width="100%" /></div>
+            </div>
+            <div class="col-md-3">
+              <div><img src="assets/2.png" alt="" width="100%" /></div>
+            </div>
+            <div class="col-md-3">
+              <div><img src="assets/3.png" alt="" width="100%" /></div>
+            </div>
+            <div class="col-md-3">
+              <div><img src="assets/4.png" alt="" width="100%" /></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="tab-pane fade"
+        id="pills-trending"
+        role="tabpanel"
+        aria-labelledby="pills-trending-tab"
+        tabindex="0"
+      >
+        <div class="container-fluid">
+          <div class="row mainContentRow">
+            <div class="col-md-6">
+              <div><img src="assets/Frame_2.png" alt="" width="100%" /></div>
+            </div>
+            <div class="col-md-6">
+              <div><img src="assets/Frame_1.png" alt="" width="100%" /></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="tab-pane fade"
+        id="pills-following"
+        role="tabpanel"
+        aria-labelledby="pills-following-tab"
+        tabindex="0"
+      >
+        <div class="container-fluid">
+          <div class="row mainContentRow">
+            <div class="col-md-6">
+              <div><img src="assets/Frame_2.png" alt="" width="100%" /></div>
+            </div>
+            <div class="col-md-6">
+              <div><img src="assets/Frame_2.png" alt="" width="100%" /></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <section class="floating-bar">
+      <div class="row justify-content-center">
+        <div class="col-md-5">
+          <div
+            class="rounded-pill f-conatiner d-flex flex-wrap justify-content-between px-5 py-1 align-items-center"
+          >
+            <div>
+              <button>
+                <img src="assets/home-rounded.svg" alt="" />
+                <p class="f-bar-label">Browse</p>
+              </button>
+            </div>
+            <div>
+              <button>
+                <img src="assets/search.svg" alt="" />
+                <p class="f-bar-label">Explore</p>
+              </button>
+            </div>
+            <div>
+              <button
+                class="px-4 py-3 generateBtn rounded-pill bg-dark"
+                data-bs-toggle="modal"
+                data-bs-target="#generateModal"
+              >
+                <div>
+                  <img src="assets/add-outline.svg" alt="" />
+                  <p class="f-bar-label">Generate</p>
+                </div>
+              </button>
+            </div>
+            <div>
+              <button>
+                <img src="assets/globe.svg" alt="" />
+                <p class="f-bar-label">Community</p>
+              </button>
+            </div>
+            <div>
+              <button>
+                <img src="assets/play-list.svg" alt="" />
+                <p class="f-bar-label">Reels</p>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Offcanvas (unchanged) -->
+    <div
+      class="offcanvas offcanvas-end"
+      tabindex="-1"
+      id="offcanvasRight"
+      aria-labelledby="offcanvasRightLabel"
+    >
+      <div class="offcanvas-header">
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+          <div><img src="assets/profile.png" alt="" /></div>
+          <div>
+            <h4 class="m-0 font-15 text-light">Junadi ALi</h4>
+            <p class="m-0 font-13 font-light-2">@junaidali0077</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="offcanvas"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="offcanvas-body">
+        <!-- content omitted for brevity; original content preserved -->
+        <div class="row">
+          <div class="col-md-4 text-center">
+            <h4 class="m-0 font-15 text-light font-weight-700">Posts</h4>
+            <p class="m-0 font-13 font-light-2">40</p>
+          </div>
+          <div class="col-md-4 text-center">
+            <h4 class="m-0 font-15 text-light font-weight-700">Followers</h4>
+            <p class="m-0 font-13 font-light-2">2.5k</p>
+          </div>
+          <div class="col-md-4 text-center">
+            <h4 class="m-0 font-15 text-light font-weight-700">Following</h4>
+            <p class="m-0 font-13 font-light-2">15</p>
+          </div>
+        </div>
+        <!-- rest omitted -->
+      </div>
+    </div>
+
+    <!-- Generate Modal (first modal) -->
+    <div
+      class="modal fade"
+      id="generateModal"
+      tabindex="-1"
+      aria-labelledby="generateModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-light rounded-4 p-3">
+          <div class="modal-header justify-content-center border-0">
+            <h4 class="modal-title" id="generateModalLabel">
+              Choose An Option
+            </h4>
+          </div>
+          <div class="modal-body">
+            <div class="row">
+              <div class="col-md-6">
+                <div
+                  class="rounded-20 bghightlight border-grey p-4 text-center d-flex flex-column justify-content-center align-items-center"
+                >
+                  <h5>Upload Post</h5>
+                  <div><img src="assets/upload-2.png" alt="" /></div>
+                  <button
+                    class="btn btn-primary w-75 font-14 rounded-pill mt-2"
+                    id="browseFile"
+                  >
+                    Browse Files
+                  </button>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div
+                  class="rounded-20 bghightlight border-grey p-4 text-center d-flex flex-column justify-content-center align-items-center"
+                >
+                  <h5>Create Ai</h5>
+                  <div><img src="assets/ai-idea.png" alt="" /></div>
+                  <button
+                    class="btn btn-success w-75 font-14 rounded-pill mt-2"
+                    id="generateAi"
+                  >
+                    Generate AI
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== New Upload Modal (second modal opened by Browse Files) ===== -->
+    <div
+      class="modal fade"
+      id="uploadModal"
+      tabindex="-1"
+      aria-labelledby="uploadModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-1 modal-dialog-centered">
+        <div class="modal-content bg-dark text-light rounded-4">
+          <div
+            class="modal-header bghightlight justify-content-between align-items-center border-0"
+          >
+            <button id="backToGenerate" class="btn_none">
+              <i class="fa-solid fa-arrow-left text-light"></i>
+            </button>
+            <h5 class="m-0 p-0">Crop</h5>
+            <!-- added id="btn-next" -->
+            <button class="btn_none" id="btn-next">
+              <h5 class="text-primary m-0 p-0">Next</h5>
+            </button>
+          </div>
+          <div class="modal-body position-relative p-0">
+            <div class="text-center">
+              <img src="assets/demo-image.png" alt="" />
+            </div>
+            <div
+              class="crop-btns d-flex justify-content-between align-items-center position-relative"
+            >
+              <!-- Aspect Ratio Dropdown Button -->
+              <div class="dropdown">
+                <button
+                  class="btn_none crop-btns-2"
+                  type="button"
+                  id="aspectRatioDropdown"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                >
+                  <img src="assets/gg_ratio.png" alt="" />
+                </button>
+
+                <!-- Dropdown Menu -->
+                <ul
+                  class="dropdown-menu dropdown-menu-dark"
+                  aria-labelledby="aspectRatioDropdown"
+                >
+                  <li>
+                    <a
+                      class="dropdown-item ratio-item"
+                      data-ratio="1:1"
+                      href="#"
+                      >1 : 1 (Square)</a
+                    >
+                  </li>
+                  <li>
+                    <a
+                      class="dropdown-item ratio-item"
+                      data-ratio="16:9"
+                      href="#"
+                      >16 : 9 (Widescreen)</a
+                    >
+                  </li>
+                  <li>
+                    <a
+                      class="dropdown-item ratio-item"
+                      data-ratio="4:5"
+                      href="#"
+                      >4 : 5 (Portrait)</a
+                    >
+                  </li>
+                  <li>
+                    <a
+                      class="dropdown-item ratio-item"
+                      data-ratio="9:16"
+                      href="#"
+                      >9 : 16 (Story)</a
+                    >
+                  </li>
+                  <li>
+                    <a
+                      class="dropdown-item ratio-item"
+                      data-ratio="3:2"
+                      href="#"
+                      >3 : 2 (Classic)</a
+                    >
+                  </li>
+                </ul>
+              </div>
+
+              <!-- Other crop button -->
+              <button class="btn_none crop-btns-1">
+                <img src="assets/box-multiple.png" alt="" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== AI Modal (opens when "Generate AI" clicked) ===== -->
+    <div
+      class="modal fade"
+      id="aiModal"
+      tabindex="-1"
+      aria-labelledby="aiModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-light rounded-4">
+          <div
+            class="modal-header bghightlight justify-content-center align-items-center border-0"
+          >
+            <ul
+              class="nav nav-pills rounded-pill border-grey px-3 py-1"
+              id="pills-tab"
+              role="tablist"
+            >
+              <li class="nav-item" role="presentation">
+                <button
+                  class="nav-link nav-linkImage font-12 active"
+                  id="pills-image-tab"
+                  data-bs-toggle="pill"
+                  data-bs-target="#pills-image"
+                  type="button"
+                  role="tab"
+                  aria-controls="pills-image"
+                  aria-selected="true"
+                >
+                  image
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button
+                  class="nav-link font-12 nav-linkImage"
+                  id="pills-video-tab"
+                  data-bs-toggle="pill"
+                  data-bs-target="#pills-video"
+                  type="button"
+                  role="tab"
+                  aria-controls="pills-video"
+                  aria-selected="false"
+                >
+                  Video
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button
+                  class="nav-link font-12 nav-linkImage"
+                  id="pills-audio-tab"
+                  data-bs-toggle="pill"
+                  data-bs-target="#pills-audio"
+                  type="button"
+                  role="tab"
+                  aria-controls="pills-audio"
+                  aria-selected="false"
+                >
+                  Audio
+                </button>
+              </li>
+            </ul>
+          </div>
+
+          <div class="modal-body">
+            <div class="tab-content" id="pills-tabContent">
+              <div
+                class="tab-pane fade show active"
+                id="pills-image"
+                role="tabpanel"
+                aria-labelledby="pills-image-tab"
+                tabindex="0"
+              >
+                <div class="mb-1">
+                  <div
+                    class="d-flex flex-wrap justify-content-between align-items-center"
+                  >
+                    <label class="form-label fadefont font-10">PROMPT</label>
+                    <div class="d-flex gap-2 align-items-center">
+                      <img src="assets/ri_dvd-ai-line.png" alt="" />
+                      <p class="font-10 fadefont m-0">Spend 150 Credit Coins</p>
+                    </div>
+                  </div>
+                  <textarea
+                    name=""
+                    id=""
+                    class="posttextarea p-3 font-13 text-light rounded"
+                    rows="4"
+                    placeholder="Share something about the picture..."
+                  ></textarea>
+                  <div
+                    class="d-flex gap-4 align-items-center justify-content-end position-relative"
+                  >
+                    <!-- Aspect Ratio Dropdown Button -->
+                    <div class="dropdown">
+                      <button class="btn_none prompt-btns-1" type="button">
+                        <img src="assets/mage_image-upload.png" alt="" />
+                      </button>
+
+                      <!-- Dropdown Menu -->
+                    </div>
+
+                    <!-- Oher prompt button -->
+                    <button class="btn_none prompt-btns-2">
+                      <i class="fa-solid fa-xmark fadefont"></i>
+                    </button>
+                  </div>
+                  <div class="row">
+                    <div class="col-md-4">
+                      <div>
+                        <div class="model-section" id="modelSelector">
+                          <label class="form-label fadefont font-10"
+                            >MODEL</label
+                          >
+                          <div class="model-select-wrapper">
+                            <select
+                              name="modelOption"
+                              id="modelOption"
+                              class="model-dropdown"
+                            >
+                              <option value="auto">Auto</option>
+                              <option value="gpt-4">GPT-4</option>
+                              <option value="gpt-5">GPT-5</option>
+                              <option value="gpt-mini">GPT-5 Mini</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-3">
+                      <div class="aspect-section" id="aspectRatioSelector">
+                        <label class="form-label fadefont font-10"
+                          >ASPECT RATIO</label
+                        >
+
+                        <div class="aspect-wrapper">
+                          <select id="aspectRatio" class="aspect-select">
+                            <option value="1x1">🟦 1:1</option>
+                            <option value="16x9">🟩 16:9</option>
+                            <option value="4x3">🟥 4:3</option>
+                            <option value="9x16">🟨 9:16</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-5">
+                      <div class="upload-type">
+                        <label class="form-label fadefont font-10"
+                          >UPLOAD TYPE</label
+                        >
+
+                        <!-- Toggle container (role = tablist for semantics) -->
+                        <div
+                          id="uploadTypeToggle"
+                          role="tablist"
+                          aria-label="Upload Type"
+                        >
+                          <button
+                            id="btnUploadDraft"
+                            class="upload-btn upload-btn--active"
+                            role="tab"
+                            aria-selected="true"
+                            data-value="draft"
+                            tabindex="0"
+                          >
+                            Upload to Draft
+                          </button>
+
+                          <button
+                            id="btnUploadProfile"
+                            class="upload-btn upload-btn--inactive"
+                            role="tab"
+                            aria-selected="false"
+                            data-value="profile"
+                            tabindex="-1"
+                          >
+                            Upload to Profile
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="row justify-content-center mt-3">
+                    <button
+                      class="btn btn-primary w-25 font-14 rounded-pill mt-2 d-flex justify-content-between px-4"
+                      id="browseFile"
+                    >
+                      <p class="m-0 p-0 font-15">Gererate</p>
+                      <img src="assets/si_ai-fill.png" alt="">
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="tab-pane fade"
+                id="pills-video"
+                role="tabpanel"
+                aria-labelledby="pills-video-tab"
+                tabindex="0"
+              >
+                ...
+              </div>
+              <div
+                class="tab-pane fade"
+                id="pills-audio"
+                role="tabpanel"
+                aria-labelledby="pills-audio-tab"
+                tabindex="0"
+              >
+                ...
+              </div>
+            </div>
+            <!-- Replace below with your AI UI -->
+            <!-- <div class="p-3">
+              <p class="mb-2">Choose AI options and generate content.</p>
+
+              <div class="d-flex gap-2">
+                <button id="runAiBtn" class="btn btn-success w-50">
+                  Generate
+                </button>
+                <button
+                  id="cancelAiBtn"
+                  class="btn btn-outline-light w-50"
+                  data-bs-dismiss="modal"
+                >
+                  Cancel
+                </button>
+              </div>
+
+              <div id="aiResult" class="mt-3" style="display: none">
+                <h6>Result</h6>
+                <div
+                  class="p-2 border rounded bg-dark-2"
+                  id="aiResultContent"
+                ></div>
+              </div>
+            </div> -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== nextModal (the modal that opens after clicking Next) ====== -->
+    <div
+      class="modal fade"
+      id="nextModal"
+      tabindex="-1"
+      aria-labelledby="nextModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-light rounded-4">
+          <div
+            class="modal-header bghightlight justify-content-between align-items-center border-0"
+          >
+            <!-- Back to crop modal -->
+            <button class="btn_none" id="backToCrop">
+              <i class="fa-solid fa-arrow-left text-light"></i>
+            </button>
+            <h5 class="m-0 p-0">Upload Post</h5>
+            <button class="btn_none">
+              <h5 class="text-primary m-0 p-0">Share</h5>
+            </button>
+          </div>
+          <div class="modal-body p-0">
+            <!-- put the content you want in the next modal here -->
+            <div class="row p-0 m-0">
+              <div class="col-md-6 m-0 p-0">
+                <div class="text-center">
+                  <img
+                    id="nextPreviewImage"
+                    src="assets/demo-image.png"
+                    alt="preview"
+                    style="width: 100%; border-radius: 8px"
+                  />
+                </div>
+              </div>
+              <div class="col-md-6 m-0 p-0">
+                <div class="px-4 py-3">
+                  <div class="d-flex gap-2 align-items-center">
+                    <img src="assets/ellipse4.png" alt="" />
+                    <p class="fadefont m-0 p-0">junaidali0077</p>
+                  </div>
+                  <div class="mt-2">
+                    <textarea
+                      name=""
+                      id=""
+                      class="posttextarea p-3 font-13 text-light rounded"
+                      rows="4"
+                      placeholder="Share something about the picture..."
+                    ></textarea>
+                    <div
+                      class="crop-btns d-flex justify-content-between align-items-center position-relative"
+                    >
+                      <!-- Aspect Ratio Dropdown Button -->
+                      <div class="dropdown">
+                        <button class="btn_none crop-btns-2" type="button">
+                          <img src="assets/emoji-16-regular.png" alt="" />
+                        </button>
+
+                        <!-- Dropdown Menu -->
+                      </div>
+
+                      <!-- Other crop button -->
+                      <button class="btn_none crop-btns-1">
+                        <p class="fadefont font-10 p-0 m-0">0/2000</p>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="mt-2">
+                    <div
+                      class="d-flex align-items-center justify-content-between p-2 border-bottom"
+                    >
+                      <h6 class="m-0 p-0">Add Location</h6>
+                      <img src="assets/mi_location.png" alt="" />
+                    </div>
+                    <div
+                      class="d-flex align-items-center justify-content-between p-2 border-bottom"
+                    >
+                      <h6 class="m-0 p-0">Add Collaborators</h6>
+                      <img src="assets/hugeicons_ai-user.png" alt="" />
+                    </div>
+                    <div>
+                      <button
+                        class="d-flex align-items-center justify-content-between p-2 border-bottom btn_none w-100"
+                      >
+                        <h6 class="m-0 p-0 text-light">Advance setting</h6>
+                        <img src="assets/icon-park-outline_down.png" alt="" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap JS and Popper.js -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+      integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js"
+      integrity="sha384-G/EV+4j2dNv+tEPo3++6LCgdCROaejBqfUeNjuKAiuXbjrxilcCdDz6ZAVfHWe1Y"
+      crossorigin="anonymous"
+    ></script>
+    <script>
+      // Simple toggle logic
+      (function () {
+        const container = document.getElementById("uploadTypeToggle");
+        const btnDraft = document.getElementById("btnUploadDraft");
+        const btnProfile = document.getElementById("btnUploadProfile");
+
+        function setActive(activeBtn, inactiveBtn) {
+          activeBtn.classList.add("upload-btn--active");
+          activeBtn.classList.remove("upload-btn--inactive");
+          activeBtn.setAttribute("aria-selected", "true");
+          activeBtn.tabIndex = 0;
+
+          inactiveBtn.classList.remove("upload-btn--active");
+          inactiveBtn.classList.add("upload-btn--inactive");
+          inactiveBtn.setAttribute("aria-selected", "false");
+          inactiveBtn.tabIndex = -1;
+        }
+
+        btnDraft.addEventListener("click", () => {
+          setActive(btnDraft, btnProfile);
+          // do something: e.g. update a form field or app state
+          console.log("selected:", btnDraft.dataset.value);
+        });
+
+        btnProfile.addEventListener("click", () => {
+          setActive(btnProfile, btnDraft);
+          console.log("selected:", btnProfile.dataset.value);
+        });
+
+        // keyboard support: left/right arrow to change selected tab
+        container.addEventListener("keydown", (e) => {
+          if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+            e.preventDefault();
+            if (btnDraft.classList.contains("upload-btn--active")) {
+              setActive(btnProfile, btnDraft);
+              btnProfile.focus();
+              console.log("selected:", btnProfile.dataset.value);
+            } else {
+              setActive(btnDraft, btnProfile);
+              btnDraft.focus();
+              console.log("selected:", btnDraft.dataset.value);
+            }
+          }
+        });
+      })();
+    </script>
+
+    <script>
+      (function () {
+        if (typeof bootstrap === "undefined") {
+          console.warn(
+            "Bootstrap not found. Make sure bootstrap.bundle.js is loaded."
+          );
+          return;
+        }
+
+        const generateAiBtn = document.getElementById("generateAi");
+        const generateModalEl = document.getElementById("generateModal");
+        const aiModalEl = document.getElementById("aiModal");
+
+        const getModalInstance = (el) =>
+          bootstrap.Modal.getInstance(el) || new bootstrap.Modal(el);
+        const genModal = getModalInstance(generateModalEl);
+        const aiModal = getModalInstance(aiModalEl);
+
+        // Open AI modal from Generate modal
+        generateAiBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          // hide generate modal and show ai modal
+          genModal.hide();
+          setTimeout(() => aiModal.show(), 180);
+        });
+
+        // Back button in AI modal: close AI and reopen Generate
+        document.getElementById("backFromAi").addEventListener("click", (e) => {
+          e.preventDefault();
+          aiModal.hide();
+          setTimeout(() => genModal.show(), 180);
+        });
+
+        // Optional demo: Run AI (replace with your API call)
+        const runAiBtn = document.getElementById("runAiBtn");
+        runAiBtn.addEventListener("click", () => {
+          const prompt = document.getElementById("aiPrompt").value.trim();
+          if (!prompt) {
+            alert("Enter a prompt first.");
+            return;
+          }
+
+          runAiBtn.textContent = "Generating...";
+          runAiBtn.disabled = true;
+
+          // Simulate an AI response — replace this with a real fetch to your AI endpoint
+          setTimeout(() => {
+            const resultEl = document.getElementById("aiResult");
+            const resultContent = document.getElementById("aiResultContent");
+            resultContent.textContent = "AI output for: " + prompt;
+            resultEl.style.display = "block";
+            runAiBtn.textContent = "Generate";
+            runAiBtn.disabled = false;
+          }, 1000);
+        });
+
+        // Optional: when AI modal is hidden, if generate modal isn't visible, reopen it (safety)
+        aiModalEl.addEventListener("hidden.bs.modal", () => {
+          const genEl = generateModalEl;
+          if (!genEl.classList.contains("show")) {
+            // nothing — we only reopen when user presses Back; avoid auto-reopening here
+          }
+        });
+      })();
+    </script>
+
+    <!-- ===== Script to switch modals and handle file input ===== -->
+    <script>
+      (function () {
+        // Ensure bootstrap is available
+        if (typeof bootstrap === "undefined") {
+          console.warn(
+            "Bootstrap not found. Make sure bootstrap.bundle.js is loaded."
+          );
+          return;
+        }
+
+        const uploadModalEl = document.getElementById("uploadModal");
+        const nextModalEl = document.getElementById("nextModal");
+
+        // Create/get Bootstrap modal instances (don't double-instantiate)
+        const getModalInstance = (el) =>
+          bootstrap.Modal.getInstance(el) || new bootstrap.Modal(el);
+
+        const uploadModal = getModalInstance(uploadModalEl);
+        const nextModal = getModalInstance(nextModalEl);
+
+        // Next button: hide uploadModal then show nextModal
+        const btnNext = document.getElementById("btn-next");
+        btnNext.addEventListener("click", (e) => {
+          e.preventDefault();
+          uploadModal.hide();
+          // slight delay so hide animation finishes and transition is smooth
+          setTimeout(() => {
+            nextModal.show();
+          }, 200);
+        });
+
+        // Back arrow in nextModal: close nextModal and reopen uploadModal
+        const backToCrop = document.getElementById("backToCrop");
+        backToCrop.addEventListener("click", (e) => {
+          e.preventDefault();
+          nextModal.hide();
+          setTimeout(() => {
+            uploadModal.show();
+          }, 200);
+        });
+
+        // Optional: if uploadModal closed via other means (X or backdrop), ensure nextModal is hidden
+        uploadModalEl.addEventListener("hidden.bs.modal", () => {
+          // keep nextModal hidden unless explicitly opened
+          // (no action needed, this is a safe hook)
+        });
+
+        // Optional: pass preview image from upload modal to next modal (if you crop and have a blob/dataURL)
+        // Example: if you have a cropped image dataURL in JS variable `croppedDataUrl`, set it like:
+        // document.getElementById('nextPreviewImage').src = croppedDataUrl;
+      })();
+    </script>
+    <script>
+      (function () {
+        // Elements
+        const browseBtn = document.getElementById("browseFile");
+        const generateModalEl = document.getElementById("generateModal");
+        const uploadModalEl = document.getElementById("uploadModal");
+
+        // helper to get/create Bootstrap modal instance
+        const getModalInstance = (el) =>
+          bootstrap.Modal.getInstance(el) || new bootstrap.Modal(el);
+
+        // When Browse Files is clicked: hide generateModal and show uploadModal
+        browseBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          const genModal = getModalInstance(generateModalEl);
+          genModal.hide();
+          const upModal = getModalInstance(uploadModalEl);
+          upModal.show();
+        });
+
+        // Back button: hide upload modal and reopen generate modal
+        document
+          .getElementById("backToGenerate")
+          .addEventListener("click", () => {
+            const upModal = getModalInstance(uploadModalEl);
+            upModal.hide();
+            setTimeout(() => {
+              const genModal = getModalInstance(generateModalEl);
+              genModal.show();
+            }, 150);
+          });
+
+        // File input preview logic
+        const fileInput = document.getElementById("fileInput");
+        const previewContainer = document.getElementById("previewContainer");
+        const previewImg = document.getElementById("previewImg");
+        const previewName = document.getElementById("previewName");
+        const uploadNowBtn = document.getElementById("uploadNowBtn");
+
+        fileInput.addEventListener("change", (ev) => {
+          const file = ev.target.files && ev.target.files[0];
+          if (!file) {
+            previewContainer.style.display = "none";
+            return;
+          }
+
+          previewName.textContent = file.name;
+
+          if (file.type.startsWith("image/")) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+              previewImg.src = e.target.result;
+              previewContainer.style.display = "block";
+            };
+            reader.readAsDataURL(file);
+          } else {
+            // Non-image: hide image element but show filename
+            previewImg.src = "";
+            previewImg.style.display = "none";
+            previewContainer.style.display = "block";
+          }
+
+          console.log("Selected file:", file);
+        });
+
+        // Upload Now (placeholder) — replace with actual upload code (fetch / axios)
+        uploadNowBtn.addEventListener("click", () => {
+          const file = fileInput.files && fileInput.files[0];
+          if (!file) {
+            alert("Please choose a file first.");
+            return;
+          }
+          uploadNowBtn.textContent = "Uploading...";
+          uploadNowBtn.disabled = true;
+
+          // Simulate upload; replace with real upload code
+          setTimeout(() => {
+            alert("File ready to be uploaded (implement API call).");
+            uploadNowBtn.textContent = "Upload Now";
+            uploadNowBtn.disabled = false;
+
+            // close upload modal and reopen generate modal
+            const upModal = getModalInstance(uploadModalEl);
+            upModal.hide();
+            setTimeout(() => {
+              const genModal = getModalInstance(generateModalEl);
+              genModal.show();
+            }, 150);
+          }, 1000);
+        });
+
+        // When upload modal closes (via X), reopen generate modal if it's not visible
+        uploadModalEl.addEventListener("hidden.bs.modal", () => {
+          const genEl = generateModalEl;
+          if (!genEl.classList.contains("show")) {
+            const gm = getModalInstance(generateModalEl);
+            gm.show();
+          }
+        });
+
+        // Optional: when uploadModal shows, auto-open file picker
+        // Uncomment the block below if you want file dialog to open automatically when upload modal opens
+        /*
+        uploadModalEl.addEventListener("shown.bs.modal", () => {
+          // small timeout to ensure modal animation finished
+          setTimeout(() => {
+            fileInput.click();
+          }, 200);
+        });
+        */
+      })();
+    </script>
+    <script>
+      // Handle aspect ratio selection
+      document.querySelectorAll(".ratio-item").forEach((item) => {
+        item.addEventListener("click", (e) => {
+          e.preventDefault();
+          const selectedRatio = e.target.getAttribute("data-ratio");
+          console.log("Selected Aspect Ratio:", selectedRatio);
+
+          // 👉 You can integrate this with your cropper library logic here
+          // Example:
+          // cropper.setAspectRatio(selectedRatioValue)
+        });
+      });
+    </script>
+  </body>
+</html>

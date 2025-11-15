@@ -632,6 +632,58 @@ exports.getUserPosts = async (req, res) => {
 };
 
 /**
+ * Get All Posts Count (for debugging)
+ * GET /api/posts/count
+ */
+exports.getPostsCount = async (req, res) => {
+	try {
+		const totalPosts = await prisma.post.count();
+		const approvedPosts = await prisma.post.count({ where: { isApproved: true } });
+		const publicPosts = await prisma.post.count({
+			where: {
+				isApproved: true,
+				visibility: 'public'
+			}
+		});
+
+		const samplePost = await prisma.post.findFirst({
+			where: { isApproved: true },
+			include: {
+				author: {
+					select: {
+						username: true,
+						firstName: true,
+						lastName: true
+					}
+				}
+			}
+		});
+
+		res.json({
+			success: true,
+			counts: {
+				total: totalPosts,
+				approved: approvedPosts,
+				public: publicPosts
+			},
+			samplePost: samplePost ? {
+				id: samplePost.id,
+				category: samplePost.category,
+				hasImage: !!(samplePost.mediaUrl || samplePost.thumbnailUrl || (samplePost.mediaUrls && samplePost.mediaUrls.length > 0)),
+				author: samplePost.author?.username
+			} : null
+		});
+	} catch (error) {
+		console.error('Get posts count error:', error);
+		res.status(500).json({
+			success: false,
+			message: 'Failed to get posts count',
+			error: error.message
+		});
+	}
+};
+
+/**
  * Get Feed Posts (Prisma)
  * GET /api/posts/feed
  */
@@ -642,18 +694,31 @@ exports.getFeedPosts = async (req, res) => {
 
 		const skip = (parseInt(page) - 1) * parseInt(limit);
 
+		console.log('📡 Feed Posts Request:', {
+			category,
+			page: parseInt(page),
+			limit: parseInt(limit),
+			skip
+		});
+
+		// Build where clause - more flexible
 		const whereClause = {
-			isApproved: true,
-			visibility: {
-				in: ['public', 'followers']
-			}
+			isApproved: true
 		};
 
-		if (category) {
+		// Only filter by category if it's explicitly provided and not empty
+		if (category && category !== '' && category !== 'featured') {
 			whereClause.category = category;
 		}
 
-		const posts = await prisma.post.findMany({
+		// Include both public and followers visibility
+		whereClause.visibility = {
+			in: ['public', 'followers']
+		};
+
+		console.log('🔍 Where Clause:', JSON.stringify(whereClause, null, 2));
+
+		let posts = await prisma.post.findMany({
 			where: whereClause,
 			include: {
 				author: {
@@ -675,9 +740,60 @@ exports.getFeedPosts = async (req, res) => {
 			take: parseInt(limit)
 		});
 
-		const total = await prisma.post.count({
+		let total = await prisma.post.count({
 			where: whereClause
 		});
+
+		// If no posts found with category filter, try without category
+		if (posts.length === 0 && category) {
+			console.log('⚠️ No posts found with category filter, trying without category...');
+			const fallbackWhere = {
+				isApproved: true,
+				visibility: {
+					in: ['public', 'followers']
+				}
+			};
+
+			posts = await prisma.post.findMany({
+				where: fallbackWhere,
+				include: {
+					author: {
+						select: {
+							id: true,
+							username: true,
+							firstName: true,
+							lastName: true,
+							avatar: true,
+							verificationStatus: true,
+							totalCreations: true
+						}
+					}
+				},
+				orderBy: {
+					createdAt: 'desc'
+				},
+				skip: skip,
+				take: parseInt(limit)
+			});
+
+			total = await prisma.post.count({
+				where: fallbackWhere
+			});
+		}
+
+		console.log(`✅ Found ${posts.length} posts (Total: ${total})`);
+
+		// Log first post structure for debugging
+		if (posts.length > 0) {
+			console.log('📸 First post structure:', {
+				id: posts[0].id,
+				hasMediaUrl: !!posts[0].mediaUrl,
+				hasMediaUrls: !!posts[0].mediaUrls,
+				hasThumbnail: !!posts[0].thumbnailUrl,
+				category: posts[0].category,
+				authorName: posts[0].author?.username
+			});
+		}
 
 		res.json({
 			success: true,
@@ -691,7 +807,7 @@ exports.getFeedPosts = async (req, res) => {
 		});
 
 	} catch (error) {
-		console.error('Get feed posts error:', error);
+		console.error('❌ Get feed posts error:', error);
 		res.status(500).json({
 			success: false,
 			message: 'Failed to get feed posts',

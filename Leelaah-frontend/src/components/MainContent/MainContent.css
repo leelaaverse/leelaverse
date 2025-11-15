@@ -1,20 +1,68 @@
 .mainContent {
     min-height: calc(100vh - 200px);
+    padding-bottom: 2rem;
+}
+
+.mainContentRow {
+    margin-bottom: 0.5rem;
 }
 
 .mainContentRow .col-md-3 {
     padding-left: 3px;
     padding-right: 3px;
+    margin-bottom: 6px;
 }
 
 .mainContentRow .col-md-6 {
     padding-left: 3px;
     padding-right: 3px;
+    margin-bottom: 6px;
 }
 
-.mainContentRow img {
-    display: block;
+/* Observer Target for Infinite Scroll */
+.observer-target {
+    height: 50px;
     width: 100%;
-    height: auto;
-    border-radius: 8px;
+    margin: 2rem 0;
+}
+
+/* No Posts Message */
+.no-posts-message {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: rgba(255, 255, 255, 0.6);
+    font-family: 'Poppins', sans-serif;
+}
+
+.no-posts-message p {
+    font-size: 1.2rem;
+    margin: 0;
+}
+
+/* No More Posts */
+.no-more-posts {
+    text-align: center;
+    padding: 2rem;
+    color: rgba(255, 255, 255, 0.5);
+    font-family: 'Poppins', sans-serif;
+    margin-top: 2rem;
+}
+
+.no-more-posts p {
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .mainContentRow .col-md-3,
+    .mainContentRow .col-md-6 {
+        padding-left: 5px;
+        padding-right: 5px;
+        margin-bottom: 10px;
+    }
+
+    .mainContent {
+        padding-bottom: 1rem;
+    }
 }

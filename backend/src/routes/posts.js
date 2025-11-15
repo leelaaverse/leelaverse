@@ -33,6 +33,13 @@ router.post('/create-from-generation', auth, postController.createPostFromGenera
 router.post('/', postController.createPost);
 
 /**
+ * @route   GET /api/posts/count
+ * @desc    Get posts count (for debugging)
+ * @access  Public
+ */
+router.get('/count', postController.getPostsCount);
+
+/**
  * @route   GET /api/posts/feed
  * @desc    Get feed posts (public timeline)
  * @access  Public/Private
