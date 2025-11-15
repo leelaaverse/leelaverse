@@ -144,7 +144,7 @@ const AuthModal = ({ isOpen, onClose, mode, onSuccess }) => {
         localStorage.setItem('oauthInProgress', 'true');
 
         // Redirect to Google OAuth
-        window.location.href = `${baseURL}/api/oauth/google`;
+        window.location.href = `${baseURL}api/oauth/google`;
     };
 
     const handleClose = () => {
