@@ -1,22 +1,32 @@
 import React from 'react';
 import './Navbar.css';
 
-const Navbar = ({ activeTab, setActiveTab, isLoggedIn = false, onLogin, onSignup }) => {
+const Navbar = ({ activeTab, setActiveTab, isLoggedIn = false, onLogin, onSignup, showBackButton = false, onBack }) => {
     return (
         <nav className="navbar navbar-expand-lg sticky-top py-2 bg-mainColor Header">
             <div className="container-fluid flex-wrap px-4">
-                {/* Logo */}
-                <a
-                    className="navbar-brand d-flex align-items-center order-1 order-lg-1"
-                    href="#"
-                >
-                    <img
-                        src="/assets/logo-web.png"
-                        alt="LELAA Logo"
-                        className="img-fluid"
-                        style={{ maxHeight: '100px' }}
-                    />
-                </a>
+                {/* Back Button or Logo */}
+                {showBackButton ? (
+                    <button
+                        className="navbar-back-btn d-flex align-items-center order-1 order-lg-1"
+                        onClick={onBack}
+                    >
+                        <i className="fa-solid fa-arrow-left"></i>
+                        <span className="ms-2">Back to Home</span>
+                    </button>
+                ) : (
+                    <a
+                        className="navbar-brand d-flex align-items-center order-1 order-lg-1"
+                        href="#"
+                    >
+                        <img
+                            src="/assets/logo-web.png"
+                            alt="LELAA Logo"
+                            className="img-fluid"
+                            style={{ maxHeight: '100px' }}
+                        />
+                    </a>
+                )}
 
                 {/* Navigation - Show login/signup if not logged in, otherwise show tabs */}
                 <div className="justify-content-center order-3 order-lg-2" id="navbarMain">
@@ -99,6 +109,7 @@ const Navbar = ({ activeTab, setActiveTab, isLoggedIn = false, onLogin, onSignup
                             data-bs-toggle="offcanvas"
                             data-bs-target="#offcanvasRight"
                             aria-controls="offcanvasRight"
+                            data-bs-backdrop="false"
                         >
                             <i className="fa-solid fa-border-all"></i>
                         </button>

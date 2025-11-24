@@ -19,6 +19,7 @@ const { generalLimiter } = require('./src/middleware/rateLimiter');
 const authRoutes = require('./src/routes/auth');
 const oauthRoutes = require('./src/routes/oauth');
 const postRoutes = require('./src/routes/posts');
+const profileRoutes = require('./src/routes/profile');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -175,6 +176,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/oauth', oauthRoutes);
 app.use('/api/posts', postRoutes);
+app.use('/api/profile', profileRoutes);
 
 // Handle 404 errors
 app.use('*', (req, res) => {

@@ -89,6 +89,19 @@ const apiService = {
 		updateProfile: (data) => apiClient.put('/api/auth/profile', data),
 	},
 
+	// Profile API
+	profile: {
+		updateProfile: (data) => apiClient.put('/api/profile', data),
+		updateAvatar: (avatar) => apiClient.put('/api/profile/avatar', { avatar }),
+		updateCover: (coverImage) => apiClient.put('/api/profile/cover', { coverImage }),
+		updateUsername: (username) => apiClient.put('/api/profile/username', { username }),
+		updateBio: (bio) => apiClient.put('/api/profile/bio', { bio }),
+		updateSocialLinks: (links) => apiClient.put('/api/profile/social', links),
+		updateSettings: (settings) => apiClient.put('/api/profile/settings', settings),
+		checkUsername: (username) => apiClient.get(`/api/profile/check-username/${username}`),
+		getStats: () => apiClient.get('/api/profile/stats'),
+	},
+
 	// OAuth
 	oauth: {
 		google: () => `${API_URL}/api/oauth/google`,

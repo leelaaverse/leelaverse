@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LEELA</title>
+    <!-- Include Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
+      integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg sticky-top py-2 bg-mainColor Header">
+      <div class="container-fluid flex-wrap px-4">
+        <!-- Logo -->
+        <a
+          class="navbar-brand d-flex align-items-center order-1 order-lg-1"
+          href="#"
+        >
+          <img
+            src="assets/logo-web.png"
+            alt="LELAA Logo"
+            class="img-fluid"
+            style="max-height: 100px"
+          />
+        </a>
+
+        <!-- Navigation -->
+        <div
+          class="justify-content-center order-3 order-lg-2"
+          id="navbarMain"
+        ></div>
+
+        <!-- Right Icons -->
+        <div
+          class="d-flex align-items-center justify-content-end bg-dark-2 px-md-5 py-md-3 px-lg-5 py-lg-3 px-sm-5 py-sm-2 px-3 py-2 rounded-pill navigationRight ms-2 gap-lg-4 gap-md-4 gap-sm-3 gap-3 order-2 order-lg-3"
+        >
+          <button><i class="fa-solid fa-message"></i></button>
+          <button><i class="fa-solid fa-bell"></i></button>
+          <button
+            type="button"
+            data-bs-toggle="offcanvas"
+            data-bs-target="#offcanvasRight"
+            aria-controls="offcanvasRight"
+          >
+            <i class="fa-solid fa-border-all"></i>
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <main>
+      <div class="profileHero d-flex align-items-center justify-content-center">
+        <div
+          class="d-flex flex-wrap gap-4 align-items-center justify-content-center"
+        >
+          <div>
+            <img src="assets/profilepicture.png" alt="" />
+          </div>
+          <div class="d-flex flex-column gap-2">
+            <div class="d-flex align-items-center flex-wrap gap-3">
+              <p class="text-light m-0 p-0 font-weight-700">junaid0077</p>
+              <button
+                class="rounded p-2 btn_none bg-dark-2 text-light font-12 bg-2A2A2A"
+              >
+                Edit Profile
+              </button>
+              <button class="btn_none">
+                <img src="assets/uil_setting.png" alt="" />
+              </button>
+            </div>
+            <div>
+              <h5 class="text-light">
+                Digital creator | Turning ideas into visuals
+              </h5>
+            </div>
+            <div class="d-flex flex-wrap align-items-center gap-5">
+              <div class="text-center">
+                <p class="m-0 p-0 text-light font-weight-700">Post</p>
+                <p class="fadefont m-0 p-0">40</p>
+              </div>
+              <div class="text-center">
+                <p class="m-0 p-0 text-light font-weight-700">Followers</p>
+                <p class="fadefont m-0 p-0">40</p>
+              </div>
+              <div class="text-center">
+                <p class="m-0 p-0 text-light font-weight-700">Following</p>
+                <p class="fadefont m-0 p-0">15</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="container-fluid mt-3">
+        <div class="row">
+          <div class="col-md-4">
+            <ul
+              class="nav nav-pills rounded-pill py-1 rounded-0"
+              id="pills-tab"
+              role="tablist"
+            >
+              <li class="nav-item" role="presentation">
+                <button
+                  class="nav-link nav-profiletab font-12 active"
+                  id="pills-allpost-tab"
+                  data-bs-toggle="pill"
+                  data-bs-target="#pills-allpost"
+                  type="button"
+                  role="tab"
+                  aria-controls="pills-allpost"
+                  aria-selected="true"
+                >
+                  All Post
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button
+                  class="nav-link font-12 nav-profiletab"
+                  id="pills-singularity-tab"
+                  data-bs-toggle="pill"
+                  data-bs-target="#pills-singularity"
+                  type="button"
+                  role="tab"
+                  aria-controls="pills-singularity"
+                  aria-selected="false"
+                >
+                  Singularity
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button
+                  class="nav-link font-12 nav-profiletab"
+                  id="pills-draft-tab"
+                  data-bs-toggle="pill"
+                  data-bs-target="#pills-draft"
+                  type="button"
+                  role="tab"
+                  aria-controls="pills-draft"
+                  aria-selected="false"
+                >
+                  Draft
+                </button>
+              </li>
+            </ul>
+          </div>
+          <div class="tab-content mt-3" id="pills-tabContent">
+            <div
+              class="tab-pane fade show active"
+              id="pills-allpost"
+              role="tabpanel"
+              aria-labelledby="pills-allpost-tab"
+              tabindex="0"
+            >
+              <div class="mb-1">
+                <button
+                  class="btn_none text-light bg-2A2A2A py-1 px-2 rounded"
+                  id="filterbtn"
+                  type="button"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                >
+                  <img src="assets/rivet-icons_filter.png" alt="" />
+                  Filter
+                </button>
+                <ul
+                  class="dropdown-menu dropdown-menu-dark"
+                  aria-labelledby="filterbtn"
+                >
+                  <li>
+                    <a
+                      class="dropdown-item ratio-item"
+                      data-ratio="image"
+                      href="#"
+                      >Image</a
+                    >
+                  </li>
+                  <li>
+                    <a
+                      class="dropdown-item ratio-item"
+                      data-ratio="Audio"
+                      href="#"
+                      >Audio</a
+                    >
+                  </li>
+                  <li>
+                    <a
+                      class="dropdown-item ratio-item"
+                      data-ratio="Vedio"
+                      href="#"
+                      >Vedio</a
+                    >
+                  </li>
+                  <li>
+                    <a
+                      class="dropdown-item ratio-item"
+                      data-ratio="Text"
+                      href="#"
+                      >Text</a
+                    >
+                  </li>
+                </ul>
+                <div class="row mt-3 mainContentRow px-1">
+                  <div class="col-md-3">
+                    <div><img src="assets/1.png" alt="" width="100%" /></div>
+                  </div>
+                  <div class="col-md-3">
+                    <div><img src="assets/2.png" alt="" width="100%" /></div>
+                  </div>
+                  <div class="col-md-3">
+                    <div><img src="assets/3.png" alt="" width="100%" /></div>
+                  </div>
+                  <div class="col-md-3">
+                    <div><img src="assets/4.png" alt="" width="100%" /></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div
+              class="tab-pane fade"
+              id="pills-singularity"
+              role="tabpanel"
+              aria-labelledby="pills-singularity-tab"
+              tabindex="0"
+            >
+              ...
+            </div>
+            <div
+              class="tab-pane fade"
+              id="pills-draft"
+              role="tabpanel"
+              aria-labelledby="pills-draft-tab"
+              tabindex="0"
+            >
+              ...
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Your Off-Canvas Code Here -->
+    <div
+      class="offcanvas offcanvas-end"
+      tabindex="-1"
+      id="offcanvasRight"
+      aria-labelledby="offcanvasRightLabel"
+    >
+      <div class="offcanvas-header">
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+          <div>
+            <img src="assets/profile.png" alt="" />
+          </div>
+          <div>
+            <h4 class="m-0 font-15 text-light">Junadi ALi</h4>
+            <p class="m-0 font-13 font-light-2">@junaidali0077</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="offcanvas"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="offcanvas-body">
+        <div class="row">
+          <div class="col-md-4">
+            <div class="text-center">
+              <h4 class="m-0 font-15 text-light font-weight-700">Posts</h4>
+              <p class="m-0 font-13 font-light-2">40</p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="text-center">
+              <h4 class="m-0 font-15 text-light font-weight-700">Followers</h4>
+              <p class="m-0 font-13 font-light-2">2.5k</p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="text-center">
+              <h4 class="m-0 font-15 text-light font-weight-700">Following</h4>
+              <p class="m-0 font-13 font-light-2">15</p>
+            </div>
+          </div>
+        </div>
+        <div class="creditscore row mt-3">
+          <a href="">
+            <div
+              class="d-flex flex-wrap justify-content-between align-items-center"
+            >
+              <div class="d-flex flex-wrap gap-2 align-items-center">
+                <div><img src="assets/data-usage.png" alt="" /></div>
+                <h4 class="font-14 font-weight-700 m-0 text-light mt-1">
+                  Ai Credit Usage
+                </h4>
+              </div>
+              <div>
+                <img class="mt-1" src="assets/arrow-right.png " alt="" />
+              </div>
+            </div>
+          </a>
+        </div>
+        <div class="mt-1">
+          <div class="progress-container">
+            <div class="progress-text">
+              <span class="font-13 font-weight-500 text-light">Spent 50</span>
+              <span class="font-13 font-weight-500 text-light">Limit 100</span>
+            </div>
+          </div>
+          <div class="progress-bar mt-1">
+            <div class="progress-fill"></div>
+          </div>
+        </div>
+        <div class="sidenav-items mt-3">
+          <a href="#"
+            ><div class="py-2 border-bottom_1 d-flex gap-2 align-items-center">
+              <img src="assets/uil_setting.png" alt="" />
+              <h4 class="font-15 font-weight-400 m-0 mt-1">Setting</h4>
+            </div>
+          </a>
+          <a href="#"
+            ><div class="py-2 border-bottom_1 d-flex gap-2 align-items-center">
+              <img src="assets/line-md_discord.png" alt="" />
+              <h4 class="font-15 font-weight-400 m-0 mt-1">Discord</h4>
+            </div>
+          </a>
+          <div
+            class="d-flex flex-wrap justify-content-between border-bottom_1 align-items-center"
+          >
+            <div class="py-2 d-flex gap-2 align-items-center">
+              <img src="assets/fluent_dark-theme-20-filled.png" alt="" />
+              <h4 class="font-15 font-weight-400 m-0 mt-1">Theme</h4>
+            </div>
+            <div class="selectheme">
+              <select name="" id="">
+                <option value="Light">Light</option>
+                <option value="Dark">Dark</option>
+              </select>
+            </div>
+          </div>
+          <div
+            class="d-flex flex-wrap justify-content-between border-bottom_1 align-items-center"
+          >
+            <div class="py-2 d-flex gap-2 align-items-center">
+              <img src="assets/clarity_language-line.png" alt="" />
+              <h4 class="font-15 font-weight-400 m-0 mt-1">Language</h4>
+            </div>
+            <div class="selectlang">
+              <select name="" id="">
+                <option value="English">English</option>
+                <option value="Hindi">Hindi</option>
+              </select>
+            </div>
+          </div>
+          <a href="#"
+            ><div class="py-2 border-bottom_1 d-flex gap-2 align-items-center">
+              <img src="assets/ix_support.png" alt="" />
+              <h4 class="font-15 font-weight-400 m-0 mt-1">Help & Support</h4>
+            </div>
+          </a>
+
+          <div class="logoutbtn text-center mt-3">
+            <button class="btn-danger btn">
+              <i class="fa-solid fa-right-from-bracket"></i>
+              Logout
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Your button or element to toggle offcanvas -->
+
+    <!-- Bootstrap JS and Popper.js -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+      integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js"
+      integrity="sha384-G/EV+4j2dNv+tEPo3++6LCgdCROaejBqfUeNjuKAiuXbjrxilcCdDz6ZAVfHWe1Y"
+      crossorigin="anonymous"
+    ></script>
+  </body>
+</html>

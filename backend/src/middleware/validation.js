@@ -203,6 +203,80 @@ const validatePost = [
     handleValidationErrors
 ];
 
+// Username update validation
+const validateUsernameUpdate = [
+    body('username')
+        .trim()
+        .notEmpty()
+        .withMessage('Username is required')
+        .isLength({ min: 3, max: 20 })
+        .withMessage('Username must be between 3 and 20 characters')
+        .matches(/^[a-zA-Z0-9_]+$/)
+        .withMessage('Username can only contain letters, numbers, and underscores'),
+
+    handleValidationErrors
+];
+
+// Bio update validation
+const validateBioUpdate = [
+    body('bio')
+        .optional({ nullable: true })
+        .trim()
+        .isLength({ max: 500 })
+        .withMessage('Bio must not exceed 500 characters'),
+
+    handleValidationErrors
+];
+
+// Avatar update validation
+const validateAvatarUpdate = [
+    body('avatar')
+        .optional({ nullable: true })
+        .isURL()
+        .withMessage('Avatar must be a valid URL'),
+
+    body('coverImage')
+        .optional({ nullable: true })
+        .isURL()
+        .withMessage('Cover image must be a valid URL'),
+
+    handleValidationErrors
+];
+
+// Social links update validation
+const validateSocialLinksUpdate = [
+    body('twitterLink')
+        .optional({ nullable: true })
+        .trim()
+        .isURL()
+        .withMessage('Twitter link must be a valid URL'),
+
+    body('instagramLink')
+        .optional({ nullable: true })
+        .trim()
+        .isURL()
+        .withMessage('Instagram link must be a valid URL'),
+
+    body('linkedinLink')
+        .optional({ nullable: true })
+        .trim()
+        .isURL()
+        .withMessage('LinkedIn link must be a valid URL'),
+
+    body('githubLink')
+        .optional({ nullable: true })
+        .trim()
+        .isURL()
+        .withMessage('GitHub link must be a valid URL'),
+
+    body('discordLink')
+        .optional({ nullable: true })
+        .trim()
+        .withMessage('Discord link must be a string'),
+
+    handleValidationErrors
+];
+
 module.exports = {
     validateRegister,
     validateLogin,
@@ -212,5 +286,9 @@ module.exports = {
     validateProfileUpdate,
     validateRefreshToken,
     validatePost,
+    validateUsernameUpdate,
+    validateBioUpdate,
+    validateAvatarUpdate,
+    validateSocialLinksUpdate,
     handleValidationErrors
 };

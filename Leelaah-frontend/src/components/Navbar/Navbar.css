@@ -47,6 +47,34 @@
     font-size: 13px;
 }
 
+/* Back Button */
+.navbar-back-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 0.625rem 1.25rem;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.navbar-back-btn:hover {
+    background: rgba(155, 108, 248, 0.15);
+    border-color: rgba(155, 108, 248, 0.5);
+    transform: translateX(-2px);
+}
+
+.navbar-back-btn i {
+    font-size: 16px;
+    transition: transform 0.2s ease;
+}
+
+.navbar-back-btn:hover i {
+    transform: translateX(-2px);
+}
+
 /* Responsiveness */
 @media (max-width: 768px) {
     .navigationRight {
