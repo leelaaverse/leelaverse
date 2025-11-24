@@ -272,6 +272,7 @@ const validateSocialLinksUpdate = [
     body('discordLink')
         .optional({ nullable: true })
         .trim()
+        .isString()
         .withMessage('Discord link must be a string'),
 
     handleValidationErrors
