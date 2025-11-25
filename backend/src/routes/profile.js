@@ -25,16 +25,30 @@ router.put('/',
     profileController.updateProfile
 );
 
+// @route   POST /api/profile/avatar/upload
+// @desc    Upload user avatar (with base64 image)
+// @access  Private
+router.post('/avatar/upload',
+    profileController.uploadAvatar
+);
+
 // @route   PUT /api/profile/avatar
-// @desc    Update user avatar
+// @desc    Update user avatar (via URL)
 // @access  Private
 router.put('/avatar',
     validateAvatarUpdate,
     profileController.updateAvatar
 );
 
+// @route   POST /api/profile/cover/upload
+// @desc    Upload cover image (with base64 image)
+// @access  Private
+router.post('/cover/upload',
+    profileController.uploadCoverImage
+);
+
 // @route   PUT /api/profile/cover
-// @desc    Update cover image
+// @desc    Update cover image (via URL)
 // @access  Private
 router.put('/cover',
     validateAvatarUpdate, // Reuse same validation

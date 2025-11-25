@@ -30,6 +30,8 @@ const EditProfileModal = ({ isOpen, onClose, userProfile }) => {
     const [success, setSuccess] = useState('');
     const [usernameAvailable, setUsernameAvailable] = useState(null);
     const [checkingUsername, setCheckingUsername] = useState(false);
+    const [avatarPreview, setAvatarPreview] = useState(null);
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
     useEffect(() => {
         if (userProfile) {
@@ -150,12 +152,6 @@ const EditProfileModal = ({ isOpen, onClose, userProfile }) => {
                 await apiService.profile.updateAvatar(formData.avatar);
             }
 
-            // Update cover image if changed
-            if (formData.coverImage && formData.coverImage !== userProfile?.coverImage) {
-                console.log('🖼️ Updating cover image...');
-                await apiService.profile.updateCover(formData.coverImage);
-            }
-
             // Fetch updated profile
             console.log('🔄 Fetching updated profile...');
             const response = await apiService.auth.getProfile();
@@ -208,38 +204,68 @@ const EditProfileModal = ({ isOpen, onClose, userProfile }) => {
         }
     };
 
-    const handleCoverUpdate = async (coverUrl) => {
-        setLoading(true);
-        setError('');
-        try {
-            console.log('🖼️ Updating cover image:', coverUrl);
-            const response = await apiService.profile.updateCover(coverUrl);
-            console.log('✅ Cover updated:', response.data);
+    const handleAvatarFileChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
 
-            setFormData(prev => ({ ...prev, coverImage: coverUrl }));
-
-            // Update Redux and localStorage
-            const updatedUser = response.data.data.user;
-            dispatch(updateUser(updatedUser));
-            localStorage.setItem('user', JSON.stringify(updatedUser));
-
-            setSuccess('Cover image updated successfully!');
-        } catch (error) {
-            console.error('❌ Cover update failed:', error);
-            setError(error.response?.data?.message || 'Failed to update cover image');
-        } finally {
-            setLoading(false);
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            setError('Please select an image file');
+            return;
         }
+
+        // Validate file size (5MB max)
+        if (file.size > 5 * 1024 * 1024) {
+            setError('Image size must be less than 5MB');
+            return;
+        }
+
+        setUploadingAvatar(true);
+        setError('');
+
+        try {
+            // Convert to base64
+            const reader = new FileReader();
+            reader.onloadend = async () => {
+                const base64Image = reader.result;
+                setAvatarPreview(base64Image);
+
+                // Upload to backend
+                console.log('📤 Uploading avatar...');
+                const response = await apiService.profile.uploadAvatar(base64Image);
+                console.log('✅ Avatar uploaded:', response.data);
+
+                const updatedUser = response.data.data.user;
+                setFormData(prev => ({ ...prev, avatar: updatedUser.avatar }));
+
+                // Update Redux and localStorage
+                dispatch(updateUser(updatedUser));
+                localStorage.setItem('user', JSON.stringify(updatedUser));
+
+                setSuccess('Avatar uploaded successfully!');
+                setTimeout(() => setSuccess(''), 3000);
+            };
+            reader.readAsDataURL(file);
+        } catch (error) {
+            console.error('❌ Avatar upload failed:', error);
+            setError(error.response?.data?.message || 'Failed to upload avatar');
+        } finally {
+            setUploadingAvatar(false);
+        }
+    };
+
+    const handleClose = () => {
+        onClose(false); // Pass false to indicate no update was made
     };
 
     if (!isOpen) return null;
 
     return (
-        <div className="edit-profile-modal-overlay" onClick={onClose}>
+        <div className="edit-profile-modal-overlay" onClick={handleClose}>
             <div className="edit-profile-modal" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                     <h2>Edit Profile</h2>
-                    <button className="close-btn" onClick={onClose}>
+                    <button className="close-btn" onClick={handleClose}>
                         <i className="fa-solid fa-xmark"></i>
                     </button>
                 </div>
@@ -272,6 +298,40 @@ const EditProfileModal = ({ isOpen, onClose, userProfile }) => {
                     {/* Basic Info Tab */}
                     {activeTab === 'basic' && (
                         <div className="tab-content">
+                            <div className="form-group">
+                                <label>Avatar</label>
+                                <div className="image-upload-container">
+                                    <div className="image-preview">
+                                        <img
+                                            src={avatarPreview || formData.avatar || 'https://via.placeholder.com/120'}
+                                            alt="Avatar preview"
+                                            className="avatar-preview-img"
+                                        />
+                                        {uploadingAvatar && (
+                                            <div className="upload-overlay">
+                                                <i className="fa-solid fa-spinner fa-spin"></i>
+                                                <span>Uploading...</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="upload-actions">
+                                        <label htmlFor="avatar-upload" className="upload-btn">
+                                            <i className="fa-solid fa-upload"></i>
+                                            Upload Avatar
+                                        </label>
+                                        <input
+                                            id="avatar-upload"
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleAvatarFileChange}
+                                            style={{ display: 'none' }}
+                                            disabled={uploadingAvatar}
+                                        />
+                                        <p className="upload-hint">JPG, PNG or GIF. Max 5MB.</p>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div className="form-group">
                                 <label>First Name</label>
                                 <input
@@ -465,7 +525,7 @@ const EditProfileModal = ({ isOpen, onClose, userProfile }) => {
 
                     {/* Actions */}
                     <div className="modal-actions">
-                        <button type="button" className="cancel-btn" onClick={onClose}>
+                        <button type="button" className="cancel-btn" onClick={handleClose}>
                             Cancel
                         </button>
                         <button

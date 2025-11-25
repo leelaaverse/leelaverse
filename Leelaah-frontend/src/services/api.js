@@ -92,7 +92,9 @@ const apiService = {
 	// Profile API
 	profile: {
 		updateProfile: (data) => apiClient.put('/api/profile', data),
+		uploadAvatar: (image) => apiClient.post('/api/profile/avatar/upload', { image }),
 		updateAvatar: (avatar) => apiClient.put('/api/profile/avatar', { avatar }),
+		uploadCover: (image) => apiClient.post('/api/profile/cover/upload', { image }),
 		updateCover: (coverImage) => apiClient.put('/api/profile/cover', { coverImage }),
 		updateUsername: (username) => apiClient.put('/api/profile/username', { username }),
 		updateBio: (bio) => apiClient.put('/api/profile/bio', { bio }),

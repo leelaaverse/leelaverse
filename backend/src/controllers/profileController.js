@@ -1,11 +1,14 @@
 const UserService = require('../services/UserService');
 const prisma = require('../config/prisma');
+const { uploadAvatar, uploadCoverImage } = require('../config/cloudinary');
 
 class ProfileController {
     constructor() {
         this.updateProfile = this.updateProfile.bind(this);
         this.updateAvatar = this.updateAvatar.bind(this);
         this.updateCoverImage = this.updateCoverImage.bind(this);
+        this.uploadAvatar = this.uploadAvatar.bind(this);
+        this.uploadCoverImage = this.uploadCoverImage.bind(this);
         this.updateUsername = this.updateUsername.bind(this);
         this.updateBio = this.updateBio.bind(this);
         this.updateSocialLinks = this.updateSocialLinks.bind(this);
@@ -88,7 +91,57 @@ class ProfileController {
     }
 
     /**
-     * Update avatar
+     * Upload avatar image
+     * @route POST /api/profile/avatar/upload
+     */
+    async uploadAvatar(req, res) {
+        try {
+            const userId = req.user.id;
+            const { image } = req.body;
+
+            if (!image) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Image data is required'
+                });
+            }
+
+            console.log('📤 Uploading avatar for user:', userId);
+
+            // Upload to Cloudinary
+            const uploadResult = await uploadAvatar(image, userId);
+
+            // Update user profile with new avatar URL
+            const updatedUser = await UserService.updateUser(userId, {
+                avatar: uploadResult.url,
+                updatedAt: new Date()
+            });
+
+            const { password, ...userResponse } = updatedUser;
+
+            console.log('✅ Avatar uploaded and updated successfully');
+
+            res.json({
+                success: true,
+                message: 'Avatar uploaded successfully',
+                data: {
+                    user: userResponse,
+                    upload: uploadResult
+                }
+            });
+
+        } catch (error) {
+            console.error('❌ Avatar upload error:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to upload avatar',
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * Update avatar (via URL)
      * @route PUT /api/profile/avatar
      */
     async updateAvatar(req, res) {
@@ -131,7 +184,57 @@ class ProfileController {
     }
 
     /**
-     * Update cover image
+     * Upload cover image
+     * @route POST /api/profile/cover/upload
+     */
+    async uploadCoverImage(req, res) {
+        try {
+            const userId = req.user.id;
+            const { image } = req.body;
+
+            if (!image) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Image data is required'
+                });
+            }
+
+            console.log('📤 Uploading cover image for user:', userId);
+
+            // Upload to Cloudinary
+            const uploadResult = await uploadCoverImage(image, userId);
+
+            // Update user profile with new cover image URL
+            const updatedUser = await UserService.updateUser(userId, {
+                coverImage: uploadResult.url,
+                updatedAt: new Date()
+            });
+
+            const { password, ...userResponse } = updatedUser;
+
+            console.log('✅ Cover image uploaded and updated successfully');
+
+            res.json({
+                success: true,
+                message: 'Cover image uploaded successfully',
+                data: {
+                    user: userResponse,
+                    upload: uploadResult
+                }
+            });
+
+        } catch (error) {
+            console.error('❌ Cover image upload error:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to upload cover image',
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * Update cover image (via URL)
      * @route PUT /api/profile/cover
      */
     async updateCoverImage(req, res) {
