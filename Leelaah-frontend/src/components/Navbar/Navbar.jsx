@@ -98,11 +98,11 @@ const Navbar = ({ activeTab, setActiveTab, isLoggedIn = false, onLogin, onSignup
                 {/* Right Icons - Only show when logged in */}
                 {isLoggedIn && (
                     <div className="d-flex align-items-center justify-content-end bg-dark-2 px-md-5 py-md-3 px-lg-5 py-lg-3 px-sm-5 py-sm-2 px-3 py-2 rounded-pill navigationRight ms-2 gap-lg-4 gap-md-4 gap-sm-3 gap-3 order-2 order-lg-3">
-                        <button>
-                            <i className="fa-solid fa-message"></i>
+                        <button title="Messages">
+                            <i className="fa-regular fa-comment-dots"></i>
                         </button>
-                        <button>
-                            <i className="fa-solid fa-bell"></i>
+                        <button title="Notifications">
+                            <i className="fa-regular fa-bell"></i>
                         </button>
                         <button
                             type="button"
@@ -110,8 +110,9 @@ const Navbar = ({ activeTab, setActiveTab, isLoggedIn = false, onLogin, onSignup
                             data-bs-target="#offcanvasRight"
                             aria-controls="offcanvasRight"
                             data-bs-backdrop="false"
+                            title="Menu"
                         >
-                            <i className="fa-solid fa-border-all"></i>
+                            <i className="fa-solid fa-bars"></i>
                         </button>
                     </div>
                 )}

@@ -1,11 +1,22 @@
 import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
 import GenerateModal from '../GenerateModal/GenerateModal';
 import './FloatingBar.css';
 
 const FloatingBar = ({ onOpenAuth }) => {
     const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
+    const { isLoggedIn } = useSelector((state) => state.auth);
 
     const handleGenerateClick = () => {
+        // Check if user is logged in
+        if (!isLoggedIn) {
+            // Open auth modal for login/signup
+            if (onOpenAuth) {
+                onOpenAuth('signup'); // Open signup modal by default
+            }
+            return;
+        }
+        // If logged in, open generate modal
         setIsGenerateModalOpen(true);
     };
 
@@ -17,8 +28,8 @@ const FloatingBar = ({ onOpenAuth }) => {
         <>
             <section className="floating-bar">
                 <div className="row justify-content-center">
-                    <div className="col-md-5">
-                        <div className="rounded-pill f-conatiner d-flex flex-wrap justify-content-between px-5 py-1 align-items-center">
+                    <div className="col-md-5 col-11">
+                        <div className="rounded-pill f-conatiner d-flex flex-nowrap justify-content-between px-5 py-1 align-items-center">
                             <div>
                                 <button>
                                     <img src="/assets/home-rounded.svg" alt="" />

@@ -22,12 +22,23 @@ const ViewProfile = ({ onNavigate }) => {
 
     const fetchUserProfile = async () => {
         try {
+            console.log('🔄 Fetching user profile...');
             const response = await apiService.auth.getProfile();
+            console.log('✅ Profile fetched:', response.data.data.user);
             setUserProfile(response.data.data.user);
         } catch (error) {
-            console.error('Failed to fetch profile:', error);
+            console.error('❌ Failed to fetch profile:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleModalClose = (wasUpdated) => {
+        setIsEditModalOpen(false);
+        // If profile was updated, refresh the profile data
+        if (wasUpdated) {
+            console.log('🔄 Profile was updated, refreshing...');
+            fetchUserProfile();
         }
     };
 
@@ -114,6 +125,24 @@ const ViewProfile = ({ onNavigate }) => {
                             </div>
                             <h3 className="profile-display-name">{displayName}</h3>
                             <p className="profile-bio">{bio}</p>
+
+                            {/* Location and Website */}
+                            <div className="profile-meta">
+                                {userProfile?.location && (
+                                    <div className="profile-meta-item">
+                                        <i className="fa-solid fa-location-dot"></i>
+                                        <span>{userProfile.location}</span>
+                                    </div>
+                                )}
+                                {userProfile?.website && (
+                                    <div className="profile-meta-item">
+                                        <i className="fa-solid fa-link"></i>
+                                        <a href={userProfile.website} target="_blank" rel="noopener noreferrer">
+                                            {userProfile.website.replace(/^https?:\/\//, '')}
+                                        </a>
+                                    </div>
+                                )}
+                            </div>
 
                             <div className="profile-stats">
                                 <div className="stat-box">
@@ -235,7 +264,7 @@ const ViewProfile = ({ onNavigate }) => {
             {/* Edit Profile Modal */}
             <EditProfileModal
                 isOpen={isEditModalOpen}
-                onClose={() => setIsEditModalOpen(false)}
+                onClose={handleModalClose}
                 userProfile={userProfile}
             />
         </div>

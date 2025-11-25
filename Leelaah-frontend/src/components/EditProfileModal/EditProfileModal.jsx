@@ -101,32 +101,66 @@ const EditProfileModal = ({ isOpen, onClose, userProfile }) => {
         setSuccess('');
 
         try {
+            console.log('🔄 Starting profile update...');
+
             // Update basic profile
-            await apiService.profile.updateProfile({
-                firstName: formData.firstName,
-                lastName: formData.lastName,
-                bio: formData.bio,
-                location: formData.location,
-                website: formData.website
-            });
+            console.log('📝 Updating basic profile info...');
+
+            // Only include fields that have values to avoid validation errors
+            const profileUpdateData = {};
+            if (formData.firstName?.trim()) profileUpdateData.firstName = formData.firstName.trim();
+            if (formData.lastName?.trim()) profileUpdateData.lastName = formData.lastName.trim();
+            if (formData.bio?.trim()) profileUpdateData.bio = formData.bio.trim();
+            if (formData.location?.trim()) profileUpdateData.location = formData.location.trim();
+            if (formData.website?.trim()) profileUpdateData.website = formData.website.trim();
+
+            const profileResponse = await apiService.profile.updateProfile(profileUpdateData);
+            console.log('✅ Basic profile updated:', profileResponse.data);
 
             // Update username if changed
             if (formData.username !== userProfile?.username) {
-                await apiService.profile.updateUsername(formData.username);
+                console.log('👤 Updating username...');
+                const usernameResponse = await apiService.profile.updateUsername(formData.username);
+                console.log('✅ Username updated:', usernameResponse.data);
             }
 
-            // Update social links
-            await apiService.profile.updateSocialLinks({
-                twitterLink: formData.twitterLink,
-                instagramLink: formData.instagramLink,
-                linkedinLink: formData.linkedinLink,
-                githubLink: formData.githubLink,
-                discordLink: formData.discordLink
-            });
+            // Update social links - only if any social link has a value
+            const hasSocialLinks = formData.twitterLink || formData.instagramLink ||
+                formData.linkedinLink || formData.githubLink ||
+                formData.discordLink;
+
+            if (hasSocialLinks) {
+                console.log('🔗 Updating social links...');
+                const socialUpdateData = {};
+                if (formData.twitterLink?.trim()) socialUpdateData.twitterLink = formData.twitterLink.trim();
+                if (formData.instagramLink?.trim()) socialUpdateData.instagramLink = formData.instagramLink.trim();
+                if (formData.linkedinLink?.trim()) socialUpdateData.linkedinLink = formData.linkedinLink.trim();
+                if (formData.githubLink?.trim()) socialUpdateData.githubLink = formData.githubLink.trim();
+                if (formData.discordLink?.trim()) socialUpdateData.discordLink = formData.discordLink.trim();
+
+                const socialResponse = await apiService.profile.updateSocialLinks(socialUpdateData);
+                console.log('✅ Social links updated:', socialResponse.data);
+            } else {
+                console.log('ℹ️ No social links to update');
+            }
+
+            // Update avatar if changed
+            if (formData.avatar && formData.avatar !== userProfile?.avatar) {
+                console.log('🖼️ Updating avatar...');
+                await apiService.profile.updateAvatar(formData.avatar);
+            }
+
+            // Update cover image if changed
+            if (formData.coverImage && formData.coverImage !== userProfile?.coverImage) {
+                console.log('🖼️ Updating cover image...');
+                await apiService.profile.updateCover(formData.coverImage);
+            }
 
             // Fetch updated profile
+            console.log('🔄 Fetching updated profile...');
             const response = await apiService.auth.getProfile();
             const updatedUser = response.data.data.user;
+            console.log('✅ Updated profile fetched:', updatedUser);
 
             // Update Redux store
             dispatch(updateUser(updatedUser));
@@ -135,13 +169,16 @@ const EditProfileModal = ({ isOpen, onClose, userProfile }) => {
             localStorage.setItem('user', JSON.stringify(updatedUser));
 
             setSuccess('Profile updated successfully!');
+
+            // Close modal and trigger parent refresh
             setTimeout(() => {
-                onClose();
+                onClose(true); // Pass true to indicate successful update
             }, 1500);
 
         } catch (error) {
-            console.error('Profile update failed:', error);
-            setError(error.response?.data?.message || 'Failed to update profile');
+            console.error('❌ Profile update failed:', error);
+            console.error('Error details:', error.response?.data);
+            setError(error.response?.data?.message || 'Failed to update profile. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -149,12 +186,23 @@ const EditProfileModal = ({ isOpen, onClose, userProfile }) => {
 
     const handleAvatarUpdate = async (avatarUrl) => {
         setLoading(true);
+        setError('');
         try {
-            await apiService.profile.updateAvatar(avatarUrl);
+            console.log('🖼️ Updating avatar:', avatarUrl);
+            const response = await apiService.profile.updateAvatar(avatarUrl);
+            console.log('✅ Avatar updated:', response.data);
+
             setFormData(prev => ({ ...prev, avatar: avatarUrl }));
+
+            // Update Redux and localStorage
+            const updatedUser = response.data.data.user;
+            dispatch(updateUser(updatedUser));
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+
             setSuccess('Avatar updated successfully!');
         } catch (error) {
-            setError('Failed to update avatar');
+            console.error('❌ Avatar update failed:', error);
+            setError(error.response?.data?.message || 'Failed to update avatar');
         } finally {
             setLoading(false);
         }
@@ -162,12 +210,23 @@ const EditProfileModal = ({ isOpen, onClose, userProfile }) => {
 
     const handleCoverUpdate = async (coverUrl) => {
         setLoading(true);
+        setError('');
         try {
-            await apiService.profile.updateCover(coverUrl);
+            console.log('🖼️ Updating cover image:', coverUrl);
+            const response = await apiService.profile.updateCover(coverUrl);
+            console.log('✅ Cover updated:', response.data);
+
             setFormData(prev => ({ ...prev, coverImage: coverUrl }));
+
+            // Update Redux and localStorage
+            const updatedUser = response.data.data.user;
+            dispatch(updateUser(updatedUser));
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+
             setSuccess('Cover image updated successfully!');
         } catch (error) {
-            setError('Failed to update cover image');
+            console.error('❌ Cover update failed:', error);
+            setError(error.response?.data?.message || 'Failed to update cover image');
         } finally {
             setLoading(false);
         }

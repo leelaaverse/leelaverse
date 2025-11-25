@@ -96,3 +96,144 @@
     align-items: center;
     justify-content: center;
 }
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .floating-bar {
+        bottom: 0;
+        padding: 0;
+        width: 100%;
+        left: 0;
+        transform: none;
+    }
+
+    .floating-bar .row {
+        margin: 0;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .floating-bar .col-11 {
+        max-width: 100%;
+        flex: 0 0 100%;
+        padding: 0;
+    }
+
+    .f-conatiner {
+        padding: 0.8rem 1rem !important;
+        width: 100%;
+        margin: 0;
+        border-radius: 0 !important;
+    }
+
+    .floating-bar button {
+        padding: 8px 6px;
+        min-width: 0;
+        flex: 0 0 auto;
+    }
+
+    .floating-bar img {
+        width: 22px;
+        height: 22px;
+    }
+
+    .f-conatiner p {
+        font-size: 10px;
+    }
+
+    .generateBtn {
+        padding: 0.75rem 1rem !important;
+        margin: 0 0.25rem;
+    }
+
+    .generateBtn:hover {
+        padding: 0.75rem 1rem !important;
+    }
+
+    /* Hide labels on mobile by default */
+    .f-bar-label {
+        display: none;
+    }
+
+    /* Show labels on active/tap */
+    .f-conatiner button:active .f-bar-label,
+    .f-conatiner:active .f-bar-label {
+        display: block;
+        max-height: 50px;
+        opacity: 1;
+        margin-top: 2px;
+    }
+}
+
+@media (max-width: 576px) {
+    .floating-bar {
+        bottom: 0;
+        padding: 0;
+    }
+
+    .f-conatiner {
+        padding: 0.7rem 0.8rem !important;
+        border-radius: 0 !important;
+    }
+
+    .floating-bar button {
+        padding: 8px 4px;
+    }
+
+    .floating-bar img {
+        width: 20px;
+        height: 20px;
+    }
+
+    .f-conatiner p {
+        font-size: 9px;
+    }
+
+    .generateBtn {
+        padding: 0.65rem 0.8rem !important;
+        margin: 0 0.2rem;
+    }
+
+    .generateBtn:hover {
+        padding: 0.65rem 0.8rem !important;
+    }
+}
+
+@media (max-width: 400px) {
+    .floating-bar {
+        bottom: 0;
+        padding: 0;
+    }
+
+    .f-conatiner {
+        padding: 0.6rem 0.6rem !important;
+        border-radius: 0 !important;
+    }
+
+    .floating-bar button {
+        padding: 6px 3px;
+    }
+
+    .floating-bar img {
+        width: 18px;
+        height: 18px;
+    }
+
+    .f-conatiner p {
+        font-size: 8px;
+    }
+
+    .generateBtn {
+        padding: 0.55rem 0.7rem !important;
+        margin: 0 0.15rem;
+    }
+
+    .generateBtn:hover {
+        padding: 0.55rem 0.7rem !important;
+    }
+
+    /* Further reduce spacing */
+    .f-conatiner div:not(:nth-child(3)) button:hover {
+        background-color: transparent;
+    }
+}

@@ -143,8 +143,40 @@
 .profile-bio {
     font-size: 15px;
     color: #999;
-    margin: 0 0 1.5rem 0;
+    margin: 0 0 1rem 0;
     line-height: 1.5;
+}
+
+.profile-meta {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.profile-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 14px;
+    color: #999;
+}
+
+.profile-meta-item i {
+    color: #9b6cf8;
+    font-size: 16px;
+}
+
+.profile-meta-item a {
+    color: #9b6cf8;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.profile-meta-item a:hover {
+    color: #b88fff;
+    text-decoration: underline;
 }
 
 .profile-stats {

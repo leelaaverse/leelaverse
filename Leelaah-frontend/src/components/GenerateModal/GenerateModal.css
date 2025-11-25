@@ -119,7 +119,7 @@
     min-height: 300px;
 }
 
-.modal-content .row .col-md-6 > div {
+.modal-content .row .col-md-6>div {
     min-height: 250px;
     padding: 2rem 1.5rem;
 }
@@ -753,10 +753,12 @@
         max-width: 700px;
         margin: 1.75rem auto;
     }
+
     .modal-dialog-1 {
         max-width: 500px;
         margin: 1.75rem auto;
     }
+
     .modal-dialog-centered {
         min-height: calc(100% - 3.5rem);
     }
@@ -765,4 +767,611 @@
 /* Button close white */
 .btn-close-white {
     filter: brightness(0) invert(1);
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+    .modal-dialog {
+        margin: 0.5rem;
+        max-width: calc(100% - 1rem);
+    }
+
+    .modal-dialog-1 {
+        margin: 0.5rem;
+        max-width: calc(100% - 1rem);
+    }
+
+    .modal-dialog-centered {
+        min-height: calc(100% - 1rem);
+    }
+
+    .modal-content {
+        border-radius: 0.75rem !important;
+    }
+
+    .modal-header {
+        padding: 0.75rem 1rem;
+    }
+
+    .modal-body {
+        padding: 0.75rem;
+    }
+
+    .modal-title {
+        font-size: 16px !important;
+    }
+
+    /* Grid columns - stack on mobile */
+    .col-md-6,
+    .col-md-3,
+    .col-md-4,
+    .col-md-5,
+    .col-md-12 {
+        width: 100%;
+        flex: 0 0 100%;
+        padding-right: 0.5rem;
+        padding-left: 0.5rem;
+    }
+
+    /* Cards in choose option modal */
+    .modal-content .row .col-md-6>div {
+        min-height: 180px;
+        padding: 1.25rem 1rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .modal-content h5 {
+        font-size: 15px !important;
+        margin-bottom: 0.75rem;
+    }
+
+    /* Upload and AI card images */
+    .modal-content .col-md-6 img {
+        max-width: 80px;
+        height: auto;
+    }
+
+    /* Buttons in cards */
+    .modal-content .col-md-6 .btn {
+        width: 80% !important;
+        font-size: 13px;
+        padding: 0.6rem 1rem;
+    }
+
+    /* Buttons */
+    .btn {
+        font-size: 13px;
+        padding: 0.5rem 1rem;
+    }
+
+    /* AI generation form */
+    .prompttextarea {
+        font-size: 13px;
+        padding: 10px;
+        min-height: 100px;
+    }
+
+    .posttextarea {
+        font-size: 13px;
+        padding: 10px;
+    }
+
+    /* Model dropdown and selects */
+    .model-dropdown,
+    .aspect-select {
+        font-size: 12px;
+        padding: 8px 10px;
+        background-position: right 8px center;
+    }
+
+    .model-label,
+    .aspect-label {
+        font-size: 10px;
+        margin-bottom: 0.5rem !important;
+    }
+
+    /* Model and aspect sections */
+    .model-section,
+    .aspect-section {
+        margin-bottom: 1rem;
+    }
+
+    /* Upload type buttons */
+    .upload-type {
+        width: 100%;
+        justify-content: space-between;
+        flex-wrap: nowrap;
+    }
+
+    .upload-btn {
+        font-size: 11px;
+        padding: 8px 8px;
+        flex: 1;
+        white-space: nowrap;
+    }
+
+    /* Generate button */
+    .modal-body .btn.btn-primary {
+        padding: 0.6rem 2rem;
+        font-size: 13px;
+    }
+
+    /* Row spacing in AI modal */
+    .modal-body .row.mt-3 {
+        margin-top: 0.75rem !important;
+    }
+
+    .modal-body .row.mt-4 {
+        margin-top: 1rem !important;
+    }
+
+    /* Crop and prompt buttons */
+    .crop-btns {
+        padding: 0 10px;
+        bottom: 10px;
+    }
+
+    .crop-btns-1,
+    .crop-btns-2 {
+        bottom: 8px;
+    }
+
+    .prompt-btns-1 {
+        right: 30px;
+        bottom: 8px;
+    }
+
+    .prompt-btns-2 {
+        right: 8px;
+        bottom: 8px;
+    }
+
+    /* Images in modals */
+    .modal-body img.img-fluid {
+        max-height: 300px;
+    }
+
+    /* Nav pills for AI tabs */
+    .nav-pills {
+        gap: 0.25rem;
+    }
+
+    .nav-linkImage {
+        padding: 6px 12px;
+        font-size: 11px !important;
+    }
+
+    /* Font size adjustments */
+    .font-20 {
+        font-size: 18px !important;
+    }
+
+    .font-16 {
+        font-size: 14px !important;
+    }
+
+    .font-14 {
+        font-size: 13px !important;
+    }
+
+    .font-13 {
+        font-size: 12px !important;
+    }
+
+    .font-12 {
+        font-size: 11px !important;
+    }
+
+    /* Spacing adjustments */
+    .p-3 {
+        padding: 0.75rem !important;
+    }
+
+    .p-4 {
+        padding: 1rem !important;
+    }
+
+    .p-5 {
+        padding: 1.5rem !important;
+    }
+
+    .px-4 {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+
+    .px-5 {
+        padding-left: 1.5rem !important;
+        padding-right: 1.5rem !important;
+    }
+
+    .py-3 {
+        padding-top: 0.75rem !important;
+        padding-bottom: 0.75rem !important;
+    }
+
+    .py-5 {
+        padding-top: 1.5rem !important;
+        padding-bottom: 1.5rem !important;
+    }
+
+    /* Alert adjustments */
+    .alert {
+        padding: 0.5rem 0.75rem;
+        font-size: 11px !important;
+    }
+
+    /* Progress bar */
+    .progress {
+        max-width: 250px !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .modal-dialog {
+        margin: 0.25rem;
+        max-width: calc(100% - 0.5rem);
+    }
+
+    .modal-dialog-1 {
+        margin: 0.25rem;
+        max-width: calc(100% - 0.5rem);
+    }
+
+    .modal-content {
+        border-radius: 0.5rem !important;
+    }
+
+    .modal-header {
+        padding: 0.5rem 0.75rem;
+    }
+
+    .modal-body {
+        padding: 0.5rem;
+    }
+
+    .modal-title {
+        font-size: 14px !important;
+    }
+
+    /* Cards in choose option modal */
+    .modal-content .row .col-md-6>div {
+        min-height: 160px;
+        padding: 1rem 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    /* Upload and AI card images */
+    .modal-content .col-md-6 img {
+        max-width: 70px;
+        height: auto;
+    }
+
+    /* Buttons in cards */
+    .modal-content .col-md-6 .btn {
+        width: 85% !important;
+        font-size: 12px;
+        padding: 0.55rem 0.9rem;
+    }
+
+    /* Buttons */
+    .btn {
+        font-size: 12px;
+        padding: 0.4rem 0.8rem;
+    }
+
+    /* AI generation form */
+    .prompttextarea,
+    .posttextarea {
+        font-size: 12px;
+        padding: 8px;
+        min-height: 90px;
+    }
+
+    /* Model dropdown and selects */
+    .model-dropdown,
+    .aspect-select {
+        font-size: 11px;
+        padding: 7px 8px;
+        background-position: right 6px center;
+    }
+
+    .model-label,
+    .aspect-label {
+        font-size: 9px;
+        margin-bottom: 0.4rem !important;
+        letter-spacing: 0.3px;
+    }
+
+    /* Upload type buttons */
+    .upload-btn {
+        font-size: 10px;
+        padding: 6px 6px;
+        white-space: nowrap;
+    }
+
+    .upload-type {
+        gap: 4px;
+    }
+
+    /* Generate button */
+    .modal-body .btn.btn-primary {
+        padding: 0.5rem 1.5rem;
+        font-size: 12px;
+    }
+
+    .modal-body .btn.btn-primary img {
+        width: 14px;
+        height: 14px;
+    }
+
+    /* Credit coins text */
+    .fadefont.font-12 {
+        font-size: 10px !important;
+    }
+
+    /* Form label */
+    .form-label.font-12 {
+        font-size: 10px !important;
+    }
+
+    /* Images in modals */
+    .modal-body img.img-fluid {
+        max-height: 250px;
+    }
+
+    /* Crop buttons */
+    .crop-btns {
+        padding: 0 8px;
+        bottom: 8px;
+    }
+
+    .crop-btns-1,
+    .crop-btns-2 {
+        bottom: 6px;
+    }
+
+    .crop-btns-1 {
+        right: 10px;
+    }
+
+    .crop-btns-2 {
+        left: 10px;
+    }
+
+    /* Prompt buttons */
+    .prompt-btns-1 {
+        right: 25px;
+        bottom: 6px;
+    }
+
+    .prompt-btns-2 {
+        right: 6px;
+        bottom: 6px;
+    }
+
+    /* Nav pills */
+    .nav-pills {
+        gap: 0.15rem;
+        padding: 0.25rem 0.5rem !important;
+    }
+
+    .nav-linkImage {
+        padding: 5px 10px;
+        font-size: 10px !important;
+    }
+
+    /* Font size adjustments */
+    .font-20 {
+        font-size: 16px !important;
+    }
+
+    .font-16 {
+        font-size: 13px !important;
+    }
+
+    .font-14 {
+        font-size: 12px !important;
+    }
+
+    .font-13 {
+        font-size: 11px !important;
+    }
+
+    .font-12 {
+        font-size: 10px !important;
+    }
+
+    /* Spacing adjustments */
+    .p-3 {
+        padding: 0.5rem !important;
+    }
+
+    .p-4 {
+        padding: 0.75rem !important;
+    }
+
+    .px-4 {
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+    }
+
+    .py-3 {
+        padding-top: 0.5rem !important;
+        padding-bottom: 0.5rem !important;
+    }
+
+    /* Row and col adjustments */
+    .row {
+        margin-right: -0.5rem;
+        margin-left: -0.5rem;
+    }
+
+    .col-md-6,
+    .col-md-3,
+    .col-md-4,
+    .col-md-5,
+    .col-md-12 {
+        padding-right: 0.5rem;
+        padding-left: 0.5rem;
+    }
+
+    /* Button images */
+    .btn img {
+        width: 16px;
+        height: 16px;
+    }
+
+    /* Progress bar */
+    .progress {
+        max-width: 200px !important;
+        height: 6px !important;
+    }
+
+    /* Spinner */
+    .spinner-border {
+        width: 2rem !important;
+        height: 2rem !important;
+    }
+
+    /* Profile images */
+    .modal-body img[style*="40px"] {
+        width: 32px !important;
+        height: 32px !important;
+    }
+}
+
+@media (max-width: 400px) {
+
+    .modal-dialog,
+    .modal-dialog-1 {
+        margin: 0.25rem;
+        max-width: calc(100% - 0.5rem);
+    }
+
+    .modal-header {
+        padding: 0.5rem;
+    }
+
+    .modal-body {
+        padding: 0.5rem;
+    }
+
+    .modal-title {
+        font-size: 13px !important;
+    }
+
+    /* Cards */
+    .modal-content .row .col-md-6>div {
+        min-height: 140px;
+        padding: 0.85rem 0.5rem;
+    }
+
+    /* Upload and AI card images */
+    .modal-content .col-md-6 img {
+        max-width: 60px;
+        height: auto;
+    }
+
+    /* Buttons in cards */
+    .modal-content .col-md-6 .btn {
+        width: 90% !important;
+        font-size: 11px;
+        padding: 0.5rem 0.75rem;
+    }
+
+    .modal-content h5 {
+        font-size: 13px !important;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Buttons */
+    .btn {
+        font-size: 10px;
+        padding: 0.35rem 0.7rem;
+    }
+
+    /* AI generation form */
+    .prompttextarea,
+    .posttextarea {
+        font-size: 11px;
+        padding: 8px;
+        min-height: 80px;
+    }
+
+    /* Model dropdown and selects */
+    .model-dropdown,
+    .aspect-select {
+        font-size: 10px;
+        padding: 6px 8px;
+        background-size: 10px;
+        background-position: right 5px center;
+    }
+
+    .model-label,
+    .aspect-label {
+        font-size: 8px;
+        margin-bottom: 0.3rem !important;
+    }
+
+    /* Upload type - stack vertically on very small screens */
+    .upload-type {
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .upload-btn {
+        width: 100%;
+        justify-content: center;
+        font-size: 10px;
+        padding: 8px;
+    }
+
+    /* Generate button */
+    .modal-body .btn.btn-primary {
+        padding: 0.5rem 1.2rem;
+        font-size: 11px;
+    }
+
+    .modal-body .btn.btn-primary img {
+        width: 12px;
+        height: 12px;
+    }
+
+    /* Reduce column gaps */
+    .modal-body .col-md-4,
+    .modal-body .col-md-3,
+    .modal-body .col-md-5 {
+        margin-bottom: 0.75rem;
+    }
+
+    /* Row spacing */
+    .modal-body .row.mt-3 {
+        margin-top: 0.5rem !important;
+    }
+
+    .modal-body .row.mt-4 {
+        margin-top: 0.75rem !important;
+    }
+
+    /* Images */
+    .modal-body img.img-fluid {
+        max-height: 200px;
+    }
+
+    /* Nav pills */
+    .nav-pills {
+        padding: 0.25rem !important;
+    }
+
+    .nav-linkImage {
+        padding: 4px 8px;
+        font-size: 9px !important;
+    }
+
+    /* Close button */
+    .btn-close {
+        padding: 0.15rem;
+        font-size: 0.75rem;
+    }
 }
