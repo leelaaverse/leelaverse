@@ -2,6 +2,23 @@
 
 A scalable Node.js/Express backend API for the Leelaverse platform with JWT authentication, MongoDB integration, and comprehensive user management.
 
+## 📚 **NEW: Complete API Documentation Available!**
+
+We've created comprehensive documentation for all API endpoints:
+
+- **📖 [COMPREHENSIVE_API_DOCUMENTATION.md](./COMPREHENSIVE_API_DOCUMENTATION.md)** - Complete API reference with all 40 endpoints
+- **📦 [Leelaverse_Complete_API_Collection.json](./Leelaverse_Complete_API_Collection.json)** - Ready-to-import Postman collection
+- **🚀 [API_DOCUMENTATION_README.md](./API_DOCUMENTATION_README.md)** - Quick start guide
+- **📊 [DOCUMENTATION_SUMMARY.md](./DOCUMENTATION_SUMMARY.md)** - Project overview and statistics
+- **🔒 [SECURITY_REVIEW.md](./SECURITY_REVIEW.md)** - Security audit findings
+
+**Base URL**: `https://backend.leelaah.com/api`
+
+### Quick Start with Postman
+1. Import `Leelaverse_Complete_API_Collection.json` into Postman
+2. All 40 endpoints are ready to test with example payloads
+3. Automatic token management included!
+
 ## 🚀 Features
 
 - **Authentication & Authorization**
