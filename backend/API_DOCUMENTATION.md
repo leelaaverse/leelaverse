@@ -539,8 +539,7 @@ Content-Type: application/json
 **Notes**:
 - For security reasons, the same success message is returned even if the email doesn't exist
 - The reset token is valid for 10 minutes
-- In production, the `resetToken` field should be removed and only sent via email
-- Currently, the token is returned in the response for development/testing purposes
+- ⚠️ **SECURITY WARNING**: In production, the `resetToken` field MUST be removed from the response and only sent via email. Currently, the token is returned in the response for development/testing purposes only. This is a security risk and should never be deployed to production.
 
 **Example Request**:
 ```bash
@@ -1108,6 +1107,13 @@ When rate limit is exceeded:
 
 ## Code Examples
 
+⚠️ **SECURITY WARNING**: The following JavaScript examples use `localStorage` for demonstration purposes only. In production applications, consider using:
+- **HTTP-only cookies** (recommended for web applications)
+- **Secure session storage** with encryption
+- **Memory-based storage** for sensitive tokens
+
+Never store tokens in localStorage in production as they are vulnerable to XSS attacks.
+
 ### JavaScript (Fetch API)
 
 #### Register User
@@ -1476,12 +1482,18 @@ Example valid usernames:
 
 ### Security Best Practices
 
-1. **Never store tokens in localStorage in production** - Use secure HTTP-only cookies instead
-2. **Always use HTTPS** in production
-3. **Implement token refresh** before access token expires
-4. **Clear tokens on logout**
+⚠️ **CRITICAL SECURITY GUIDELINES**:
+
+1. **Never store tokens in localStorage in production** - Use secure HTTP-only cookies instead to prevent XSS attacks
+2. **Always use HTTPS** in production - Never transmit tokens over unencrypted connections
+3. **Implement token refresh** before access token expires to maintain seamless user experience
+4. **Clear tokens on logout** to prevent unauthorized access
 5. **Handle 401 errors** by refreshing token or redirecting to login
-6. **Don't expose sensitive information** in error messages
+6. **Don't expose sensitive information** in error messages or API responses
+7. **Validate environment variables** - Ensure NODE_ENV is set to "production" in production
+8. **Remove development features** - Disable reset token exposure and permissive CORS in production
+9. **Use strong secrets** - Ensure JWT_SECRET and JWT_REFRESH_SECRET are cryptographically strong
+10. **Enable rate limiting** - Keep rate limits enabled to prevent abuse
 
 ### CORS Policy
 
@@ -1491,7 +1503,7 @@ The API allows requests from the following origins:
 - `http://localhost:3000`
 - `http://127.0.0.1:5173`
 
-For development purposes, all origins are allowed when `NODE_ENV=development`.
+⚠️ **SECURITY WARNING**: For development purposes, all origins are allowed when `NODE_ENV=development`. **Never deploy to production with NODE_ENV=development** as this disables CORS protection and creates a significant security vulnerability. Always ensure NODE_ENV is set to "production" in production environments.
 
 ### Account Security Features
 
