@@ -17,7 +17,7 @@ router.get('/google', passport.authenticate('google', {
 // Google OAuth callback route
 router.get('/google/callback',
 	passport.authenticate('google', {
-		failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/?error=oauth_failed`
+		failureRedirect: `${(process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '')}/?error=oauth_failed`
 	}),
 	async (req, res) => {
 		try {
@@ -33,7 +33,10 @@ router.get('/google/callback',
 			await UserService.storeRefreshToken(user.id, refreshToken);
 
 			// Determine redirect URL based on environment
-			const frontendURL = process.env.FRONTEND_URL || 'http://localhost:5173';
+			let frontendURL = process.env.FRONTEND_URL || 'http://localhost:5173';
+
+			// Remove trailing slash to prevent double slashes
+			frontendURL = frontendURL.replace(/\/$/, '');
 
 			// Create success redirect with tokens as query parameters
 			// Redirect to root path since the app doesn't use React Router
@@ -46,15 +49,16 @@ router.get('/google/callback',
 				avatar: user.avatar
 			}))}`;
 
-			console.log('🔄 Redirecting to:', frontendURL);
-			res.redirect(redirectURL);
-
 		} catch (error) {
 			console.error('❌ OAuth callback error:', error);
-			const frontendURL = process.env.FRONTEND_URL || 'http://localhost:5173';
+			let frontendURL = process.env.FRONTEND_URL || 'http://localhost:5173';
+			frontendURL = frontendURL.replace(/\/$/, '');
 			res.redirect(`${frontendURL}/?error=oauth_callback_failed`);
-		}
+		} console.error('❌ OAuth callback error:', error);
+		const frontendURL = process.env.FRONTEND_URL || 'http://localhost:5173';
+		res.redirect(`${frontendURL}/?error=oauth_callback_failed`);
 	}
+
 );
 
 // OAuth token verification route (for frontend to validate tokens)
