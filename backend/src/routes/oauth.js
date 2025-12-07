@@ -16,7 +16,9 @@ router.get('/google', passport.authenticate('google', {
 
 // Google OAuth callback route
 router.get('/google/callback',
-	passport.authenticate('google', { failureRedirect: '/login?error=oauth_failed' }),
+	passport.authenticate('google', {
+		failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/?error=oauth_failed`
+	}),
 	async (req, res) => {
 		try {
 			const user = req.user;
@@ -34,7 +36,8 @@ router.get('/google/callback',
 			const frontendURL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 			// Create success redirect with tokens as query parameters
-			const redirectURL = `${frontendURL}/auth/callback?success=true&access_token=${accessToken}&refresh_token=${refreshToken}&user=${encodeURIComponent(JSON.stringify({
+			// Redirect to root path since the app doesn't use React Router
+			const redirectURL = `${frontendURL}/?success=true&access_token=${accessToken}&refresh_token=${refreshToken}&user=${encodeURIComponent(JSON.stringify({
 				id: user.id,
 				email: user.email,
 				username: user.username,
@@ -49,7 +52,7 @@ router.get('/google/callback',
 		} catch (error) {
 			console.error('❌ OAuth callback error:', error);
 			const frontendURL = process.env.FRONTEND_URL || 'http://localhost:5173';
-			res.redirect(`${frontendURL}/login?error=oauth_callback_failed`);
+			res.redirect(`${frontendURL}/?error=oauth_callback_failed`);
 		}
 	}
 );

@@ -79,7 +79,7 @@ const HomeFeed = ({ onNavigate, onPostClick, onUserClick }) => {
         };
 
         handleOAuthCallback();
-    }, []);
+    }, [dispatch]);
 
     const handleLogin = () => {
         setAuthMode('login');
