@@ -265,4 +265,4 @@ profile = requests.get('https://backend.leelaah.com/api/auth/profile',
 
 **Support**: support@leelaah.com  
 **Version**: 1.0.0  
-**Last Updated**: January 2024
+**Last Updated**: December 2024

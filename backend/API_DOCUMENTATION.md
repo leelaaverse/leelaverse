@@ -12,6 +12,31 @@ http://localhost:3000
 
 ---
 
+## ⚠️ PRODUCTION DEPLOYMENT CHECKLIST
+
+**Before deploying this API to production, ensure the following critical security requirements are met:**
+
+### Required Changes:
+- [ ] **Environment**: Set `NODE_ENV=production` (NEVER use development mode in production)
+- [ ] **CORS**: Verify CORS is restricted to allowed origins only (development mode allows all origins)
+- [ ] **Password Reset**: Remove `resetToken` from `/api/auth/forgot-password` response and implement email delivery
+- [ ] **Secrets**: Use cryptographically strong values for `JWT_SECRET` and `JWT_REFRESH_SECRET`
+- [ ] **HTTPS**: Deploy behind HTTPS/SSL certificate (NEVER use HTTP in production)
+- [ ] **Token Storage**: Implement HTTP-only cookies instead of localStorage in client applications
+- [ ] **Rate Limiting**: Verify rate limits are enabled and properly configured
+- [ ] **Email Service**: Configure email service for password resets and notifications
+- [ ] **Database**: Use production MongoDB instance with authentication and encryption
+- [ ] **Monitoring**: Set up logging, monitoring, and error tracking
+
+### Current Development Features That Are NOT Production-Ready:
+- 🔴 Password reset tokens are exposed in API responses
+- 🔴 Development mode allows unrestricted CORS
+- 🔴 Code examples use localStorage (XSS vulnerable)
+
+**DO NOT deploy to production without addressing ALL items above.**
+
+---
+
 ## Table of Contents
 1. [Authentication Overview](#authentication-overview)
 2. [Public Endpoints](#public-endpoints)
@@ -539,7 +564,12 @@ Content-Type: application/json
 **Notes**:
 - For security reasons, the same success message is returned even if the email doesn't exist
 - The reset token is valid for 10 minutes
-- ⚠️ **SECURITY WARNING**: In production, the `resetToken` field MUST be removed from the response and only sent via email. Currently, the token is returned in the response for development/testing purposes only. This is a security risk and should never be deployed to production.
+
+⚠️ **CRITICAL SECURITY VULNERABILITY**: The current implementation exposes the reset token in the API response, which is a **significant security risk**. This endpoint is currently **NOT production-ready** and must be fixed before deployment:
+  - **Required Fix**: Remove the `resetToken` field from the response
+  - **Required Implementation**: Send reset token only via email to the user
+  - **Current State**: Development/testing mode only - DO NOT deploy to production as-is
+  - **Risk**: Exposed tokens can be intercepted and used by attackers to reset passwords
 
 **Example Request**:
 ```bash
@@ -1107,12 +1137,26 @@ When rate limit is exceeded:
 
 ## Code Examples
 
-⚠️ **SECURITY WARNING**: The following JavaScript examples use `localStorage` for demonstration purposes only. In production applications, consider using:
-- **HTTP-only cookies** (recommended for web applications)
-- **Secure session storage** with encryption
-- **Memory-based storage** for sensitive tokens
+---
 
-Never store tokens in localStorage in production as they are vulnerable to XSS attacks.
+## ⚠️ CRITICAL SECURITY WARNING ⚠️
+
+**The following JavaScript examples use `localStorage` for demonstration purposes ONLY.**
+
+### Do NOT use localStorage in production for the following reasons:
+- ❌ **Vulnerable to XSS attacks** - Any JavaScript on your page can access localStorage
+- ❌ **No expiration** - Tokens persist indefinitely unless manually cleared
+- ❌ **Accessible to all scripts** - Third-party scripts can steal your tokens
+
+### Production Recommendations:
+- ✅ **HTTP-only cookies** (recommended) - Not accessible to JavaScript, immune to XSS
+- ✅ **Secure session storage** with encryption
+- ✅ **Memory-based storage** for sensitive tokens
+- ✅ **Token rotation** with short expiration times
+
+**Every code example below includes localStorage ONLY for learning purposes. Replace with secure storage in production.**
+
+---
 
 ### JavaScript (Fetch API)
 
@@ -1559,5 +1603,5 @@ For API support, issues, or questions:
 ---
 
 **API Version**: 1.0.0  
-**Last Updated**: January 2024  
+**Last Updated**: December 2024  
 **Base URL**: https://backend.leelaah.com
