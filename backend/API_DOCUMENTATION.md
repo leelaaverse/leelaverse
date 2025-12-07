@@ -1503,6 +1503,40 @@ For development purposes, all origins are allowed when `NODE_ENV=development`.
 
 ---
 
+## Postman Collection
+
+We provide a complete Postman collection for testing the API:
+
+**[Download Postman Collection](./Leelaverse_API_Collection.postman_collection.json)**
+
+### How to Use
+
+1. **Import the Collection**:
+   - Open Postman
+   - Click "Import" button
+   - Select the `Leelaverse_API_Collection.postman_collection.json` file
+   - The collection will be imported with all endpoints pre-configured
+
+2. **Configure Environment Variables**:
+   - The collection uses variables for `baseUrl`, `accessToken`, and `refreshToken`
+   - Base URL is pre-configured as `https://backend.leelaah.com`
+   - Tokens are automatically saved after login/register
+
+3. **Test the API**:
+   - Start with "Register User" or "Login User" endpoints
+   - Tokens are automatically captured and used in protected endpoints
+   - All endpoints include sample request bodies
+
+### Collection Features
+
+- Pre-configured base URL
+- Automatic token management
+- Sample request bodies for all endpoints
+- Organized by endpoint categories
+- Test scripts to save tokens automatically
+
+---
+
 ## Support & Contact
 
 For API support, issues, or questions:
