@@ -49,17 +49,16 @@ router.get('/google/callback',
 				avatar: user.avatar
 			}))}`;
 
+			console.log('🔄 Redirecting to:', redirectURL);
+			res.redirect(redirectURL);
+
 		} catch (error) {
 			console.error('❌ OAuth callback error:', error);
 			let frontendURL = process.env.FRONTEND_URL || 'http://localhost:5173';
 			frontendURL = frontendURL.replace(/\/$/, '');
 			res.redirect(`${frontendURL}/?error=oauth_callback_failed`);
-		} console.error('❌ OAuth callback error:', error);
-		const frontendURL = process.env.FRONTEND_URL || 'http://localhost:5173';
-		res.redirect(`${frontendURL}/?error=oauth_callback_failed`);
-	}
-
-);
+		}
+	});
 
 // OAuth token verification route (for frontend to validate tokens)
 router.post('/verify-oauth-token', async (req, res) => {
