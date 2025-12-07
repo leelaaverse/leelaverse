@@ -2,6 +2,7 @@ const prisma = require('../models');
 const { fal } = require("@fal-ai/client");
 const cloudinary = require('cloudinary').v2;
 const axios = require('axios');
+const { getAllModels, getModelsByType, getFeaturedModels, getModelById, getModelConfig } = require('../config/aiModels');
 
 // Configure Cloudinary
 cloudinary.config({
@@ -21,6 +22,38 @@ console.log('Cloudinary Config:', {
 fal.config({
 	credentials: process.env.FAL_KEY
 });
+
+/**
+ * Get Available AI Models
+ * GET /api/posts/models
+ */
+exports.getAvailableModels = async (req, res) => {
+	try {
+		const { type, featured } = req.query;
+
+		let models;
+		if (type) {
+			models = featured === 'true'
+				? getFeaturedModels(type)
+				: getModelsByType(type);
+		} else {
+			models = getAllModels();
+		}
+
+		res.json({
+			success: true,
+			models,
+			message: 'Available AI models retrieved successfully'
+		});
+	} catch (error) {
+		console.error('Get models error:', error);
+		res.status(500).json({
+			success: false,
+			message: 'Failed to get available models',
+			error: error.message
+		});
+	}
+};
 
 /**
  * Generate Image using FAL AI
@@ -172,6 +205,101 @@ exports.generateImage = async (req, res) => {
 };
 
 /**
+ * Generate Video using FAL AI
+ * POST /api/posts/generate-video
+ */
+exports.generateVideo = async (req, res) => {
+	try {
+		// Use authenticated user ID or fallback to existing user (same as image for now)
+		const userId = req.user?.id || 'cmh0b61s30000oadwipl47rkk';
+
+		const {
+			prompt,
+			selectedModel,
+			aspectRatio,
+			duration
+		} = req.body;
+
+		if (!prompt || prompt.trim().length === 0) {
+			return res.status(400).json({ success: false, message: 'Prompt is required' });
+		}
+
+		const modelConfig = getModelConfig(selectedModel);
+		if (!modelConfig) {
+			return res.status(400).json({ success: false, message: 'Invalid model selected' });
+		}
+
+		const falModel = modelConfig.falEndpoint;
+		const modelName = getModelById(selectedModel)?.name || selectedModel;
+
+		console.log(`Starting VIDEO generation with model: ${modelName} (${falModel})`);
+
+		// construct input based on model requirements
+		const inputParams = {
+			prompt: prompt.trim()
+		};
+
+		// Ratio mapping for video
+		const aspectMap = {
+			'16:9': '16:9',
+			'9:16': '9:16',
+			'1:1': '1:1',
+			'custom': '16:9'
+		};
+
+		// Add model-specific params
+		if (selectedModel.includes('kling')) {
+			inputParams.aspect_ratio = aspectMap[aspectRatio] || '16:9';
+			inputParams.duration = duration || '5'; // Kling usually takes string '5' or '10'
+		} else if (selectedModel.includes('minimax') || selectedModel.includes('hailuo')) {
+			// Minimax params
+			// Usually just prompt, but check docs if needed. Defaulting to basic prompt.
+		} else if (selectedModel.includes('luma')) {
+			inputParams.aspect_ratio = aspectMap[aspectRatio] || '16:9';
+		} else {
+			// Default fallback for generic params
+			inputParams.aspect_ratio = aspectMap[aspectRatio] || '16:9';
+		}
+
+		// Submit to FAL
+		const { request_id } = await fal.queue.submit(falModel, {
+			input: inputParams
+		});
+
+		// Create record
+		const aiGeneration = await prisma.aIGeneration.create({
+			data: {
+				userId: userId,
+				type: 'video',
+				model: modelName,
+				prompt: prompt.trim(),
+				aspectRatio: aspectRatio || '16:9',
+				status: 'processing',
+				falRequestId: request_id
+			}
+		});
+
+		res.json({
+			success: true,
+			message: 'Video generation started',
+			generations: [{
+				requestId: request_id,
+				aiGenerationId: aiGeneration.id
+			}],
+			estimatedTime: '60-120 seconds'
+		});
+
+	} catch (error) {
+		console.error('Generate video error:', error);
+		res.status(500).json({
+			success: false,
+			message: 'Failed to start video generation',
+			error: error.message
+		});
+	}
+};
+
+/**
  * Check Generation Status and Get Result
  * GET /api/posts/generation/:requestId
  */
@@ -179,9 +307,7 @@ exports.getGenerationResult = async (req, res) => {
 	try {
 		const { requestId } = req.params;
 
-		console.log('Checking generation status for request:', requestId);
-
-		// Find the AI Generation record to determine which model was used
+		// Find the AI Generation to look up model & type
 		const aiGeneration = await prisma.aIGeneration.findFirst({ where: { falRequestId: requestId } });
 		if (!aiGeneration) {
 			return res.status(404).json({
@@ -190,40 +316,56 @@ exports.getGenerationResult = async (req, res) => {
 			});
 		}
 
-		// Determine FAL model endpoint based on the stored model
+		// Find model config dynamically or fallback
+		const allModels = getAllModels();
+		const foundModel = [...allModels.image, ...allModels.video].find(m => m.name === aiGeneration.model);
+
 		let falModel;
-		if (aiGeneration.model === 'FLUX Schnell') {
-			falModel = "fal-ai/flux/schnell";
+		if (foundModel) {
+			falModel = foundModel.falEndpoint;
 		} else {
-			falModel = "fal-ai/flux-1/srpo"; // Default to SRPO
+			// Legacy fallbacks
+			if (aiGeneration.model === 'FLUX Schnell') falModel = "fal-ai/flux/schnell";
+			else falModel = "fal-ai/flux-1/srpo"; // default fallback
 		}
 
-		console.log('Using FAL model:', falModel);
-
-		// Check status from FAL AI - using correct parameter name
+		// Check status
 		const status = await fal.queue.status(falModel, {
 			requestId: requestId,
 			logs: true
 		});
 
-		console.log('FAL Status:', status.status);
-
-		// If completed, get the result
 		if (status.status === "COMPLETED") {
 			const result = await fal.queue.result(falModel, {
 				requestId: requestId
 			});
 
-			console.log('Generation completed successfully');
-			console.log('Result data:', result.data);
+			// Extract URL based on type
+			let resultUrl = null;
+			let seed = null;
 
-			// Update AI Generation record
+			// Handle video vs image output format
+			if (result.data.video?.url) {
+				resultUrl = result.data.video.url;
+			} else if (result.data.video_url) {
+				resultUrl = result.data.video_url;
+			} else if (result.data.url) { // some models return direct url at root
+				resultUrl = result.data.url;
+			} else if (result.data.images && result.data.images[0]?.url) {
+				resultUrl = result.data.images[0].url;
+			}
+
+			if (result.data.seed) {
+				seed = result.data.seed;
+			}
+
+			// Update record
 			await prisma.aIGeneration.updateMany({
 				where: { falRequestId: requestId },
 				data: {
-					resultUrl: result.data.images[0]?.url,
+					resultUrl: resultUrl,
 					status: 'completed',
-					seed: result.data.seed?.toString()
+					seed: seed ? seed.toString() : null
 				}
 			});
 
@@ -231,14 +373,14 @@ exports.getGenerationResult = async (req, res) => {
 				success: true,
 				status: 'completed',
 				requestId: requestId,
-				imageUrl: result.data.images[0]?.url,
-				seed: result.data.seed,
+				imageUrl: resultUrl, // Keep property name consistent for frontend
+				videoUrl: resultUrl, // Add this for clarity
+				seed: seed,
 				prompt: result.data.prompt,
 				data: result.data
 			});
 		}
 
-		// If failed
 		if (status.status === "FAILED") {
 			await prisma.aIGeneration.updateMany({
 				where: { falRequestId: requestId },
@@ -247,16 +389,9 @@ exports.getGenerationResult = async (req, res) => {
 					errorMessage: 'Generation failed'
 				}
 			});
-
-			return res.json({
-				success: false,
-				status: 'failed',
-				requestId: requestId,
-				message: 'Generation failed'
-			});
+			return res.json({ success: false, status: 'failed', requestId: requestId });
 		}
 
-		// If still processing
 		res.json({
 			success: true,
 			status: status.status.toLowerCase(),
@@ -266,13 +401,11 @@ exports.getGenerationResult = async (req, res) => {
 		});
 
 	} catch (error) {
-		console.error('Get generation result error:', error);
-		console.error('Error details:', error.body || error);
+		console.error('Get result error:', error);
 		res.status(500).json({
 			success: false,
 			message: 'Failed to get generation result',
-			error: error.message,
-			details: error.body || null
+			error: error.message
 		});
 	}
 };
@@ -387,6 +520,167 @@ exports.createPostFromGeneration = async (req, res) => {
 		res.status(500).json({
 			success: false,
 			message: 'Failed to create post from generation',
+			error: error.message
+		});
+	}
+};
+
+/**
+ * Upload Image and Create Post (Direct File Upload)
+ * POST /api/posts/upload
+ */
+exports.uploadAndCreatePost = async (req, res) => {
+	try {
+		// MUST have authenticated user
+		const userId = req.user?.id;
+
+		console.log('📤 Upload and Create Post - Auth Check:', {
+			hasReqUser: !!req.user,
+			userId: userId
+		});
+
+		if (!userId) {
+			console.error('❌ No authenticated user found. Cannot upload.');
+			return res.status(401).json({
+				success: false,
+				message: 'Authentication required. Please log in to upload.'
+			});
+		}
+
+		const {
+			image, // Base64 encoded image or video
+			caption,
+			title,
+			tags = [],
+			locationName,
+			visibility = 'public'
+		} = req.body;
+
+		// Validate media
+		if (!image) {
+			return res.status(400).json({
+				success: false,
+				message: 'Media data is required'
+			});
+		}
+
+		// Detect if it's a video or image from base64 data
+		const isVideo = image.startsWith('data:video/');
+		const resourceType = isVideo ? 'video' : 'image';
+
+		console.log(`📤 Uploading ${resourceType} to Cloudinary for user:`, userId);
+
+		// Upload to Cloudinary directly using base64
+		const uploadOptions = {
+			folder: `leelaverse/posts/${userId}`,
+			resource_type: resourceType
+		};
+
+		// Add transformations based on type
+		if (isVideo) {
+			// Video-specific options
+			uploadOptions.eager = [
+				{ width: 1280, height: 720, crop: 'limit', quality: 'auto:good', format: 'mp4' }
+			];
+			uploadOptions.eager_async = true;
+		} else {
+			// Image-specific transformations
+			uploadOptions.transformation = [
+				{ quality: 'auto:good' },
+				{ fetch_format: 'auto' }
+			];
+		}
+
+		const uploadResult = await cloudinary.uploader.upload(image, uploadOptions);
+
+		console.log('✅ Cloudinary upload success:', uploadResult.secure_url);
+
+		// Determine media type and category
+		let mediaType, category, postTitle;
+		if (isVideo) {
+			mediaType = 'video/mp4';
+			category = 'video-post';
+			postTitle = title || 'Uploaded Video';
+		} else {
+			mediaType = 'image/jpeg';
+			category = 'image-post';
+			postTitle = title || 'Uploaded Image';
+		}
+
+		// Create post with the uploaded media
+		const postData = {
+			authorId: userId,
+			type: 'content',
+			category: category,
+			caption: caption || null,
+			title: postTitle,
+			mediaUrls: [uploadResult.secure_url],
+			mediaUrl: uploadResult.secure_url,
+			thumbnailUrl: uploadResult.secure_url,
+			mediaType: mediaType,
+			aiGenerated: false,
+			tags: tags.map(tag => tag.toLowerCase().trim()),
+			locationName: locationName || null,
+			visibility: visibility,
+			isApproved: true
+		};
+
+		console.log('💾 Creating post with data:', {
+			authorId: postData.authorId,
+			category: postData.category,
+			visibility: postData.visibility,
+			hasMediaUrl: !!postData.mediaUrl
+		});
+
+		// Create post using Prisma
+		const post = await prisma.post.create({
+			data: postData,
+			include: {
+				author: {
+					select: {
+						id: true,
+						username: true,
+						firstName: true,
+						lastName: true,
+						avatar: true,
+						verificationStatus: true
+					}
+				}
+			}
+		});
+
+		console.log('✅ Post created successfully!', post.id);
+
+		// Update user stats
+		await prisma.user.update({
+			where: { id: userId },
+			data: {
+				totalCreations: {
+					increment: 1
+				}
+			}
+		});
+
+		res.status(201).json({
+			success: true,
+			message: `${isVideo ? 'Video' : 'Image'} uploaded and post created successfully`,
+			post: post,
+			upload: {
+				url: uploadResult.secure_url,
+				publicId: uploadResult.public_id,
+				width: uploadResult.width,
+				height: uploadResult.height,
+				duration: uploadResult.duration || null, // Video duration if applicable
+				format: uploadResult.format,
+				resourceType: uploadResult.resource_type
+			}
+		});
+
+	} catch (error) {
+		console.error('❌ Upload and create post error:', error);
+		res.status(500).json({
+			success: false,
+			message: 'Failed to upload image and create post',
 			error: error.message
 		});
 	}
@@ -762,6 +1056,88 @@ exports.getPostsCount = async (req, res) => {
  * Get Feed Posts (Prisma)
  * GET /api/posts/feed
  */
+exports.getBloops = async (req, res) => {
+	try {
+		const { page = 1, limit = 5 } = req.query;
+		const skip = (parseInt(page) - 1) * parseInt(limit);
+
+		console.log('🎬 Bloops Request:', { page, limit });
+
+		const whereClause = {
+			isApproved: true,
+			category: 'video-post',
+			visibility: {
+				in: ['public', 'followers']
+			}
+		};
+
+		const posts = await prisma.post.findMany({
+			where: whereClause,
+			include: {
+				author: {
+					select: {
+						id: true,
+						username: true,
+						firstName: true,
+						lastName: true,
+						avatar: true,
+						verificationStatus: true,
+						totalCreations: true
+					}
+				},
+				likes: {
+					select: {
+						userId: true
+					}
+				}
+			},
+			orderBy: [
+				{ createdAt: 'desc' },
+				{ id: 'desc' }
+			],
+			skip: skip,
+			take: parseInt(limit)
+		});
+
+		const total = await prisma.post.count({
+			where: whereClause
+		});
+
+		console.log('🎬 Bloops Response:', {
+			postsCount: posts.length,
+			total,
+			firstPostCategory: posts[0]?.category,
+			firstPostMediaType: posts[0]?.mediaType
+		});
+
+		res.json({
+			success: true,
+			data: {
+				posts,
+				pagination: {
+					page: parseInt(page),
+					limit: parseInt(limit),
+					total,
+					pages: Math.ceil(total / parseInt(limit)),
+					hasMore: parseInt(page) < Math.ceil(total / parseInt(limit))
+				}
+			}
+		});
+
+	} catch (error) {
+		console.error('Get bloops error:', error);
+		res.status(500).json({
+			success: false,
+			message: 'Failed to get bloops',
+			error: error.message
+		});
+	}
+};
+
+/**
+ * Get Feed Posts
+ * GET /api/posts/feed
+ */
 exports.getFeedPosts = async (req, res) => {
 	try {
 		const userId = req.user?.id;
@@ -808,6 +1184,11 @@ exports.getFeedPosts = async (req, res) => {
 						verificationStatus: true,
 						totalCreations: true
 					}
+				},
+				likes: {
+					select: {
+						userId: true
+					}
 				}
 			},
 			orderBy: [
@@ -844,6 +1225,11 @@ exports.getFeedPosts = async (req, res) => {
 							avatar: true,
 							verificationStatus: true,
 							totalCreations: true
+						}
+					},
+					likes: {
+						select: {
+							userId: true
 						}
 					}
 				},
@@ -1211,6 +1597,519 @@ exports.getMyGenerations = async (req, res) => {
 		res.status(500).json({
 			success: false,
 			message: 'Failed to fetch AI generations',
+			error: error.message
+		});
+	}
+};
+
+/**
+ * Like a Post
+ * POST /api/posts/:postId/like
+ */
+exports.likePost = async (req, res) => {
+	try {
+		const { postId } = req.params;
+		const userId = req.user.id;
+
+		// Check if post exists
+		const post = await prisma.post.findUnique({
+			where: { id: postId }
+		});
+
+		if (!post) {
+			return res.status(404).json({
+				success: false,
+				message: 'Post not found'
+			});
+		}
+
+		// Check if already liked
+		const existingLike = await prisma.like.findUnique({
+			where: {
+				userId_postId: {
+					userId: userId,
+					postId: postId
+				}
+			}
+		});
+
+		if (existingLike) {
+			return res.status(400).json({
+				success: false,
+				message: 'Post already liked',
+				isLiked: true,
+				likesCount: post.likesCount
+			});
+		}
+
+		// Create like and increment count in a transaction
+		const [like, updatedPost] = await prisma.$transaction([
+			prisma.like.create({
+				data: {
+					userId: userId,
+					postId: postId
+				}
+			}),
+			prisma.post.update({
+				where: { id: postId },
+				data: {
+					likesCount: {
+						increment: 1
+					}
+				}
+			})
+		]);
+
+		console.log(`✅ User ${userId} liked post ${postId}. New count: ${updatedPost.likesCount}`);
+
+		res.json({
+			success: true,
+			message: 'Post liked successfully',
+			isLiked: true,
+			likesCount: updatedPost.likesCount
+		});
+
+	} catch (error) {
+		console.error('Like post error:', error);
+		res.status(500).json({
+			success: false,
+			message: 'Failed to like post',
+			error: error.message
+		});
+	}
+};
+
+/**
+ * Unlike a Post
+ * DELETE /api/posts/:postId/like
+ */
+exports.unlikePost = async (req, res) => {
+	try {
+		const { postId } = req.params;
+		const userId = req.user.id;
+
+		// Check if post exists
+		const post = await prisma.post.findUnique({
+			where: { id: postId }
+		});
+
+		if (!post) {
+			return res.status(404).json({
+				success: false,
+				message: 'Post not found'
+			});
+		}
+
+		// Check if like exists
+		const existingLike = await prisma.like.findUnique({
+			where: {
+				userId_postId: {
+					userId: userId,
+					postId: postId
+				}
+			}
+		});
+
+		if (!existingLike) {
+			return res.status(400).json({
+				success: false,
+				message: 'Post not liked',
+				isLiked: false,
+				likesCount: post.likesCount
+			});
+		}
+
+		// Delete like and decrement count in a transaction
+		const [_, updatedPost] = await prisma.$transaction([
+			prisma.like.delete({
+				where: {
+					userId_postId: {
+						userId: userId,
+						postId: postId
+					}
+				}
+			}),
+			prisma.post.update({
+				where: { id: postId },
+				data: {
+					likesCount: {
+						decrement: 1
+					}
+				}
+			})
+		]);
+
+		console.log(`✅ User ${userId} unliked post ${postId}. New count: ${updatedPost.likesCount}`);
+
+		res.json({
+			success: true,
+			message: 'Post unliked successfully',
+			isLiked: false,
+			likesCount: updatedPost.likesCount
+		});
+
+	} catch (error) {
+		console.error('Unlike post error:', error);
+		res.status(500).json({
+			success: false,
+			message: 'Failed to unlike post',
+			error: error.message
+		});
+	}
+};
+
+/**
+ * Check Like Status
+ * GET /api/posts/:postId/like-status
+ */
+exports.checkLikeStatus = async (req, res) => {
+	try {
+		const { postId } = req.params;
+		const userId = req.user?.id;
+
+		// Get post with like count
+		const post = await prisma.post.findUnique({
+			where: { id: postId },
+			select: {
+				id: true,
+				likesCount: true
+			}
+		});
+
+		if (!post) {
+			return res.status(404).json({
+				success: false,
+				message: 'Post not found'
+			});
+		}
+
+		// If user is not logged in, return just the count
+		if (!userId) {
+			return res.json({
+				success: true,
+				isLiked: false,
+				likesCount: post.likesCount
+			});
+		}
+
+		// Check if user has liked the post
+		const like = await prisma.like.findUnique({
+			where: {
+				userId_postId: {
+					userId: userId,
+					postId: postId
+				}
+			}
+		});
+
+		res.json({
+			success: true,
+			isLiked: !!like,
+			likesCount: post.likesCount
+		});
+
+	} catch (error) {
+		console.error('Check like status error:', error);
+		res.status(500).json({
+			success: false,
+			message: 'Failed to check like status',
+			error: error.message
+		});
+	}
+};
+
+/**
+ * Add Comment to Post
+ * POST /api/posts/:postId/comments
+ */
+exports.addComment = async (req, res) => {
+	try {
+		const { postId } = req.params;
+		const userId = req.user.id;
+		const { text, parentCommentId } = req.body;
+
+		// Validate text
+		if (!text || text.trim().length === 0) {
+			return res.status(400).json({
+				success: false,
+				message: 'Comment text is required'
+			});
+		}
+
+		// Check if post exists
+		const post = await prisma.post.findUnique({
+			where: { id: postId }
+		});
+
+		if (!post) {
+			return res.status(404).json({
+				success: false,
+				message: 'Post not found'
+			});
+		}
+
+		// Prepare comment data
+		const commentData = {
+			postId: postId,
+			authorId: userId,
+			text: text.trim()
+		};
+
+		// Handle reply to another comment
+		if (parentCommentId) {
+			const parentComment = await prisma.comment.findUnique({
+				where: { id: parentCommentId }
+			});
+
+			if (!parentComment) {
+				return res.status(404).json({
+					success: false,
+					message: 'Parent comment not found'
+				});
+			}
+
+			commentData.parentCommentId = parentCommentId;
+			commentData.replyLevel = parentComment.replyLevel + 1;
+
+			// Also increment repliesCount on parent
+			await prisma.comment.update({
+				where: { id: parentCommentId },
+				data: {
+					repliesCount: {
+						increment: 1
+					}
+				}
+			});
+		}
+
+		// Create comment and increment count in a transaction
+		const [comment, updatedPost] = await prisma.$transaction([
+			prisma.comment.create({
+				data: commentData,
+				include: {
+					author: {
+						select: {
+							id: true,
+							username: true,
+							firstName: true,
+							lastName: true,
+							avatar: true
+						}
+					}
+				}
+			}),
+			prisma.post.update({
+				where: { id: postId },
+				data: {
+					commentsCount: {
+						increment: 1
+					}
+				}
+			})
+		]);
+
+		console.log(`✅ User ${userId} commented on post ${postId}. New count: ${updatedPost.commentsCount}`);
+
+		res.status(201).json({
+			success: true,
+			message: 'Comment added successfully',
+			comment: comment,
+			commentsCount: updatedPost.commentsCount
+		});
+
+	} catch (error) {
+		console.error('Add comment error:', error);
+		res.status(500).json({
+			success: false,
+			message: 'Failed to add comment',
+			error: error.message
+		});
+	}
+};
+
+/**
+ * Get Comments for Post
+ * GET /api/posts/:postId/comments
+ */
+exports.getComments = async (req, res) => {
+	try {
+		const { postId } = req.params;
+		const { page = 1, limit = 20, parentCommentId = null } = req.query;
+
+		const skip = (parseInt(page) - 1) * parseInt(limit);
+
+		// Check if post exists
+		const post = await prisma.post.findUnique({
+			where: { id: postId },
+			select: {
+				id: true,
+				commentsCount: true
+			}
+		});
+
+		if (!post) {
+			return res.status(404).json({
+				success: false,
+				message: 'Post not found'
+			});
+		}
+
+		// Build where clause
+		const whereClause = {
+			postId: postId,
+			isHidden: false
+		};
+
+		// If parentCommentId is provided, get replies, otherwise get top-level comments
+		if (parentCommentId && parentCommentId !== 'null') {
+			whereClause.parentCommentId = parentCommentId;
+		} else {
+			whereClause.parentCommentId = null;
+		}
+
+		// Get comments with author info
+		const comments = await prisma.comment.findMany({
+			where: whereClause,
+			include: {
+				author: {
+					select: {
+						id: true,
+						username: true,
+						firstName: true,
+						lastName: true,
+						avatar: true
+					}
+				},
+				replies: {
+					take: 3, // Show first 3 replies
+					orderBy: {
+						createdAt: 'asc'
+					},
+					include: {
+						author: {
+							select: {
+								id: true,
+								username: true,
+								firstName: true,
+								lastName: true,
+								avatar: true
+							}
+						}
+					}
+				}
+			},
+			orderBy: {
+				createdAt: 'desc'
+			},
+			skip: skip,
+			take: parseInt(limit)
+		});
+
+		const total = await prisma.comment.count({
+			where: whereClause
+		});
+
+		res.json({
+			success: true,
+			comments: comments,
+			commentsCount: post.commentsCount,
+			pagination: {
+				page: parseInt(page),
+				limit: parseInt(limit),
+				total: total,
+				pages: Math.ceil(total / parseInt(limit))
+			}
+		});
+
+	} catch (error) {
+		console.error('Get comments error:', error);
+		res.status(500).json({
+			success: false,
+			message: 'Failed to get comments',
+			error: error.message
+		});
+	}
+};
+
+/**
+ * Delete Comment
+ * DELETE /api/posts/:postId/comments/:commentId
+ */
+exports.deleteComment = async (req, res) => {
+	try {
+		const { postId, commentId } = req.params;
+		const userId = req.user.id;
+
+		// Find comment
+		const comment = await prisma.comment.findUnique({
+			where: { id: commentId }
+		});
+
+		if (!comment) {
+			return res.status(404).json({
+				success: false,
+				message: 'Comment not found'
+			});
+		}
+
+		// Check if user is the author
+		if (comment.authorId !== userId) {
+			return res.status(403).json({
+				success: false,
+				message: 'You can only delete your own comments'
+			});
+		}
+
+		// If this is a reply, decrement parent's repliesCount
+		if (comment.parentCommentId) {
+			await prisma.comment.update({
+				where: { id: comment.parentCommentId },
+				data: {
+					repliesCount: {
+						decrement: 1
+					}
+				}
+			});
+		}
+
+		// Count all nested replies that will be deleted
+		const allRepliesCount = await prisma.comment.count({
+			where: {
+				OR: [
+					{ id: commentId },
+					{ parentCommentId: commentId }
+				]
+			}
+		});
+
+		// Delete comment and all replies (CASCADE handles this)
+		const [_, updatedPost] = await prisma.$transaction([
+			prisma.comment.delete({
+				where: { id: commentId }
+			}),
+			prisma.post.update({
+				where: { id: postId },
+				data: {
+					commentsCount: {
+						decrement: allRepliesCount
+					}
+				}
+			})
+		]);
+
+		console.log(`✅ User ${userId} deleted comment ${commentId}. ${allRepliesCount} comment(s) removed.`);
+
+		res.json({
+			success: true,
+			message: 'Comment deleted successfully',
+			commentsCount: updatedPost.commentsCount
+		});
+
+	} catch (error) {
+		console.error('Delete comment error:', error);
+		res.status(500).json({
+			success: false,
+			message: 'Failed to delete comment',
 			error: error.message
 		});
 	}

@@ -7,14 +7,39 @@
     z-index: 1030;
 }
 
+.floating-bar-col {
+    padding: 0 15px;
+}
+
 .f-conatiner {
     background: linear-gradient(90deg, #949414 -21.19%, #1936c8 100%);
+    padding: 16px 60px;
+    border-radius: 50px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(10px);
+    min-height: 64px;
+}
+
+/* Individual item wrapper */
+.f-bar-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .floating-bar button {
     border: none;
     background-color: transparent;
     outline: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 18px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 12px;
+    min-width: 54px;
 }
 
 .floating-bar button i {
@@ -27,6 +52,7 @@
     color: #fff;
     font-weight: 600;
     font-size: 12px;
+    white-space: nowrap;
 }
 
 .f-bar-label {
@@ -45,49 +71,25 @@
     margin-top: 4px;
 }
 
-.f-conatiner button {
-    padding: 10px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
 /* Background hover for all buttons except generate */
-.f-conatiner div:not(:nth-child(3)) button:hover {
-    background-color: #112f583d;
-    border-radius: 10px;
+.f-bar-item:not(.f-bar-item-center) button:hover {
+    background-color: rgba(17, 47, 88, 0.24);
 }
 
+/* Generate Button Styles */
 .generateBtn {
     background-color: #2d2d2d !important;
-}
-
-.generateBtn.bg-dark {
-    background-color: #2d2d2d !important;
+    border-radius: 50px !important;
+    padding: 14px 34px !important;
+    position: relative;
+    transform: scale(1);
+    min-width: auto !important;
 }
 
 .generateBtn:hover {
-    padding: 1rem 40px !important;
-    transition: all 0.7s ease-out;
-    background-color: #2d2d2d !important;
-}
-
-/* Ensure images are visible */
-.floating-bar img {
-    display: block;
-    width: 24px;
-    height: 24px;
-}
-
-.floating-bar button img {
-    filter: brightness(1);
-    margin: 0 auto;
-}
-
-.floating-bar button {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    transform: scale(1.05);
+    padding: 14px 38px !important;
+    background-color: #3d3d3d !important;
 }
 
 .generateBtn div {
@@ -97,39 +99,142 @@
     justify-content: center;
 }
 
-/* Mobile Responsiveness */
-@media (max-width: 768px) {
-    .floating-bar {
-        bottom: 0;
-        padding: 0;
-        width: 100%;
-        left: 0;
-        transform: none;
-    }
+/* Ensure images are visible */
+.floating-bar img {
+    display: block;
+    width: 24px;
+    height: 24px;
+    filter: brightness(1);
+    margin: 0 auto;
+}
 
-    .floating-bar .row {
-        margin: 0;
-        width: 100%;
-        max-width: 100%;
-    }
+/* ========================================
+   RESPONSIVE BREAKPOINTS
+   ======================================== */
 
-    .floating-bar .col-11 {
-        max-width: 100%;
-        flex: 0 0 100%;
-        padding: 0;
-    }
-
+/* Large Desktop (1200px and up) */
+@media (min-width: 1200px) {
     .f-conatiner {
-        padding: 0.8rem 1rem !important;
-        width: 100%;
-        margin: 0;
-        border-radius: 0 !important;
+        padding: 18px 70px;
     }
 
     .floating-bar button {
-        padding: 8px 6px;
-        min-width: 0;
+        padding: 12px 20px;
+    }
+
+    .generateBtn {
+        padding: 15px 38px !important;
+    }
+}
+
+/* Desktop and Small Desktop (992px - 1199px) */
+@media (max-width: 1199px) and (min-width: 992px) {
+    .floating-bar {
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    .f-conatiner {
+        padding: 16px 80px;
+        border-radius: 50px;
+    }
+
+    .floating-bar button {
+        padding: 10px 16px;
+    }
+
+    .floating-bar img {
+        width: 23px;
+        height: 23px;
+    }
+
+    .generateBtn {
+        padding: 14px 30px !important;
+    }
+
+    .generateBtn:hover {
+        padding: 14px 34px !important;
+    }
+}
+
+/* Tablet Landscape (768px - 991px) */
+@media (max-width: 991px) and (min-width: 768px) {
+    .floating-bar {
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    .f-conatiner {
+        padding: 14px 70px;
+        border-radius: 50px;
+    }
+
+    .floating-bar button {
+        padding: 10px 14px;
+    }
+
+    .floating-bar img {
+        width: 22px;
+        height: 22px;
+    }
+
+    .f-conatiner p {
+        font-size: 11px;
+    }
+
+    .generateBtn {
+        padding: 13px 26px !important;
+    }
+
+    .generateBtn:hover {
+        padding: 13px 30px !important;
+    }
+}
+
+/* Tablet Portrait and below (max-width: 767px) */
+@media (max-width: 767px) {
+    .floating-bar {
+        bottom: 0;
+        left: 0;
+        transform: none;
+        width: 100%;
+        padding: 0;
+    }
+
+    .floating-bar .row {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100%;
+    }
+
+    .floating-bar-col {
+        max-width: 100% !important;
+        flex: 0 0 100% !important;
+        padding: 0 !important;
+        width: 100%;
+    }
+
+    .f-conatiner {
+        padding: 16px 0 !important;
+        border-radius: 0 !important;
+        width: 100%;
+        margin: 0;
+        min-height: auto;
+        box-sizing: border-box;
+        justify-content: space-evenly !important;
+    }
+
+    .f-bar-item {
         flex: 0 0 auto;
+        min-width: 0;
+    }
+
+    .floating-bar button {
+        padding: 10px 12px;
+        width: auto;
+        min-width: auto;
     }
 
     .floating-bar img {
@@ -142,12 +247,13 @@
     }
 
     .generateBtn {
-        padding: 0.75rem 1rem !important;
-        margin: 0 0.25rem;
+        padding: 13px 18px !important;
+        margin: 0;
     }
 
     .generateBtn:hover {
-        padding: 0.75rem 1rem !important;
+        padding: 13px 18px !important;
+        transform: scale(1);
     }
 
     /* Hide labels on mobile by default */
@@ -156,8 +262,8 @@
     }
 
     /* Show labels on active/tap */
-    .f-conatiner button:active .f-bar-label,
-    .f-conatiner:active .f-bar-label {
+    .f-conatiner:active .f-bar-label,
+    .floating-bar button:active .f-bar-label {
         display: block;
         max-height: 50px;
         opacity: 1;
@@ -165,24 +271,35 @@
     }
 }
 
-@media (max-width: 576px) {
-    .floating-bar {
-        bottom: 0;
-        padding: 0;
-    }
-
+/* Mobile Large (577px - 767px) */
+@media (max-width: 767px) and (min-width: 577px) {
     .f-conatiner {
-        padding: 0.7rem 0.8rem !important;
-        border-radius: 0 !important;
-    }
-
-    .floating-bar button {
-        padding: 8px 4px;
+        padding: 16px 30px !important;
     }
 
     .floating-bar img {
-        width: 20px;
-        height: 20px;
+        width: 24px;
+        height: 24px;
+    }
+
+    .generateBtn {
+        padding: 14px 22px !important;
+    }
+}
+
+/* Mobile Medium (401px - 576px) */
+@media (max-width: 576px) and (min-width: 401px) {
+    .f-conatiner {
+        padding: 14px 24px !important;
+    }
+
+    .floating-bar button {
+        padding: 9px 6px;
+    }
+
+    .floating-bar img {
+        width: 21px;
+        height: 21px;
     }
 
     .f-conatiner p {
@@ -190,28 +307,47 @@
     }
 
     .generateBtn {
-        padding: 0.65rem 0.8rem !important;
-        margin: 0 0.2rem;
-    }
-
-    .generateBtn:hover {
-        padding: 0.65rem 0.8rem !important;
+        padding: 12px 16px !important;
     }
 }
 
-@media (max-width: 400px) {
-    .floating-bar {
-        bottom: 0;
-        padding: 0;
-    }
-
+/* Mobile Small (361px - 400px) */
+@media (max-width: 400px) and (min-width: 361px) {
     .f-conatiner {
-        padding: 0.6rem 0.6rem !important;
-        border-radius: 0 !important;
+        padding: 12px 20px !important;
     }
 
     .floating-bar button {
-        padding: 6px 3px;
+        padding: 8px 5px;
+    }
+
+    .floating-bar img {
+        width: 19px;
+        height: 19px;
+    }
+
+    .f-conatiner p {
+        font-size: 8px;
+    }
+
+    .generateBtn {
+        padding: 11px 14px !important;
+    }
+
+    /* Remove hover effects on very small screens */
+    .f-bar-item:not(.f-bar-item-center) button:hover {
+        background-color: transparent;
+    }
+}
+
+/* Mobile Extra Small (360px and below) */
+@media (max-width: 360px) {
+    .f-conatiner {
+        padding: 10px 16px !important;
+    }
+
+    .floating-bar button {
+        padding: 7px 4px;
     }
 
     .floating-bar img {
@@ -220,20 +356,30 @@
     }
 
     .f-conatiner p {
-        font-size: 8px;
+        font-size: 7px;
     }
 
     .generateBtn {
-        padding: 0.55rem 0.7rem !important;
-        margin: 0 0.15rem;
+        padding: 10px 12px !important;
     }
 
-    .generateBtn:hover {
-        padding: 0.55rem 0.7rem !important;
-    }
-
-    /* Further reduce spacing */
-    .f-conatiner div:not(:nth-child(3)) button:hover {
+    .f-bar-item:not(.f-bar-item-center) button:hover {
         background-color: transparent;
+    }
+}
+
+/* Touch device optimization */
+@media (hover: none) and (pointer: coarse) {
+    .floating-bar button {
+        -webkit-tap-highlight-color: rgba(255, 255, 255, 0.1);
+        touch-action: manipulation;
+    }
+
+    .f-bar-item:not(.f-bar-item-center) button:active {
+        background-color: rgba(17, 47, 88, 0.3);
+    }
+
+    .generateBtn:active {
+        transform: scale(0.95);
     }
 }

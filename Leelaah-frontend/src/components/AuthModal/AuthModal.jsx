@@ -3,6 +3,7 @@ import './AuthModal.css';
 
 const AuthModal = ({ isOpen, onClose, mode, onSuccess }) => {
     const [isLogin, setIsLogin] = useState(mode === 'login');
+    const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -158,6 +159,7 @@ const AuthModal = ({ isOpen, onClose, mode, onSuccess }) => {
         setErrors({});
         setErrorMessage('');
         setSuccessMessage('');
+        setShowPassword(false);
         // Reset isLogin state to match the mode prop
         setIsLogin(mode === 'login');
         onClose();
@@ -278,15 +280,25 @@ const AuthModal = ({ isOpen, onClose, mode, onSuccess }) => {
 
                         <div className="form-group">
                             <label htmlFor="password">Password</label>
-                            <input
-                                type="password"
-                                id="password"
-                                name="password"
-                                value={formData.password}
-                                onChange={handleChange}
-                                placeholder="Enter your password"
-                                className={errors.password ? 'error' : ''}
-                            />
+                            <div className="password-input-wrapper">
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    id="password"
+                                    name="password"
+                                    value={formData.password}
+                                    onChange={handleChange}
+                                    placeholder="Enter your password"
+                                    className={errors.password ? 'error' : ''}
+                                />
+                                <button
+                                    type="button"
+                                    className="password-toggle-btn"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    tabIndex="-1"
+                                >
+                                    <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                                </button>
+                            </div>
                             {errors.password && (
                                 <span className="error-text">{errors.password}</span>
                             )}

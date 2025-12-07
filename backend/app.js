@@ -20,6 +20,7 @@ const authRoutes = require('./src/routes/auth');
 const oauthRoutes = require('./src/routes/oauth');
 const postRoutes = require('./src/routes/posts');
 const profileRoutes = require('./src/routes/profile');
+const userRoutes = require('./src/routes/users');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -177,6 +178,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/oauth', oauthRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/users', userRoutes);
 
 // Handle 404 errors
 app.use('*', (req, res) => {

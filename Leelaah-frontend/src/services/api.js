@@ -67,16 +67,36 @@ const apiService = {
 	// Posts API
 	posts: {
 		getFeed: (params) => apiClient.get('/api/posts/feed', { params }),
+		getBloops: (params) => apiClient.get('/api/posts/bloops', { params }),
 		getPost: (postId) => apiClient.get(`/api/posts/${postId}`),
 		createPost: (postData) => apiClient.post('/api/posts', postData),
+		updatePost: (postId, postData) => apiClient.put(`/api/posts/${postId}`, postData),
 		deletePost: (postId) => apiClient.delete(`/api/posts/${postId}`),
 		getUserPosts: (userId) => apiClient.get(`/api/posts/user/${userId}`),
 
 		// AI Generation
 		generateImage: (data) => apiClient.post('/api/posts/generate-image', data),
+		generateVideo: (data) => apiClient.post('/api/posts/generate-video', data),
 		getGenerationResult: (requestId) => apiClient.get(`/api/posts/generation/${requestId}`),
 		getMyGenerations: () => apiClient.get('/api/posts/my-generations'),
 		createPostFromGeneration: (data) => apiClient.post('/api/posts/create-from-generation', data),
+
+		// AI Models
+		getModels: (type, featured = false) => apiClient.get('/api/posts/models', { params: { type, featured } }),
+
+		// Direct File Upload
+		uploadAndCreatePost: (data) => apiClient.post('/api/posts/upload', data),
+
+		// Like APIs
+		likePost: (postId) => apiClient.post(`/api/posts/${postId}/like`),
+		unlikePost: (postId) => apiClient.delete(`/api/posts/${postId}/like`),
+		checkLikeStatus: (postId) => apiClient.get(`/api/posts/${postId}/like-status`),
+
+		// Comment APIs
+		addComment: (postId, text, parentCommentId = null) =>
+			apiClient.post(`/api/posts/${postId}/comments`, { text, parentCommentId }),
+		getComments: (postId, params) => apiClient.get(`/api/posts/${postId}/comments`, { params }),
+		deleteComment: (postId, commentId) => apiClient.delete(`/api/posts/${postId}/comments/${commentId}`),
 	},
 
 	// Auth API
@@ -108,6 +128,14 @@ const apiService = {
 	oauth: {
 		google: () => `${API_URL}/api/oauth/google`,
 		googleCallback: (code) => apiClient.get(`/api/oauth/google/callback?code=${code}`),
+	},
+
+	// Users API (Public Profiles & Follow)
+	users: {
+		getPublicProfile: (userId) => apiClient.get(`/api/users/${userId}/profile`),
+		followUser: (userId) => apiClient.post(`/api/users/${userId}/follow`),
+		unfollowUser: (userId) => apiClient.delete(`/api/users/${userId}/follow`),
+		checkFollowStatus: (userId) => apiClient.get(`/api/users/${userId}/follow-status`),
 	},
 
 	// Health check

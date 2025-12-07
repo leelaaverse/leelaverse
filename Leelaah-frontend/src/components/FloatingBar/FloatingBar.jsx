@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import GenerateModal from '../GenerateModal/GenerateModal';
 import './FloatingBar.css';
 
-const FloatingBar = ({ onOpenAuth }) => {
+const FloatingBar = ({ onOpenAuth, onNavigate }) => {
     const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
     const { isLoggedIn } = useSelector((state) => state.auth);
 
@@ -27,42 +27,42 @@ const FloatingBar = ({ onOpenAuth }) => {
     return (
         <>
             <section className="floating-bar">
-                <div className="row justify-content-center">
-                    <div className="col-md-5 col-11">
-                        <div className="rounded-pill f-conatiner d-flex flex-nowrap justify-content-between px-5 py-1 align-items-center">
-                            <div>
+                <div className="row justify-content-center m-0">
+                    <div className="col-md-5 col-12 floating-bar-col">
+                        <div className="f-conatiner d-flex flex-nowrap justify-content-between align-items-center">
+                            <div className="f-bar-item">
                                 <button>
-                                    <img src="/assets/home-rounded.svg" alt="" />
+                                    <img src="/assets/home-rounded.svg" alt="Browse" />
                                     <p className="f-bar-label">Browse</p>
                                 </button>
                             </div>
-                            <div>
+                            <div className="f-bar-item">
                                 <button>
-                                    <img src="/assets/search.svg" alt="" />
+                                    <img src="/assets/search.svg" alt="Explore" />
                                     <p className="f-bar-label">Explore</p>
                                 </button>
                             </div>
-                            <div>
+                            <div className="f-bar-item f-bar-item-center">
                                 <button
-                                    className="px-4 py-3 generateBtn rounded-pill bg-dark"
+                                    className="generateBtn"
                                     onClick={handleGenerateClick}
                                 >
                                     <div>
-                                        <img src="/assets/add-outline.svg" alt="" />
+                                        <img src="/assets/add-outline.svg" alt="Generate" />
                                         <p className="f-bar-label">Generate</p>
                                     </div>
                                 </button>
                             </div>
-                            <div>
+                            <div className="f-bar-item">
                                 <button>
-                                    <img src="/assets/globe.svg" alt="" />
+                                    <img src="/assets/globe.svg" alt="Community" />
                                     <p className="f-bar-label">Community</p>
                                 </button>
                             </div>
-                            <div>
-                                <button>
-                                    <img src="/assets/play-list.svg" alt="" />
-                                    <p className="f-bar-label">Reels</p>
+                            <div className="f-bar-item">
+                                <button onClick={() => onNavigate && onNavigate('bloops')}>
+                                    <img src="/assets/play-list.svg" alt="Bloops" />
+                                    <p className="f-bar-label">Bloops</p>
                                 </button>
                             </div>
                         </div>

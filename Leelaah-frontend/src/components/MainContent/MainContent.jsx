@@ -1,11 +1,11 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchFeedPosts, setCategory } from '../../store/slices/postsSlice';
 import PostCard from '../PostCard/PostCard';
 import PostSkeleton from '../PostSkeleton/PostSkeleton';
 import './MainContent.css';
 
-const MainContent = ({ activeTab }) => {
+const MainContent = ({ activeTab, onShowAuthModal, onPostClick, onUserClick }) => {
     const dispatch = useDispatch();
     const { posts, loading, loadingMore, hasMore, pagination, currentCategory, error } = useSelector(
         (state) => state.posts
@@ -73,122 +73,71 @@ const MainContent = ({ activeTab }) => {
         };
     }, [handleObserver]);
 
-    // Group posts into rows
-    const groupPosts = () => {
-        console.log('🎨 Grouping posts. Total posts available:', posts.length);
-        console.log('📋 Post IDs:', posts.map(p => p.id));
-
-        const rows = [];
-        let index = 0;
-
-        // First row: 2 large posts (if available)
-        if (posts.length >= 2) {
-            rows.push({
-                type: 'large',
-                posts: posts.slice(0, 2),
-            });
-            index = 2;
-            console.log('✅ Row 0 (large): 2 posts, indices 0-1');
-        } else if (posts.length === 1) {
-            rows.push({
-                type: 'large',
-                posts: [posts[0]],
-            });
-            index = 1;
-            console.log('✅ Row 0 (large): 1 post, index 0');
+    // Calculate aspect ratio for each post
+    const getAspectRatio = useCallback((post) => {
+        // First, check if aiAspectRatio is available from AI generation
+        if (post.aiAspectRatio) {
+            const ratio = post.aiAspectRatio;
+            if (ratio === '16:9') return 'landscape';
+            if (ratio === '9:16') return 'portrait';
+            if (ratio === '1:1' || ratio === 'square') return 'square';
         }
 
-        // Remaining rows: 4 medium posts each
-        let rowNum = 1;
-        while (index < posts.length) {
-            const rowPosts = posts.slice(index, index + 4);
-            rows.push({
-                type: 'medium',
-                posts: rowPosts,
-            });
-            console.log(`✅ Row ${rowNum} (medium): ${rowPosts.length} posts, indices ${index}-${index + rowPosts.length - 1}`);
-            index += 4;
-            rowNum++;
-        }
+        // Fallback: calculate from width/height if available
+        const width = post.width || post.metadata?.width || 1;
+        const height = post.height || post.metadata?.height || 1;
+        const ratio = width / height;
 
-        console.log('📊 Total rows created:', rows.length);
-        console.log('📊 Total posts in all rows:', rows.reduce((sum, row) => sum + row.posts.length, 0));
+        // Categorize aspect ratios
+        if (ratio > 1.5) return 'landscape'; // 16:9
+        if (ratio < 0.7) return 'portrait'; // 9:16
+        return 'square'; // 1:1
+    }, []);
 
-        return rows;
-    };
+    // Distribute posts into 4 columns for masonry layout
+    const columns = useMemo(() => {
+        const cols = [[], [], [], []];
+        const colHeights = [0, 0, 0, 0];
 
-    const rows = groupPosts();
+        posts.forEach(post => {
+            const aspectRatio = getAspectRatio(post);
+
+            // Assign weight based on aspect ratio for better distribution
+            let weight = 1;
+            if (aspectRatio === 'portrait') weight = 1.5;
+            if (aspectRatio === 'landscape') weight = 0.7;
+
+            // Find column with minimum height
+            const minIndex = colHeights.indexOf(Math.min(...colHeights));
+            cols[minIndex].push(post);
+            colHeights[minIndex] += weight;
+        });
+
+        return cols;
+    }, [posts, getAspectRatio]);
 
     return (
         <main className="mainContent tab-content my-4" id="pills-tabContent">
-            <div className="container-fluid">
+            <div className="container-fluid px-2 sm:px-4">
                 {/* Loading State - First Load */}
                 {loading && posts.length === 0 && (
-                    <>
-                        {/* Large Posts Skeleton */}
-                        <div className="row mainContentRow">
-                            <div className="col-md-6">
-                                <PostSkeleton count={1} size="large" />
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1 md:gap-2">
+                        {Array.from({ length: 4 }).map((_, colIndex) => (
+                            <div key={colIndex} className="flex flex-col">
+                                <PostSkeleton count={3} variant="mixed" />
                             </div>
-                            <div className="col-md-6">
-                                <PostSkeleton count={1} size="large" />
-                            </div>
-                        </div>
-
-                        {/* Medium Posts Skeleton */}
-                        <div className="row mt-3 mainContentRow">
-                            <div className="col-md-3">
-                                <PostSkeleton count={1} size="medium" />
-                            </div>
-                            <div className="col-md-3">
-                                <PostSkeleton count={1} size="medium" />
-                            </div>
-                            <div className="col-md-3">
-                                <PostSkeleton count={1} size="medium" />
-                            </div>
-                            <div className="col-md-3">
-                                <PostSkeleton count={1} size="medium" />
-                            </div>
-                        </div>
-
-                        <div className="row mt-3 mainContentRow">
-                            <div className="col-md-3">
-                                <PostSkeleton count={1} size="medium" />
-                            </div>
-                            <div className="col-md-3">
-                                <PostSkeleton count={1} size="medium" />
-                            </div>
-                            <div className="col-md-3">
-                                <PostSkeleton count={1} size="medium" />
-                            </div>
-                            <div className="col-md-3">
-                                <PostSkeleton count={1} size="medium" />
-                            </div>
-                        </div>
-                    </>
+                        ))}
+                    </div>
                 )}
 
                 {/* Error State */}
                 {!loading && error && (
-                    <div className="error-message" style={{
-                        textAlign: 'center',
-                        padding: '3rem 2rem',
-                        color: '#ff6b6b'
-                    }}>
-                        <p style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>⚠️ Error loading posts</p>
-                        <p style={{ fontSize: '0.9rem', color: 'rgba(255, 107, 107, 0.7)' }}>{error}</p>
+                    <div className="text-center py-12 px-8 text-red-400">
+                        <p className="text-xl mb-4">⚠️ Error loading posts</p>
+                        <p className="text-sm text-red-400/70 mb-4">{error}</p>
                         <button
                             onClick={() => dispatch(fetchFeedPosts({ category: getCategoryFromTab(activeTab), page: 1, limit: 12 }))}
-                            style={{
-                                marginTop: '1rem',
-                                padding: '0.5rem 1.5rem',
-                                background: '#5d5fef',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '8px',
-                                cursor: 'pointer',
-                                fontFamily: 'Poppins, sans-serif'
-                            }}
+                            className="mt-4 px-6 py-2 bg-[#5d5fef] text-white rounded-lg cursor-pointer font-['Poppins'] hover:bg-[#4a4bcc] transition-colors"
                         >
                             Try Again
                         </button>
@@ -197,72 +146,57 @@ const MainContent = ({ activeTab }) => {
 
                 {/* Posts Content */}
                 {!loading && !error && posts.length === 0 && (
-                    <div className="no-posts-message">
-                        <p>No posts available at the moment.</p>
-                        <p style={{ fontSize: '0.85rem', color: 'rgba(255, 255, 255, 0.5)', marginTop: '0.5rem' }}>
+                    <div className="text-center py-16 px-8 text-white/60 font-['Poppins']">
+                        <p className="text-xl">No posts available at the moment.</p>
+                        <p className="text-sm text-white/50 mt-2">
                             Be the first to create a post!
                         </p>
                     </div>
                 )}
 
-                {rows.map((row, rowIndex) => (
-                    <div
-                        key={`row-${rowIndex}`}
-                        className={`row ${rowIndex > 0 ? 'mt-3' : ''} mainContentRow`}
-                    >
-                        {row.type === 'large' ? (
-                            <>
-                                {row.posts.map((post, postIndex) => (
-                                    <div className="col-md-6" key={post.id}>
-                                        <PostCard post={post} size="large" />
-                                    </div>
-                                ))}
-                                {/* Fill empty space if only 1 large post */}
-                                {row.posts.length === 1 && <div className="col-md-6"></div>}
-                            </>
-                        ) : (
-                            <>
-                                {row.posts.map((post, postIndex) => (
-                                    <div className="col-md-3" key={post.id}>
-                                        <PostCard post={post} size="medium" />
-                                    </div>
-                                ))}
-                                {/* Fill empty spaces */}
-                                {Array.from({ length: 4 - row.posts.length }).map((_, i) => (
-                                    <div className="col-md-3" key={`empty-${i}`}></div>
-                                ))}
-                            </>
-                        )}
+                {/* Masonry Grid Layout */}
+                {!loading && !error && posts.length > 0 && (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1 md:gap-2">
+                        {columns.map((column, colIndex) => (
+                            <div key={colIndex} className="flex flex-col">
+                                {column.map((post) => {
+                                    const aspectRatio = getAspectRatio(post);
+                                    return (
+                                        <PostCard
+                                            key={post.id}
+                                            post={post}
+                                            aspectRatio={aspectRatio}
+                                            onShowAuthModal={onShowAuthModal}
+                                            onPostClick={onPostClick}
+                                            onUserClick={onUserClick}
+                                        />
+                                    );
+                                })}
+                            </div>
+                        ))}
                     </div>
-                ))}
+                )}
 
                 {/* Loading More State */}
                 {loadingMore && (
-                    <div className="row mt-3 mainContentRow">
-                        <div className="col-md-3">
-                            <PostSkeleton count={1} size="medium" />
-                        </div>
-                        <div className="col-md-3">
-                            <PostSkeleton count={1} size="medium" />
-                        </div>
-                        <div className="col-md-3">
-                            <PostSkeleton count={1} size="medium" />
-                        </div>
-                        <div className="col-md-3">
-                            <PostSkeleton count={1} size="medium" />
-                        </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1 md:gap-2 mt-4">
+                        {Array.from({ length: 4 }).map((_, colIndex) => (
+                            <div key={colIndex} className="flex flex-col">
+                                <PostSkeleton count={2} variant="mixed" />
+                            </div>
+                        ))}
                     </div>
                 )}
 
                 {/* Infinite Scroll Observer Target */}
                 {!loading && posts.length > 0 && hasMore && (
-                    <div ref={observerTarget} className="observer-target"></div>
+                    <div ref={observerTarget} className="h-12 w-full my-8"></div>
                 )}
 
                 {/* No More Posts */}
                 {!loading && posts.length > 0 && !hasMore && (
-                    <div className="no-more-posts">
-                        <p>You've reached the end!</p>
+                    <div className="text-center py-8 text-white/50 font-['Poppins'] mt-8">
+                        <p className="text-sm">You've reached the end!</p>
                     </div>
                 )}
             </div>

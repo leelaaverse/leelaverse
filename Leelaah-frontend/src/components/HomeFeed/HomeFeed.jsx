@@ -8,7 +8,7 @@ import Sidebar from '../Sidebar/Sidebar';
 import AuthModal from '../AuthModal/AuthModal';
 import './HomeFeed.css';
 
-const HomeFeed = ({ onNavigate }) => {
+const HomeFeed = ({ onNavigate, onPostClick, onUserClick }) => {
     const dispatch = useDispatch();
     const { isLoggedIn } = useSelector((state) => state.auth);
 
@@ -118,8 +118,11 @@ const HomeFeed = ({ onNavigate }) => {
                 onLogin={handleLogin}
                 onSignup={handleSignup}
             />
-            <MainContent activeTab={activeTab} />
-            <FloatingBar onOpenAuth={handleOpenAuth} />
+            <MainContent activeTab={activeTab} onShowAuthModal={handleOpenAuth} onPostClick={onPostClick} onUserClick={onUserClick} />
+            <FloatingBar
+                onOpenAuth={handleOpenAuth}
+                onNavigate={onNavigate}
+            />
             <Sidebar onNavigate={onNavigate} />
 
             {/* Auth Modal */}

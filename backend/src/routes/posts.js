@@ -1,8 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const postController = require('../controllers/postController');
-const { auth } = require('../middleware/auth'); // Changed from 'protect' to 'auth'
+const { auth, optionalAuth } = require('../middleware/auth'); // Changed from 'protect' to 'auth'
 const { validatePost } = require('../middleware/validation');
+
+/**
+ * @route   GET /api/posts/models
+ * @desc    Get available AI models for image and video generation
+ * @access  Public
+ */
+router.get('/models', postController.getAvailableModels);
 
 /**
  * @route   POST /api/posts/generate-image
@@ -10,6 +17,13 @@ const { validatePost } = require('../middleware/validation');
  * @access  Public (no auth for testing)
  */
 router.post('/generate-image', auth, postController.generateImage);
+
+/**
+ * @route   POST /api/posts/generate-video
+ * @desc    Generate video using FAL AI
+ * @access  Public (no auth for testing)
+ */
+router.post('/generate-video', auth, postController.generateVideo);
 
 /**
  * @route   GET /api/posts/generation/:requestId
@@ -24,6 +38,13 @@ router.get('/generation/:requestId', auth, postController.getGenerationResult);
  * @access  Private
  */
 router.post('/create-from-generation', auth, postController.createPostFromGeneration);
+
+/**
+ * @route   POST /api/posts/upload
+ * @desc    Upload image directly to Cloudinary and create post
+ * @access  Private
+ */
+router.post('/upload', auth, postController.uploadAndCreatePost);
 
 /**
  * @route   POST /api/posts
@@ -45,6 +66,13 @@ router.get('/count', postController.getPostsCount);
  * @access  Public/Private
  */
 router.get('/feed', postController.getFeedPosts);
+
+/**
+ * @route   GET /api/posts/bloops
+ * @desc    Get video posts (bloops)
+ * @access  Public
+ */
+router.get('/bloops', postController.getBloops);
 
 /**
  * @route   GET /api/posts/my-generations
@@ -87,5 +115,55 @@ router.get('/:postId', postController.getPost);
  * @access  Private
  */
 router.delete('/:postId', auth, postController.deletePost);
+
+// ============================================
+// LIKE ROUTES
+// ============================================
+
+/**
+ * @route   POST /api/posts/:postId/like
+ * @desc    Like a post
+ * @access  Private
+ */
+router.post('/:postId/like', auth, postController.likePost);
+
+/**
+ * @route   DELETE /api/posts/:postId/like
+ * @desc    Unlike a post
+ * @access  Private
+ */
+router.delete('/:postId/like', auth, postController.unlikePost);
+
+/**
+ * @route   GET /api/posts/:postId/like-status
+ * @desc    Check if user has liked a post
+ * @access  Public (returns isLiked: false if not logged in)
+ */
+router.get('/:postId/like-status', optionalAuth, postController.checkLikeStatus);
+
+// ============================================
+// COMMENT ROUTES
+// ============================================
+
+/**
+ * @route   POST /api/posts/:postId/comments
+ * @desc    Add comment to a post
+ * @access  Private
+ */
+router.post('/:postId/comments', auth, postController.addComment);
+
+/**
+ * @route   GET /api/posts/:postId/comments
+ * @desc    Get comments for a post
+ * @access  Public
+ */
+router.get('/:postId/comments', postController.getComments);
+
+/**
+ * @route   DELETE /api/posts/:postId/comments/:commentId
+ * @desc    Delete a comment
+ * @access  Private
+ */
+router.delete('/:postId/comments/:commentId', auth, postController.deleteComment);
 
 module.exports = router;

@@ -123,7 +123,7 @@ curl -X POST http://localhost:3000/api/posts/generate-image \
 - `"1:1"` - Square (Instagram)
 - `"4:3"` - Portrait
 - `"16:9"` - Landscape (YouTube thumbnail)
-- `"9:16"` - Vertical (Stories/Reels)
+- `"9:16"` - Vertical (Stories/Bloops)
 - `"3:4"` - Portrait
 
 ---

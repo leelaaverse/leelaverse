@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
 import apiService from '../../services/api';
+import toast from 'react-hot-toast';
 import './Sidebar.css';
 
 const Sidebar = ({ onNavigate }) => {
@@ -9,6 +10,7 @@ const Sidebar = ({ onNavigate }) => {
     const { user } = useSelector((state) => state.auth);
     const [userStats, setUserStats] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'Dark');
     const [language, setLanguage] = useState(localStorage.getItem('language') || 'English');
 
@@ -33,9 +35,14 @@ const Sidebar = ({ onNavigate }) => {
 
     // Handle logout
     const handleLogout = async () => {
+        setIsLoggingOut(true);
+        toast.loading('Logging out...', { id: 'logout' });
+
         try {
             await apiService.auth.logout();
             dispatch(logout());
+            toast.success('Logged out successfully!', { id: 'logout' });
+
             // Close offcanvas
             const offcanvasElement = document.getElementById('offcanvasRight');
             const bsOffcanvas = bootstrap.Offcanvas.getInstance(offcanvasElement);
@@ -44,7 +51,10 @@ const Sidebar = ({ onNavigate }) => {
             }
         } catch (error) {
             console.error('Logout failed:', error);
+            toast.error('Logout failed, but clearing session', { id: 'logout' });
             dispatch(logout());
+        } finally {
+            setIsLoggingOut(false);
         }
     };
 
@@ -272,9 +282,13 @@ const Sidebar = ({ onNavigate }) => {
 
                 {/* Logout Button */}
                 <div className="sidebar-logout mt-4">
-                    <button className="logout-btn" onClick={handleLogout}>
+                    <button
+                        className="logout-btn"
+                        onClick={handleLogout}
+                        disabled={isLoggingOut}
+                    >
                         <i className="fa-solid fa-right-from-bracket"></i>
-                        <span>Logout</span>
+                        <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
                     </button>
                 </div>
             </div>

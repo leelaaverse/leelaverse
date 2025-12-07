@@ -1,0 +1,226 @@
+/* Container */
+.model-selector-container {
+	position: relative;
+	width: 100%;
+	font-family: 'Inter', sans-serif;
+	/* Assuming Inter or similar */
+	z-index: 10;
+	/* Ensure container is above other elements */
+}
+
+/* Trigger (The box you click) */
+.model-selector-trigger {
+	background: rgba(255, 255, 255, 0.05);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 12px;
+	padding: 10px 14px;
+	/* Reduced padding height */
+	min-height: 48px;
+	/* Slightly taller for comfort */
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	user-select: none;
+}
+
+.model-selector-trigger:hover:not(.disabled) {
+	background: rgba(255, 255, 255, 0.08);
+	border-color: rgba(155, 108, 248, 0.4);
+	/* Purple hint */
+}
+
+.model-selector-trigger.open {
+	border-color: #9b6cf8;
+	background: rgba(20, 20, 20, 1);
+}
+
+.model-selector-trigger.disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+/* Selected Preview */
+.selected-model-preview {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.model-icon-wrapper {
+	width: 24px;
+	height: 24px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #ccfc7e;
+	/* Greenish/Yellow accent from image or brand */
+	font-size: 14px;
+}
+
+.model-info-compact {
+	display: flex;
+	flex-direction: column;
+}
+
+.model-name-compact {
+	color: #ffffff;
+	font-size: 13px;
+	font-weight: 500;
+}
+
+.placeholder-text {
+	color: rgba(255, 255, 255, 0.5);
+	font-size: 13px;
+}
+
+.arrow-icon {
+	color: rgba(255, 255, 255, 0.4);
+	font-size: 12px;
+	transition: transform 0.2s ease;
+}
+
+.arrow-icon.rotate {
+	transform: rotate(180deg);
+}
+
+/* Dropdown Menu - Portal Version */
+.model-selector-dropdown-portal {
+	background: #1a1a1a;
+	/* Dark background */
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 12px;
+	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+	overflow: hidden;
+	animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+		transform: translateY(-5px);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.dropdown-header {
+	padding: 12px 16px;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+	color: rgba(255, 255, 255, 0.5);
+	font-size: 11px;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	font-weight: 600;
+	pointer-events: none;
+}
+
+.models-list {
+	max-height: 320px;
+	/* Limit height */
+	overflow-y: auto;
+	padding: 6px;
+}
+
+/* Scrollbar styling */
+.models-list::-webkit-scrollbar {
+	width: 6px;
+}
+
+.models-list::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.models-list::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.1);
+	border-radius: 3px;
+}
+
+.models-list::-webkit-scrollbar-thumb:hover {
+	background: rgba(255, 255, 255, 0.2);
+}
+
+/* List Items */
+.model-item {
+	display: flex;
+	align-items: center;
+	/* Align icon and text vertically */
+	gap: 12px;
+	padding: 10px 12px;
+	border-radius: 8px;
+	cursor: pointer;
+	transition: background 0.15s ease;
+	margin-bottom: 2px;
+}
+
+.model-item:hover {
+	background: rgba(255, 255, 255, 0.06);
+}
+
+.model-item.selected {
+	background: rgba(155, 108, 248, 0.15);
+	/* Selected background tint */
+}
+
+.model-item-icon {
+	width: 32px;
+	height: 32px;
+	/* Fixed square for icon */
+	background: rgba(255, 255, 255, 0.03);
+	border-radius: 8px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #ccfc7e;
+	font-size: 16px;
+	flex-shrink: 0;
+}
+
+.model-item-content {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	overflow: hidden;
+	/* For truncation if needed */
+}
+
+.model-item-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.model-item-title {
+	color: #f0f0f0;
+	font-size: 13px;
+	font-weight: 500;
+}
+
+.premium-badge {
+	background: rgba(204, 252, 126, 0.15);
+	color: #ccfc7e;
+	font-size: 10px;
+	padding: 1px 5px;
+	border-radius: 4px;
+	font-weight: 600;
+	text-transform: uppercase;
+}
+
+.model-item-description {
+	color: rgba(255, 255, 255, 0.5);
+	font-size: 11px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.check-icon {
+	color: #9b6cf8;
+	font-size: 12px;
+	margin-left: 8px;
+}
