@@ -557,7 +557,7 @@ Content-Type: application/json
 {
   "success": true,
   "message": "Password reset link has been sent to your email.",
-  "resetToken": "a1b2c3d4e5f6..." 
+  "resetToken": "a1b2c3d4e5f6..."
 }
 ```
 
@@ -568,7 +568,7 @@ Content-Type: application/json
 ⚠️ **CRITICAL SECURITY VULNERABILITY**: The current implementation exposes the reset token in the API response, which is a **significant security risk**. This endpoint is currently **NOT production-ready** and must be fixed before deployment:
   - **Required Fix**: Remove the `resetToken` field from the response
   - **Required Implementation**: Send reset token only via email to the user
-  - **Current State**: Development/testing mode only - DO NOT deploy to production as-is
+  - **Current State**: Development/testing mode only - DO NOT deploy to production as is
   - **Risk**: Exposed tokens can be intercepted and used by attackers to reset passwords
 
 **Example Request**:
