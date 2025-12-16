@@ -466,6 +466,116 @@ https://api.leelaah.com/oauth/google
 
 ---
 
+### 2.5 Get Available AI Models
+**GET** `/posts/models`
+
+**Description**: Get available AI models for image and video generation
+
+**Query Parameters**:
+- `type` (optional): Filter by type ('image' or 'video')
+- `featured` (optional): Get featured models only ('true')
+
+**Response**:
+```json
+{
+  "success": true,
+  "models": {
+    "image": [
+      {
+        "id": "flux-1-srpo",
+        "name": "FLUX.1 SRPO",
+        "type": "image",
+        "description": "High-quality image generation"
+      }
+    ],
+    "video": [
+      {
+        "id": "kling-v1",
+        "name": "Kling v1",
+        "type": "video",
+        "description": "AI video generation"
+      }
+    ]
+  },
+  "message": "Available AI models retrieved successfully"
+}
+```
+
+---
+
+### 2.6 Generate Video
+**POST** `/posts/generate-video`
+**Authentication**: Required
+
+**Description**: Generate AI video using FAL AI
+
+**Request Body**:
+```json
+{
+  "prompt": "A beautiful sunset timelapse over mountains",
+  "selectedModel": "kling-v1",
+  "aspectRatio": "16:9",
+  "duration": "5"
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Video generation started",
+  "generations": [
+    {
+      "requestId": "fal_request_id_123",
+      "aiGenerationId": "ai_gen_id_456"
+    }
+  ],
+  "estimatedTime": "60-120 seconds"
+}
+```
+
+---
+
+### 2.7 Upload and Create Post
+**POST** `/posts/upload`
+**Authentication**: Required
+
+**Description**: Upload image/video directly (base64) and create post in one request
+
+**Request Body**:
+```json
+{
+  "image": "data:image/jpeg;base64,/9j/4AAQSkZ...",
+  "caption": "My amazing photo!",
+  "title": "Photo Title",
+  "tags": ["photography", "nature"],
+  "locationName": "New York",
+  "visibility": "public"
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Image uploaded and post created successfully",
+  "post": {
+    "id": "post_id_123",
+    "caption": "My amazing photo!",
+    "mediaUrl": "https://cloudinary.com/image.jpg"
+  },
+  "upload": {
+    "url": "https://cloudinary.com/image.jpg",
+    "publicId": "leelaverse/posts/user_id/image_id",
+    "width": 1920,
+    "height": 1080,
+    "format": "jpg"
+  }
+}
+```
+
+---
+
 ### 3. Create Post from AI Generation
 **POST** `/posts/create-from-generation`
 **Authentication**: Required
@@ -600,7 +710,350 @@ https://api.leelaah.com/oauth/google
 
 ---
 
-### 6. Get User Posts
+### 6. Get Bloops (Short Video Posts)
+**GET** `/posts/bloops`
+
+**Description**: Get paginated short-form video posts (Bloops). Similar to TikTok/Reels-style content.
+
+**Query Parameters**:
+- `page` (optional): Page number (default: 1)
+- `limit` (optional): Items per page (default: 5)
+
+**Example**: `/posts/bloops?page=1&limit=10`
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "posts": [
+      {
+        "id": "post_id_123",
+        "category": "video-post",
+        "caption": "Check out this video!",
+        "title": "My Bloop",
+        "mediaUrl": "https://cloudinary.com/video.mp4",
+        "mediaUrls": ["https://cloudinary.com/video.mp4"],
+        "mediaType": "video/mp4",
+        "likesCount": 10,
+        "commentsCount": 5,
+        "viewsCount": 150,
+        "author": {
+          "id": "user_id",
+          "username": "creator",
+          "firstName": "John",
+          "lastName": "Doe",
+          "avatar": "https://cloudinary.com/avatar.jpg"
+        },
+        "likes": [{ "userId": "user_1" }]
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "total": 50,
+      "pages": 5,
+      "hasMore": true
+    }
+  }
+}
+```
+
+---
+
+### 7. Get Available AI Models
+**GET** `/posts/models`
+
+**Description**: Get available AI models for image and video generation
+
+**Query Parameters**:
+- `type` (optional): Filter by type ('image' or 'video')
+- `featured` (optional): Get featured models only ('true')
+
+**Response**:
+```json
+{
+  "success": true,
+  "models": {
+    "image": [
+      {
+        "id": "flux-1-srpo",
+        "name": "FLUX.1 SRPO",
+        "type": "image",
+        "description": "High-quality image generation"
+      }
+    ],
+    "video": [
+      {
+        "id": "kling-v1",
+        "name": "Kling v1",
+        "type": "video",
+        "description": "AI video generation"
+      }
+    ]
+  },
+  "message": "Available AI models retrieved successfully"
+}
+```
+
+---
+
+### 8. Generate Video
+**POST** `/posts/generate-video`
+**Authentication**: Required
+
+**Description**: Generate AI video using FAL AI
+
+**Request Body**:
+```json
+{
+  "prompt": "A beautiful sunset timelapse over mountains",
+  "selectedModel": "kling-v1",
+  "aspectRatio": "16:9",
+  "duration": "5"
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Video generation started",
+  "generations": [
+    {
+      "requestId": "fal_request_id_123",
+      "aiGenerationId": "ai_gen_id_456"
+    }
+  ],
+  "estimatedTime": "60-120 seconds"
+}
+```
+
+---
+
+### 9. Upload and Create Post
+**POST** `/posts/upload`
+**Authentication**: Required
+
+**Description**: Upload image/video directly and create post in one request
+
+**Request Body**:
+```json
+{
+  "image": "data:image/jpeg;base64,/9j/4AAQSkZ...",
+  "caption": "My amazing photo!",
+  "title": "Photo Title",
+  "tags": ["photography", "nature"],
+  "locationName": "New York",
+  "visibility": "public"
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Image uploaded and post created successfully",
+  "post": {
+    "id": "post_id_123",
+    "caption": "My amazing photo!",
+    "mediaUrl": "https://cloudinary.com/image.jpg"
+  },
+  "upload": {
+    "url": "https://cloudinary.com/image.jpg",
+    "publicId": "leelaverse/posts/user_id/image_id",
+    "width": 1920,
+    "height": 1080,
+    "format": "jpg"
+  }
+}
+```
+
+---
+
+## ❤️ Likes Endpoints
+
+### 1. Like Post
+**POST** `/posts/:postId/like`
+**Authentication**: Required
+
+**Description**: Like a post
+
+**URL Parameters**:
+- `postId`: Post ID to like
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Post liked successfully",
+  "isLiked": true,
+  "likesCount": 11
+}
+```
+
+---
+
+### 2. Unlike Post
+**DELETE** `/posts/:postId/like`
+**Authentication**: Required
+
+**Description**: Remove like from a post
+
+**URL Parameters**:
+- `postId`: Post ID to unlike
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Post unliked successfully",
+  "isLiked": false,
+  "likesCount": 10
+}
+```
+
+---
+
+### 3. Check Like Status
+**GET** `/posts/:postId/like-status`
+**Authentication**: Optional
+
+**Description**: Check if current user has liked a post
+
+**URL Parameters**:
+- `postId`: Post ID
+
+**Response**:
+```json
+{
+  "success": true,
+  "isLiked": true,
+  "likesCount": 10
+}
+```
+
+---
+
+## 💬 Comments Endpoints
+
+### 1. Add Comment
+**POST** `/posts/:postId/comments`
+**Authentication**: Required
+
+**Description**: Add a comment to a post
+
+**URL Parameters**:
+- `postId`: Post ID
+
+**Request Body**:
+```json
+{
+  "text": "Great post!",
+  "parentCommentId": null
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Comment added successfully",
+  "comment": {
+    "id": "comment_id_123",
+    "text": "Great post!",
+    "authorId": "user_id",
+    "postId": "post_id",
+    "createdAt": "2025-12-16T00:00:00.000Z",
+    "author": {
+      "id": "user_id",
+      "username": "johndoe",
+      "firstName": "John",
+      "lastName": "Doe",
+      "avatar": "https://cloudinary.com/avatar.jpg"
+    }
+  },
+  "commentsCount": 6
+}
+```
+
+---
+
+### 2. Get Comments
+**GET** `/posts/:postId/comments`
+
+**Description**: Get comments for a post
+
+**URL Parameters**:
+- `postId`: Post ID
+
+**Query Parameters**:
+- `page` (optional): Page number (default: 1)
+- `limit` (optional): Items per page (default: 20)
+- `parentCommentId` (optional): Get replies to a specific comment
+
+**Response**:
+```json
+{
+  "success": true,
+  "comments": [
+    {
+      "id": "comment_id_123",
+      "text": "Great post!",
+      "likesCount": 5,
+      "repliesCount": 2,
+      "author": {
+        "id": "user_id",
+        "username": "johndoe",
+        "firstName": "John",
+        "lastName": "Doe",
+        "avatar": "https://cloudinary.com/avatar.jpg"
+      },
+      "replies": [
+        {
+          "id": "reply_id_1",
+          "text": "Thanks!",
+          "author": { ... }
+        }
+      ]
+    }
+  ],
+  "commentsCount": 10,
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 10,
+    "pages": 1
+  }
+}
+```
+
+---
+
+### 3. Delete Comment
+**DELETE** `/posts/:postId/comments/:commentId`
+**Authentication**: Required
+
+**Description**: Delete your own comment
+
+**URL Parameters**:
+- `postId`: Post ID
+- `commentId`: Comment ID to delete
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Comment deleted successfully",
+  "commentsCount": 5
+}
+```
+
+---
+
+## 📝 Posts Endpoints (Continued)
+
+### 10. Get User Posts
 **GET** `/posts/user/:userId`
 
 **Description**: Get posts by specific user
@@ -965,13 +1418,160 @@ The API supports CORS for these origins:
 
 ---
 
+## 👥 Users & Follow Endpoints
+
+### 1. Get Public User Profile
+**GET** `/users/:userId/profile`
+**Authentication**: Optional
+
+**Description**: Get public profile of any user. Include auth header to get follow status.
+
+**URL Parameters**:
+- `userId`: User ID
+
+**Response**:
+```json
+{
+  "success": true,
+  "user": {
+    "id": "user_id",
+    "username": "johndoe",
+    "firstName": "John",
+    "lastName": "Doe",
+    "avatar": "https://cloudinary.com/avatar.jpg",
+    "bio": "Creative AI enthusiast",
+    "followersCount": 150,
+    "followingCount": 75,
+    "totalCreations": 25
+  },
+  "isFollowing": true
+}
+```
+
+---
+
+### 2. Follow User
+**POST** `/users/:userId/follow`
+**Authentication**: Required
+
+**Description**: Follow a user
+
+**URL Parameters**:
+- `userId`: User ID to follow
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "User followed successfully",
+  "isFollowing": true,
+  "followersCount": 151
+}
+```
+
+---
+
+### 3. Unfollow User
+**DELETE** `/users/:userId/follow`
+**Authentication**: Required
+
+**Description**: Unfollow a user
+
+**URL Parameters**:
+- `userId`: User ID to unfollow
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "User unfollowed successfully",
+  "isFollowing": false,
+  "followersCount": 150
+}
+```
+
+---
+
+### 4. Check Follow Status
+**GET** `/users/:userId/follow-status`
+**Authentication**: Optional
+
+**Description**: Check if current user is following another user
+
+**URL Parameters**:
+- `userId`: User ID to check
+
+**Response**:
+```json
+{
+  "success": true,
+  "isFollowing": true
+}
+```
+
+---
+
 ## 📱 Post Categories
 
-- `text-post` - Text only posts
-- `image-post` - Image only posts
-- `image-text-post` - Image with caption
-- `video-post` - Video posts
-- `mixed-media` - Multiple media types
+The `category` field is used to classify posts by their content type. This field is required when creating posts and is used for filtering in feed endpoints.
+
+### Valid Category Values
+
+| Category Value | Description | Media Required | Use Case |
+|----------------|-------------|----------------|----------|
+| `text-post` | Text-only posts | No media | Status updates, announcements, text content |
+| `image-post` | Single or multiple images | At least 1 image | Photo galleries, artwork |
+| `image-text-post` | Images with caption/text | At least 1 image | Photos with descriptions |
+| `video-post` | Video content (Bloops) | Video file | Short-form videos, reels-style content |
+| `ai-art` | AI-generated artwork | Generated by AI endpoint | AI-created images from prompts |
+
+### Category Usage in Endpoints
+
+**Creating Posts:**
+```json
+POST /posts
+{
+  "category": "image-post",
+  "caption": "My photo",
+  "imageUrls": ["https://example.com/photo.jpg"]
+}
+```
+
+**Filtering Feed:**
+```
+GET /posts/feed?category=image-post&page=1&limit=10
+GET /posts/feed?category=video-post
+GET /posts/user/:userId?category=ai-art
+```
+
+**Bloops (Video Posts):**
+The `/posts/bloops` endpoint automatically filters for `category: "video-post"`:
+```
+GET /posts/bloops?page=1&limit=5
+```
+
+### Category Validation Rules
+
+- **Required**: Category must be provided when creating a post
+- **Allowed Values**: Only the 5 values listed above are accepted
+- **Media Validation**: 
+  - `image-post` and `image-text-post` require at least one image URL
+  - `video-post` requires a video file
+  - `text-post` does not require media
+
+### Response Example
+
+Posts in API responses include the category field:
+```json
+{
+  "id": "post_123",
+  "category": "video-post",
+  "caption": "Check out this video!",
+  "mediaUrl": "https://cloudinary.com/video.mp4",
+  "mediaType": "video/mp4",
+  ...
+}
+```
 
 ---
 

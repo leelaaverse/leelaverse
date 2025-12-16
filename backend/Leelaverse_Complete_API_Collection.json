@@ -614,12 +614,136 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Get Available AI Models",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/posts/models",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "posts",
+                "models"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "image",
+                  "disabled": true
+                },
+                {
+                  "key": "featured",
+                  "value": "true",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get available AI models for image and video generation. Filter by type (image/video) or get featured models."
+          },
+          "response": []
+        },
+        {
+          "name": "Generate Video",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"A beautiful sunset timelapse over mountains, cinematic quality\",\n  \"selectedModel\": \"kling-v1\",\n  \"aspectRatio\": \"16:9\",\n  \"duration\": \"5\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/posts/generate-video",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "posts",
+                "generate-video"
+              ]
+            },
+            "description": "Generate AI video using FAL AI. Supported models include Kling, Minimax, Luma etc."
+          },
+          "response": []
         }
       ]
     },
     {
       "name": "\ud83d\udcdd Posts",
       "item": [
+        {
+          "name": "Get Bloops (Video Posts)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/posts/bloops?page=1&limit=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "posts",
+                "bloops"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "Get paginated short-form video posts (Bloops). Similar to TikTok/Reels content."
+          },
+          "response": []
+        },
+        {
+          "name": "Upload and Create Post",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"image\": \"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD...\",\n  \"caption\": \"My amazing photo!\",\n  \"title\": \"Photo Title\",\n  \"tags\": [\"photography\", \"nature\"],\n  \"locationName\": \"New York\",\n  \"visibility\": \"public\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/posts/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "posts",
+                "upload"
+              ]
+            },
+            "description": "DIRECT FILE UPLOAD: Upload image/video as base64 data and create post in one request. Use this for uploading files from device. Different from POST /posts which uses external image URLs."
+          },
+          "response": []
+        },
         {
           "name": "Create Post from AI Generation",
           "event": [
