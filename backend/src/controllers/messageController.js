@@ -1,6 +1,5 @@
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../config/prisma');
 const { checkMutualFollow } = require('../utils/checkMutualFollow');
-const prisma = new PrismaClient();
 
 /**
  * Send a message to another user
