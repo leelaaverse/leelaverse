@@ -83,9 +83,17 @@ const MainContent = ({ activeTab, onShowAuthModal, onPostClick, onUserClick }) =
             if (ratio === '1:1' || ratio === 'square') return 'square';
         }
 
+        // Check if it's a video to provide better defaults
+        const isVideo = post.mediaType?.startsWith('video/') ||
+            post.type === 'video' ||
+            post.category === 'video-post' ||
+            post.mediaUrl?.includes('.mp4') ||
+            post.mediaUrl?.includes('.webm') ||
+            post.mediaUrl?.includes('.mov');
+
         // Fallback: calculate from width/height if available
-        const width = post.width || post.metadata?.width || 1;
-        const height = post.height || post.metadata?.height || 1;
+        const width = post.width || post.metadata?.width || (isVideo ? 9 : 1);
+        const height = post.height || post.metadata?.height || (isVideo ? 16 : 1);
         const ratio = width / height;
 
         // Categorize aspect ratios

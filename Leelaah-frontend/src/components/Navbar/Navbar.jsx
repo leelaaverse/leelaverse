@@ -1,7 +1,42 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import socketService from '../../services/socket';
 import './Navbar.css';
 
-const Navbar = ({ activeTab, setActiveTab, isLoggedIn = false, onLogin, onSignup, showBackButton = false, onBack }) => {
+const Navbar = ({ activeTab, setActiveTab, isLoggedIn = false, onLogin, onSignup, showBackButton = false, onBack, onChatClick }) => {
+    const [unreadMessages, setUnreadMessages] = useState(0);
+    const [unreadNotifications, setUnreadNotifications] = useState(0);
+
+    // Subscribe to socket notifications
+    useEffect(() => {
+        if (!isLoggedIn) return;
+
+        const handleNewMessage = () => {
+            setUnreadMessages(prev => prev + 1);
+        };
+
+        const handleNewNotification = () => {
+            setUnreadNotifications(prev => prev + 1);
+        };
+
+        socketService.onNewMessageNotification(handleNewMessage);
+        socketService.onNotification(handleNewNotification);
+
+        return () => {
+            socketService.off('new:message:notification', handleNewMessage);
+            socketService.off('new:notification', handleNewNotification);
+        };
+    }, [isLoggedIn]);
+
+    const handleChatClick = () => {
+        setUnreadMessages(0);
+        onChatClick();
+    };
+
+    const handleNotificationClick = () => {
+        setUnreadNotifications(0);
+        // Future: Open notification dropdown/page
+    };
+
     return (
         <nav className="navbar navbar-expand-lg sticky-top py-2 bg-mainColor Header">
             <div className="container-fluid flex-wrap px-4">
@@ -98,11 +133,21 @@ const Navbar = ({ activeTab, setActiveTab, isLoggedIn = false, onLogin, onSignup
                 {/* Right Icons - Only show when logged in */}
                 {isLoggedIn && (
                     <div className="d-flex align-items-center justify-content-end bg-dark-2 px-md-5 py-md-3 px-lg-5 py-lg-3 px-sm-5 py-sm-2 px-3 py-2 rounded-pill navigationRight ms-2 gap-lg-4 gap-md-4 gap-sm-3 gap-3 order-2 order-lg-3">
-                        <button title="Messages">
+                        <button title="Messages" onClick={handleChatClick} className="position-relative">
                             <i className="fa-regular fa-comment-dots"></i>
+                            {unreadMessages > 0 && (
+                                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: '0.6rem', padding: '0.25em 0.4em' }}>
+                                    {unreadMessages > 9 ? '9+' : unreadMessages}
+                                </span>
+                            )}
                         </button>
-                        <button title="Notifications">
+                        <button title="Notifications" onClick={handleNotificationClick} className="position-relative">
                             <i className="fa-regular fa-bell"></i>
+                            {unreadNotifications > 0 && (
+                                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: '0.6rem', padding: '0.25em 0.4em' }}>
+                                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                                </span>
+                            )}
                         </button>
                         <button
                             type="button"

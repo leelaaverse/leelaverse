@@ -1,6 +1,5 @@
 .user-profile {
 	min-height: 100vh;
-	background-color: #000;
 }
 
 .profile-loading,
@@ -219,6 +218,27 @@
 }
 
 .btn-edit-profile:hover {
+	background: rgba(255, 255, 255, 0.12);
+	border-color: rgba(155, 108, 248, 0.5);
+}
+
+/* Message Button */
+.btn-message {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.625rem 1.25rem;
+	background: rgba(255, 255, 255, 0.08);
+	border: 1px solid rgba(255, 255, 255, 0.15);
+	border-radius: 8px;
+	color: #fff;
+	font-size: 14px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.btn-message:hover {
 	background: rgba(255, 255, 255, 0.12);
 	border-color: rgba(155, 108, 248, 0.5);
 }

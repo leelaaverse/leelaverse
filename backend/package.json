@@ -32,9 +32,12 @@
     "google-auth-library": "^10.4.0",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.2",
     "node-fetch": "^3.3.2",
     "passport": "^0.7.0",
-    "passport-google-oauth20": "^2.0.0"
+    "passport-google-oauth20": "^2.0.0",
+    "socket.io": "^4.8.3",
+    "streamifier": "^0.1.1"
   },
   "devDependencies": {
     "prisma": "^6.2.0"

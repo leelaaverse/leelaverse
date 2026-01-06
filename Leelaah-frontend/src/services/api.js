@@ -136,6 +136,18 @@ const apiService = {
 		followUser: (userId) => apiClient.post(`/api/users/${userId}/follow`),
 		unfollowUser: (userId) => apiClient.delete(`/api/users/${userId}/follow`),
 		checkFollowStatus: (userId) => apiClient.get(`/api/users/${userId}/follow-status`),
+		getFollowing: () => apiClient.get('/api/users/following'),
+	},
+
+	// Messages API
+	messages: {
+		sendMessage: (data) => apiClient.post('/api/messages/send', data),
+		getConversations: () => apiClient.get('/api/messages/conversations'),
+		getConversation: (conversationId) => apiClient.get(`/api/messages/conversation/${conversationId}`),
+		getRequests: () => apiClient.get('/api/messages/requests'),
+		acceptRequest: (conversationId) => apiClient.post(`/api/messages/requests/${conversationId}/accept`),
+		rejectRequest: (conversationId) => apiClient.delete(`/api/messages/requests/${conversationId}/reject`),
+		markAsRead: (conversationId) => apiClient.patch('/api/messages/read', { conversationId }),
 	},
 
 	// Health check

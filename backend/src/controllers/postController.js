@@ -3,6 +3,7 @@ const { fal } = require("@fal-ai/client");
 const cloudinary = require('cloudinary').v2;
 const axios = require('axios');
 const { getAllModels, getModelsByType, getFeaturedModels, getModelById, getModelConfig } = require('../config/aiModels');
+const { createNotification } = require('../utils/notificationService');
 
 // Configure Cloudinary
 cloudinary.config({
@@ -1662,6 +1663,16 @@ exports.likePost = async (req, res) => {
 
 		console.log(`✅ User ${userId} liked post ${postId}. New count: ${updatedPost.likesCount}`);
 
+		// Send notification
+		await createNotification(req, {
+			recipientId: post.authorId,
+			senderId: userId,
+			type: 'like',
+			content: 'liked your post',
+			postId: postId,
+			link: `/post/${postId}`
+		});
+
 		res.json({
 			success: true,
 			message: 'Post liked successfully',
@@ -1909,6 +1920,17 @@ exports.addComment = async (req, res) => {
 		]);
 
 		console.log(`✅ User ${userId} commented on post ${postId}. New count: ${updatedPost.commentsCount}`);
+
+		// Send notification
+		await createNotification(req, {
+			recipientId: post.authorId,
+			senderId: userId,
+			type: 'comment',
+			content: 'commented on your post',
+			postId: postId,
+			commentId: comment.id,
+			link: `/post/${postId}`
+		});
 
 		res.status(201).json({
 			success: true,

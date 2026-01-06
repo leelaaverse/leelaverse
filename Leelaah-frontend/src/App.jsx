@@ -1,10 +1,16 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Provider, useDispatch, useSelector } from 'react-redux';
+import socketService from './services/socket';
 import HomeFeed from './components/HomeFeed/HomeFeed';
 import ViewProfile from './components/ViewProfile/ViewProfile';
 import UserProfile from './components/UserProfile/UserProfile';
 import SinglePost from './components/SinglePost/SinglePost';
+import ChatPage from './components/ChatPage/ChatPage';
 import Bloops from './components/Bloops/Bloops';
+
+// ... (existing imports)
+
+// Inside App component return:
 import AuthModal from './components/AuthModal/AuthModal';
 import { setAuth } from './store/slices/authSlice';
 import './App.css';
@@ -17,6 +23,21 @@ function App() {
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login');
+
+  // Initialize socket connection when user is logged in
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken');
+    if (user && token) {
+      console.log('🔌 Initializing socket connection...');
+      socketService.connect(token);
+    }
+
+    return () => {
+      if (socketService.connected) {
+        socketService.disconnect();
+      }
+    };
+  }, [user]);
 
   const handleNavigate = (view, data = null) => {
     if (view === 'post' && data) {
@@ -115,6 +136,9 @@ function App() {
             setCurrentView('post');
           }}
         />
+      )}
+      {currentView === 'chat' && (
+        <ChatPage onBack={() => setCurrentView('home')} />
       )}
 
       {/* Global Auth Modal for SinglePost */}

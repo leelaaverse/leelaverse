@@ -7,7 +7,7 @@ import Sidebar from '../Sidebar/Sidebar';
 import SinglePost from '../SinglePost/SinglePost';
 import './UserProfile.css';
 
-const UserProfile = ({ userId, onNavigate, onBack }) => {
+const UserProfile = ({ userId, onNavigate, onBack, onChatClick }) => {
 	const { user: currentUser } = useSelector((state) => state.auth);
 	const [profile, setProfile] = useState(null);
 	const [posts, setPosts] = useState([]);
@@ -130,7 +130,12 @@ const UserProfile = ({ userId, onNavigate, onBack }) => {
 	if (!profile) {
 		return (
 			<div className="user-profile">
-				<Navbar isLoggedIn={!!currentUser} onBack={onBack} showBackButton={true} />
+				<Navbar
+					isLoggedIn={!!currentUser}
+					onBack={onBack}
+					showBackButton={true}
+					onChatClick={onChatClick}
+				/>
 				<div className="profile-error">
 					<i className="fa-solid fa-user-slash"></i>
 					<h3>User not found</h3>
@@ -315,11 +320,11 @@ const UserProfile = ({ userId, onNavigate, onBack }) => {
 
 												// Detect if post is a video
 												const isVideo = post.mediaType?.startsWith('video/') ||
-												                post.type === 'video' ||
-												                post.category === 'video-post' ||
-												                post.mediaUrl?.includes('.mp4') ||
-												                post.mediaUrl?.includes('.webm') ||
-												                post.mediaUrl?.includes('.mov');
+													post.type === 'video' ||
+													post.category === 'video-post' ||
+													post.mediaUrl?.includes('.mp4') ||
+													post.mediaUrl?.includes('.webm') ||
+													post.mediaUrl?.includes('.mov');
 
 												return (
 													<div

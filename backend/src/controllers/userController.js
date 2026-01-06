@@ -1,4 +1,5 @@
 const prisma = require('../config/prisma');
+const { createNotification } = require('../utils/notificationService');
 
 /**
  * Get Public User Profile
@@ -320,6 +321,55 @@ exports.checkFollowStatus = async (req, res) => {
 		res.status(500).json({
 			success: false,
 			message: 'Failed to check follow status',
+			error: error.message
+		});
+	}
+};
+
+/**
+ * Get Following List
+ * GET /api/users/following
+ */
+exports.getFollowing = async (req, res) => {
+	try {
+		const currentUserId = req.user?.id;
+
+		if (!currentUserId) {
+			return res.status(401).json({
+				success: false,
+				message: 'Authentication required'
+			});
+		}
+
+		const following = await prisma.follow.findMany({
+			where: {
+				followerId: currentUserId
+			},
+			select: {
+				following: {
+					select: {
+						id: true,
+						username: true,
+						firstName: true,
+						lastName: true,
+						avatar: true
+					}
+				}
+			}
+		});
+
+		const followingUsers = following.map(f => f.following);
+
+		res.json({
+			success: true,
+			following: followingUsers
+		});
+
+	} catch (error) {
+		console.error('❌ Get following error:', error);
+		res.status(500).json({
+			success: false,
+			message: 'Failed to get following list',
 			error: error.message
 		});
 	}

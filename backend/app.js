@@ -3,6 +3,9 @@ const cors = require('cors');
 const helmet = require('helmet');
 const session = require('express-session');
 const path = require('path');
+const http = require('http');
+const { Server } = require('socket.io');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 // Import database connection (Prisma)
@@ -21,9 +24,32 @@ const oauthRoutes = require('./src/routes/oauth');
 const postRoutes = require('./src/routes/posts');
 const profileRoutes = require('./src/routes/profile');
 const userRoutes = require('./src/routes/users');
+const messageRoutes = require('./src/routes/messageRoutes');
 
 const app = express();
+const server = http.createServer(app);
 const port = process.env.PORT || 3000;
+
+// Initialize Socket.IO with CORS
+const io = new Server(server, {
+    cors: {
+        origin: function (origin, callback) {
+            const allowedOrigins = [
+                'https://www.leelaah.com',
+                'http://localhost:5173',
+                'http://localhost:5174',
+                'http://localhost:3000',
+                'http://127.0.0.1:5173'
+            ];
+            if (!origin || allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+                callback(null, true);
+            } else {
+                callback(new Error('Not allowed by CORS'));
+            }
+        },
+        credentials: true
+    }
+});
 
 // In-memory log storage for debugging (limited to last 100 entries)
 const requestLogs = [];
@@ -179,6 +205,7 @@ app.use('/api/oauth', oauthRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/messages', messageRoutes);
 
 // Handle 404 errors
 app.use('*', (req, res) => {
@@ -234,9 +261,104 @@ app.use((error, req, res, next) => {
     });
 });
 
+// Socket.IO Authentication Middleware
+io.use((socket, next) => {
+    const token = socket.handshake.auth.token;
+
+    if (!token) {
+        return next(new Error('Authentication error'));
+    }
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        socket.userId = decoded.id;
+        next();
+    } catch (error) {
+        next(new Error('Authentication error'));
+    }
+});
+
+// Socket.IO Connection Handler
+io.on('connection', (socket) => {
+    console.log(`✅ User connected: ${socket.userId}`);
+
+    // Join user to their own room
+    socket.join(`user:${socket.userId}`);
+
+    // Join conversation room
+    socket.on('join:conversation', (conversationId) => {
+        socket.join(`conversation:${conversationId}`);
+        console.log(`User ${socket.userId} joined conversation ${conversationId}`);
+    });
+
+    // Leave conversation room
+    socket.on('leave:conversation', (conversationId) => {
+        socket.leave(`conversation:${conversationId}`);
+        console.log(`User ${socket.userId} left conversation ${conversationId}`);
+    });
+
+    // Send message (real-time)
+    socket.on('send:message', async (data) => {
+        try {
+            const { conversationId, content, recipientId } = data;
+
+            // Emit to conversation room
+            io.to(`conversation:${conversationId}`).emit('receive:message', {
+                conversationId,
+                senderId: socket.userId,
+                content,
+                createdAt: new Date().toISOString()
+            });
+
+            // Also emit to recipient's user room (for notification)
+            io.to(`user:${recipientId}`).emit('new:message:notification', {
+                conversationId,
+                senderId: socket.userId,
+                content
+            });
+        } catch (error) {
+            console.error('Socket send message error:', error);
+            socket.emit('error', { message: 'Failed to send message' });
+        }
+    });
+
+    // Typing indicators
+    socket.on('typing:start', ({ conversationId }) => {
+        socket.to(`conversation:${conversationId}`).emit('user:typing', {
+            userId: socket.userId,
+            conversationId
+        });
+    });
+
+    socket.on('typing:stop', ({ conversationId }) => {
+        socket.to(`conversation:${conversationId}`).emit('user:stopped:typing', {
+            userId: socket.userId,
+            conversationId
+        });
+    });
+
+    // Mark as read
+    socket.on('message:read', ({ conversationId, messageIds }) => {
+        socket.to(`conversation:${conversationId}`).emit('messages:read', {
+            conversationId,
+            messageIds,
+            readBy: socket.userId
+        });
+    });
+
+    // Disconnect
+    socket.on('disconnect', () => {
+        console.log(`❌ User disconnected: ${socket.userId}`);
+    });
+});
+
+// Make io accessible to routes
+app.set('io', io);
+
 // Graceful shutdown
 process.on('SIGTERM', async () => {
     console.log('SIGTERM received, shutting down gracefully');
+    io.close();
     await prisma.$disconnect();
     server.close(() => {
         console.log('Process terminated');
@@ -246,6 +368,7 @@ process.on('SIGTERM', async () => {
 
 process.on('SIGINT', async () => {
     console.log('SIGINT received, shutting down gracefully');
+    io.close();
     await prisma.$disconnect();
     server.close(() => {
         console.log('Process terminated');
@@ -253,8 +376,9 @@ process.on('SIGINT', async () => {
     });
 });
 
-const server = app.listen(port, () => {
+server.listen(port, () => {
     console.log(`🚀 leelaah Backend API is running on http://localhost:${port}`);
+    console.log(`💬 Socket.IO server is running for real-time chat`);
     console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`🌐 CORS enabled for: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
 });

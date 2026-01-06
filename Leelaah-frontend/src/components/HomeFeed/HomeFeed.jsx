@@ -117,6 +117,7 @@ const HomeFeed = ({ onNavigate, onPostClick, onUserClick }) => {
                 isLoggedIn={isLoggedIn}
                 onLogin={handleLogin}
                 onSignup={handleSignup}
+                onChatClick={() => onNavigate('chat')}
             />
             <MainContent activeTab={activeTab} onShowAuthModal={handleOpenAuth} onPostClick={onPostClick} onUserClick={onUserClick} />
             <FloatingBar
@@ -124,6 +125,14 @@ const HomeFeed = ({ onNavigate, onPostClick, onUserClick }) => {
                 onNavigate={onNavigate}
             />
             <Sidebar onNavigate={onNavigate} />
+
+            {/* Auth Modal */}
+            <AuthModal
+                isOpen={isAuthModalOpen}
+                onClose={handleCloseModal}
+                mode={authMode}
+                onSuccess={handleAuthSuccess}
+            />
 
             {/* Auth Modal */}
             <AuthModal

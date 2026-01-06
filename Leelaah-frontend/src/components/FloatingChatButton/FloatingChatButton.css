@@ -1,0 +1,91 @@
+/* Floating Chat Button */
+.floating-chat-button {
+	position: fixed;
+	bottom: 20px;
+	left: 20px;
+	background: #1a1a1a;
+	border: 1px solid rgba(255, 255, 255, 0.15);
+	border-radius: 24px;
+	padding: 12px 20px;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	z-index: 1000;
+	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.floating-chat-button:hover {
+	background: #252525;
+	transform: translateY(-2px);
+	box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6);
+}
+
+.chat-button-icon {
+	font-size: 20px;
+	color: #fff;
+}
+
+.chat-button-text {
+	color: #fff;
+	font-size: 14px;
+	font-weight: 600;
+	font-family: 'Poppins', sans-serif;
+}
+
+/* Avatar Stack */
+.chat-button-avatars {
+	display: flex;
+	margin-left: 4px;
+}
+
+.chat-button-avatar {
+	width: 28px;
+	height: 28px;
+	border-radius: 50%;
+	border: 2px solid #1a1a1a;
+	object-fit: cover;
+	margin-left: -10px;
+	transition: all 0.2s;
+}
+
+.chat-button-avatar:first-child {
+	margin-left: 0;
+}
+
+.floating-chat-button:hover .chat-button-avatar {
+	margin-left: -8px;
+}
+
+.floating-chat-button:hover .chat-button-avatar:first-child {
+	margin-left: 0;
+}
+
+/* Unread Badge */
+.chat-button-badge {
+	background: #ff3b30;
+	color: #fff;
+	padding: 3px 7px;
+	border-radius: 12px;
+	font-size: 11px;
+	font-weight: 700;
+	margin-left: 4px;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+	.chat-button-text {
+		display: none;
+	}
+
+	.floating-chat-button {
+		padding: 12px;
+		bottom: 80px;
+		/* Above mobile nav if exists */
+	}
+
+	.chat-button-avatars {
+		margin-left: 0;
+	}
+}

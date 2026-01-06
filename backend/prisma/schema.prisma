@@ -116,6 +116,11 @@ model User {
   // Refresh Tokens
   refreshTokens RefreshToken[]
 
+  // Messaging/Chat
+  conversationsAsParticipant1 Conversation[] @relation("ConversationParticipant1")
+  conversationsAsParticipant2 Conversation[] @relation("ConversationParticipant2")
+  messagesSent                Message[]      @relation("MessageSender")
+
   @@index([email])
   @@index([username])
   @@index([googleId])
@@ -591,4 +596,83 @@ model Group {
   @@index([name])
   @@index([category])
   @@index([visibility])
+}
+
+// ============================================
+// CONVERSATION MODEL
+// ============================================
+model Conversation {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Participants (array of user IDs for efficient querying)
+  participants String[]
+
+  // Participant Relations
+  participant1Id String
+  participant1   User   @relation("ConversationParticipant1", fields: [participant1Id], references: [id], onDelete: Cascade)
+
+  participant2Id String
+  participant2   User   @relation("ConversationParticipant2", fields: [participant2Id], references: [id], onDelete: Cascade)
+
+  // Status
+  isMutualFollowers Boolean   @default(false) // If both users follow each other
+  isAccepted        Boolean   @default(false) // If message request was accepted
+  acceptedAt        DateTime?
+
+  // Last Activity
+  lastMessageAt      DateTime @default(now())
+  lastMessagePreview String?
+  lastMessageSender  String? // User ID who sent last message
+
+  // Relations
+  messages Message[]
+
+  @@unique([participant1Id, participant2Id])
+  @@index([participant1Id])
+  @@index([participant2Id])
+  @@index([participants])
+  @@index([lastMessageAt])
+  @@index([isAccepted])
+  @@index([isMutualFollowers])
+}
+
+// ============================================
+// MESSAGE MODEL
+// ============================================
+model Message {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Conversation
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  // Sender
+  senderId String
+  sender   User   @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  // Content
+  content String
+
+  // Media (optional)
+  mediaUrl  String?
+  mediaType String? // 'image', 'video', 'audio', 'file'
+
+  // Status
+  isRead Boolean   @default(false)
+  readAt DateTime?
+
+  // Deleted/Edited
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  isEdited  Boolean   @default(false)
+  editedAt  DateTime?
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([createdAt])
+  @@index([isRead])
 }

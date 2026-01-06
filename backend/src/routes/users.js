@@ -31,4 +31,11 @@ router.delete('/:userId/follow', auth, userController.unfollowUser);
  */
 router.get('/:userId/follow-status', optionalAuth, userController.checkFollowStatus);
 
+/**
+ * @route   GET /api/users/following
+ * @desc    Get list of users current user is following
+ * @access  Private
+ */
+router.get('/following', auth, userController.getFollowing);
+
 module.exports = router;

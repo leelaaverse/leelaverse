@@ -16,26 +16,31 @@ const PostCard = memo(({ post, aspectRatio = 'square', size = 'medium', onShowAu
   const videoRef = useRef(null);
   const [isVideoInView, setIsVideoInView] = useState(false);
 
-  // Calculate natural height based on aspect ratio for masonry layout
-  const getMinHeight = () => {
+  // Get aspect ratio class for proper image sizing in masonry layout
+  const getAspectClass = () => {
     switch (aspectRatio) {
       case 'portrait':
-        return 'min-h-[400px]'; // 9:16 ratio - taller
+        return 'aspect-[9/16]'; // 9:16 ratio - full height
       case 'landscape':
-        return 'min-h-[200px]'; // 16:9 ratio - shorter
+        return 'aspect-[16/9]'; // 16:9 ratio - standard
       case 'square':
       default:
-        return 'min-h-[300px]'; // 1:1 ratio - medium
+        return 'aspect-square'; // 1:1 ratio
     }
+  };
+
+  // Get object position - top for portraits (to show faces), center for others
+  const getObjectPosition = () => {
+    return aspectRatio === 'portrait' ? 'object-top' : 'object-center';
   };
 
   // Determine if post is a video
   const isVideo = post.mediaType?.startsWith('video/') ||
-                  post.type === 'video' ||
-                  post.category === 'video-post' ||
-                  post.mediaUrl?.includes('.mp4') ||
-                  post.mediaUrl?.includes('.webm') ||
-                  post.mediaUrl?.includes('.mov');
+    post.type === 'video' ||
+    post.category === 'video-post' ||
+    post.mediaUrl?.includes('.mp4') ||
+    post.mediaUrl?.includes('.webm') ||
+    post.mediaUrl?.includes('.mov');
 
   // Determine media URL - handle multiple field names from API
   const mediaUrl =
@@ -179,10 +184,10 @@ const PostCard = memo(({ post, aspectRatio = 'square', size = 'medium', onShowAu
       onDoubleClick={handleDoubleClick}
       onClick={handleCardClick}
     >
-      {/* Media Container with Natural Height */}
-      <div className={`relative w-full ${getMinHeight()} bg-gray-900`}>
+      {/* Media Container - uses aspect ratio for consistent sizing */}
+      <div className={`relative w-full ${getAspectClass()} overflow-hidden`}>
         {!imageLoaded && (
-          <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 animate-pulse">
+          <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 animate-pulse rounded-lg">
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-700/50 to-transparent animate-shimmer"></div>
           </div>
         )}
@@ -192,7 +197,7 @@ const PostCard = memo(({ post, aspectRatio = 'square', size = 'medium', onShowAu
             <video
               ref={videoRef}
               src={mediaUrl}
-              className={`w-full h-auto object-contain transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+              className={`absolute inset-0 w-full h-full object-cover ${getObjectPosition()} transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
               loop
               muted
               playsInline
@@ -216,7 +221,7 @@ const PostCard = memo(({ post, aspectRatio = 'square', size = 'medium', onShowAu
           <img
             src={mediaUrl}
             alt={post.title || post.prompt || 'Post image'}
-            className={`w-full h-auto object-contain transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+            className={`absolute inset-0 w-full h-full object-cover ${getObjectPosition()} transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
             loading="lazy"
             onLoad={(e) => {
               setImageLoaded(true);
@@ -282,11 +287,10 @@ const PostCard = memo(({ post, aspectRatio = 'square', size = 'medium', onShowAu
             {/* Actions */}
             <div className="flex items-center gap-3">
               <button
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full backdrop-blur-md transition-all duration-200 ${
-                  isLiked
-                    ? 'bg-red-500/90 text-white'
-                    : 'bg-white/20 text-white hover:bg-white/30'
-                } ${isLiking ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full backdrop-blur-md transition-all duration-200 ${isLiked
+                  ? 'bg-red-500/90 text-white'
+                  : 'bg-white/20 text-white hover:bg-white/30'
+                  } ${isLiking ? 'opacity-50 cursor-not-allowed' : ''}`}
                 onClick={handleLike}
                 disabled={isLiking}
               >
