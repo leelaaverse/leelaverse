@@ -676,3 +676,51 @@ model Message {
   @@index([createdAt])
   @@index([isRead])
 }
+
+// ============================================
+// AI MODEL REGISTRY
+// ============================================
+model AIModel {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Model Info
+  name        String  @unique // e.g. "FLUX Schnell", "Kling Video v2"
+  provider    String // e.g. "fal-ai", "openai"
+  category    String // "image_generation" or "video_generation"
+  modelId     String  @unique // e.g. "fal-ai/flux/schnell"
+  description String?
+  coinCost    Int // coins consumed per request
+  isActive    Boolean @default(true)
+
+  // Relations
+  usageLogs ModelUsageLog[]
+
+  @@index([category])
+  @@index([isActive])
+}
+
+// ============================================
+// MODEL USAGE LOG
+// ============================================
+model ModelUsageLog {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  // User & Model
+  userId    String
+  aiModelId String
+  aiModel   AIModel @relation(fields: [aiModelId], references: [id])
+
+  // Coin Tracking
+  coinsCharged Int
+  status       String @default("completed") // "completed", "failed", "refunded"
+
+  // Optional metadata (prompt, params, etc.)
+  metadata Json?
+
+  @@index([userId])
+  @@index([aiModelId])
+  @@index([createdAt])
+}

@@ -221,6 +221,23 @@ const Sidebar = ({ onNavigate }) => {
                         <i className="fa-solid fa-chevron-right"></i>
                     </button>
 
+                    <button className="sidebar-nav-item" onClick={() => {
+                        if (onNavigate) {
+                            onNavigate('coinStore');
+                            const offcanvasElement = document.getElementById('offcanvasRight');
+                            const bsOffcanvas = bootstrap.Offcanvas.getInstance(offcanvasElement);
+                            if (bsOffcanvas) {
+                                bsOffcanvas.hide();
+                            }
+                        }
+                    }}>
+                        <div className="nav-item-content">
+                            <i className="fa-solid fa-coins" style={{ fontSize: '18px', color: '#f5a623' }}></i>
+                            <span>Coin Store</span>
+                        </div>
+                        <i className="fa-solid fa-chevron-right"></i>
+                    </button>
+
                     <button className="sidebar-nav-item">
                         <div className="nav-item-content">
                             <img src="/assets/mdi_account-cog-outline.png" alt="Account" width="18" height="18" />

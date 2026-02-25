@@ -58,6 +58,18 @@ class AuthController {
                 lastName: lastName || ''
             });
 
+            // Record the 100 free signup tokens as a transaction
+            await prisma.coinTransaction.create({
+                data: {
+                    userId: user.id,
+                    type: 'signup_bonus',
+                    amount: 100,
+                    balanceAfter: 100,
+                    description: 'Welcome bonus: 100 free tokens on signup',
+                    status: 'completed',
+                },
+            });
+
             // Generate tokens
             const accessToken = UserService.generateAccessToken(user.id);
             const refreshToken = UserService.generateRefreshToken(user.id);
@@ -84,8 +96,8 @@ class AuthController {
             // Handle Prisma unique constraint errors
             if (error.code === 'P2002') {
                 const field = error.meta?.target?.[0] || 'field';
-                const message = field === 'email' 
-                    ? 'Email is already registered' 
+                const message = field === 'email'
+                    ? 'Email is already registered'
                     : `${field} is already taken`;
 
                 return res.status(400).json({

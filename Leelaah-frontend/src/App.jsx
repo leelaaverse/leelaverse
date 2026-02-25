@@ -8,6 +8,7 @@ import SinglePost from './components/SinglePost/SinglePost';
 import ChatPage from './components/ChatPage/ChatPage';
 import Bloops from './components/Bloops/Bloops';
 import Community from './components/Community/Community';
+import CoinStore from './components/CoinStore/CoinStore';
 
 // ... (existing imports)
 
@@ -88,6 +89,10 @@ function App() {
     setCurrentView('home');
   };
 
+  const handleBackFromCoinStore = () => {
+    setCurrentView('home');
+  };
+
   const handleOpenAuth = useCallback((mode = 'signup') => {
     setAuthMode(mode);
     setIsAuthModalOpen(true);
@@ -150,6 +155,9 @@ function App() {
       )}
       {currentView === 'chat' && (
         <ChatPage onBack={() => setCurrentView('home')} />
+      )}
+      {currentView === 'coinStore' && (
+        <CoinStore onBack={handleBackFromCoinStore} />
       )}
 
       {/* Global Auth Modal for SinglePost */}

@@ -1,0 +1,984 @@
+/* ============================================
+   COIN STORE — Full-Width | Leelaah Design
+   Poppins | #000 BG | #9b6cf8 Accent
+   ============================================ */
+
+/* React-icons utilities */
+.cs-spin-icon {
+    animation: cs-spin 0.8s linear infinite;
+}
+
+.cs-field-icon {
+    color: #fbbf24;
+    font-size: 15px;
+    flex-shrink: 0;
+}
+
+.cs-check {
+    color: #4ade80;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+
+.cs-page {
+    min-height: 100vh;
+    width: 100%;
+    background: #000;
+    color: #fff;
+    font-family: 'Poppins', sans-serif;
+    padding-bottom: 100px;
+}
+
+.cs-page>.cs-section,
+.cs-page>.cs-balance-bar,
+.cs-page>.cs-nav,
+.cs-page>.cs-custom-wrap {
+    max-width: 960px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* ---------- LOADER ---------- */
+.cs-loader {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 70vh;
+    gap: 14px;
+}
+
+.cs-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(155, 108, 248, 0.15);
+    border-top-color: #9b6cf8;
+    border-radius: 50%;
+    animation: cs-spin 0.7s linear infinite;
+}
+
+@keyframes cs-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.cs-loader p {
+    color: #999;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* ---------- HEADER ---------- */
+.cs-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    background: #0a0a0a;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.cs-header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.cs-back {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #fff;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cs-back:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.cs-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0;
+}
+
+.cs-header-coins {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(155, 108, 248, 0.08);
+    border: 1px solid rgba(155, 108, 248, 0.18);
+    padding: 7px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #c084fc;
+}
+
+.cs-header-coins i {
+    color: #fbbf24;
+    font-size: 12px;
+}
+
+/* ---------- BALANCE BAR ---------- */
+.cs-balance-bar {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 18px 24px;
+    background: #0f0f0f;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.cs-bal-item {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    justify-content: center;
+}
+
+.cs-bal-divider {
+    width: 1px;
+    height: 36px;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.cs-bal-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    font-size: 14px;
+}
+
+.cs-bal-icon.wallet {
+    background: rgba(155, 108, 248, 0.1);
+    color: #9b6cf8;
+}
+
+.cs-bal-icon.earned {
+    background: rgba(74, 222, 128, 0.08);
+    color: #4ade80;
+}
+
+.cs-bal-icon.spent {
+    background: rgba(248, 113, 113, 0.08);
+    color: #f87171;
+}
+
+.cs-bal-num {
+    display: block;
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.cs-bal-num.earned-text {
+    color: #4ade80;
+}
+
+.cs-bal-num.spent-text {
+    color: #f87171;
+}
+
+.cs-bal-lbl {
+    display: block;
+    font-size: 10px;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+/* ---------- NAV TABS ---------- */
+.cs-nav {
+    display: flex;
+    padding: 16px 24px 0;
+    gap: 6px;
+}
+
+.cs-nav-btn {
+    flex: 1;
+    padding: 11px 0;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.02);
+    color: #555;
+    font-family: 'Poppins', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.cs-nav-btn:hover {
+    background: rgba(255, 255, 255, 0.04);
+    color: #888;
+}
+
+.cs-nav-btn.active {
+    background: rgba(155, 108, 248, 0.1);
+    border-color: rgba(155, 108, 248, 0.22);
+    color: #c084fc;
+}
+
+.cs-nav-btn i {
+    font-size: 12px;
+}
+
+/* ---------- SECTION ---------- */
+.cs-section {
+    padding: 24px;
+}
+
+/* ---------- COIN CARDS ---------- */
+.cs-coin-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 36px;
+}
+
+.cs-coin-card {
+    background: #141414;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 14px;
+    padding: 24px 18px 20px;
+    text-align: center;
+    position: relative;
+    transition: all 0.25s;
+}
+
+.cs-coin-card:hover {
+    border-color: rgba(155, 108, 248, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+}
+
+.cs-coin-card.featured {
+    border-color: rgba(155, 108, 248, 0.3);
+    background: linear-gradient(180deg, rgba(155, 108, 248, 0.06) 0%, #141414 50%);
+}
+
+.cs-badge {
+    position: absolute;
+    top: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #9b6cf8, #7c3aed);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 3px 14px;
+    border-radius: 0 0 8px 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.cs-coin-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    margin: 0 auto 14px;
+    display: grid;
+    place-items: center;
+    font-size: 20px;
+}
+
+.cs-coin-icon.starter {
+    background: rgba(251, 191, 36, 0.08);
+    color: #fbbf24;
+}
+
+.cs-coin-icon.popular {
+    background: rgba(249, 115, 22, 0.08);
+    color: #f97316;
+}
+
+.cs-coin-icon.pro {
+    background: rgba(59, 130, 246, 0.08);
+    color: #3b82f6;
+}
+
+.cs-coin-icon.ultra {
+    background: rgba(155, 108, 248, 0.08);
+    color: #c084fc;
+}
+
+.cs-coin-card h3 {
+    font-size: 14px;
+    font-weight: 700;
+    margin: 0 0 6px;
+}
+
+.cs-coin-amount {
+    font-size: 12px;
+    color: #fbbf24;
+    font-weight: 600;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+.cs-coin-amount i {
+    font-size: 11px;
+}
+
+.cs-coin-desc {
+    font-size: 11px;
+    color: #555;
+    margin: 0 0 16px;
+    line-height: 1.5;
+}
+
+.cs-coin-price {
+    margin-bottom: 2px;
+}
+
+.cs-rupee {
+    font-size: 13px;
+    color: #888;
+    font-weight: 600;
+    vertical-align: top;
+    line-height: 1.8;
+}
+
+.cs-coin-price span:last-child {
+    font-size: 28px;
+    font-weight: 800;
+}
+
+.cs-per {
+    display: block;
+    font-size: 10px;
+    color: #444;
+    margin-bottom: 16px;
+}
+
+.cs-buy {
+    width: 100%;
+    padding: 10px 0;
+    background: rgba(155, 108, 248, 0.12);
+    border: 1px solid rgba(155, 108, 248, 0.2);
+    border-radius: 8px;
+    color: #c084fc;
+    font-family: 'Poppins', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cs-buy:hover:not(:disabled) {
+    background: rgba(155, 108, 248, 0.22);
+}
+
+.cs-buy:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* ---------- CUSTOM SECTION ---------- */
+.cs-custom-wrap {
+    margin-top: 0;
+}
+
+.cs-sec-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin: 0 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cs-sec-title i {
+    color: #9b6cf8;
+    font-size: 14px;
+}
+
+.cs-custom-card {
+    background: #141414;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 14px;
+    padding: 24px;
+}
+
+.cs-custom-row {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.cs-custom-input-box {
+    flex: 0 0 130px;
+}
+
+.cs-custom-input-box label {
+    display: block;
+    font-size: 10px;
+    color: #555;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.cs-input-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 10px 14px;
+}
+
+.cs-input-field i {
+    color: #fbbf24;
+    font-size: 13px;
+}
+
+.cs-input-field input {
+    background: none;
+    border: none;
+    outline: none;
+    color: #fff;
+    font-family: 'Poppins', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    width: 100%;
+}
+
+.cs-input-field input::-webkit-inner-spin-button,
+.cs-input-field input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+}
+
+.cs-slider-box {
+    flex: 1;
+}
+
+.cs-range {
+    width: 100%;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 2px;
+    outline: none;
+}
+
+.cs-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #9b6cf8;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(155, 108, 248, 0.4);
+}
+
+.cs-range::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #9b6cf8;
+    cursor: pointer;
+    border: none;
+}
+
+.cs-range-ticks {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+    font-size: 9px;
+    color: #444;
+    font-weight: 500;
+}
+
+.cs-custom-total-box {
+    flex: 0 0 auto;
+    text-align: right;
+    background: rgba(155, 108, 248, 0.06);
+    border: 1px solid rgba(155, 108, 248, 0.12);
+    border-radius: 12px;
+    padding: 12px 20px;
+}
+
+.cs-ct-label {
+    display: block;
+    font-size: 10px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.cs-ct-price {
+    display: block;
+    font-size: 22px;
+    font-weight: 800;
+    color: #fff;
+    margin-top: 2px;
+}
+
+.cs-custom-buy {
+    width: 100%;
+    padding: 13px 0;
+    background: linear-gradient(135deg, #9b6cf8, #7c3aed);
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-family: 'Poppins', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.cs-custom-buy:hover:not(:disabled) {
+    box-shadow: 0 6px 24px rgba(155, 108, 248, 0.3);
+    transform: translateY(-1px);
+}
+
+.cs-custom-buy:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* =============================================
+   SUBSCRIPTION PLANS — Higgsfield-style
+   ============================================= */
+.cs-sub-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.cs-sub-title {
+    font-size: 22px;
+    font-weight: 800;
+    margin: 0 0 4px;
+}
+
+.cs-sub-desc {
+    font-size: 13px;
+    color: #666;
+    margin: 0;
+    font-weight: 400;
+}
+
+.cs-billing-toggle {
+    display: flex;
+    background: #141414;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.cs-billing-toggle button {
+    padding: 9px 20px;
+    border: none;
+    background: transparent;
+    color: #666;
+    font-family: 'Poppins', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.cs-billing-toggle button.active {
+    background: rgba(155, 108, 248, 0.15);
+    color: #c084fc;
+}
+
+.cs-billing-toggle button:hover:not(.active) {
+    color: #999;
+}
+
+.cs-save-badge {
+    font-size: 9px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #4ade80, #22c55e);
+    color: #000;
+    padding: 2px 7px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.cs-sub-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+
+.cs-sub-card {
+    background: #141414;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 28px 22px 24px;
+    position: relative;
+    transition: all 0.25s;
+    display: flex;
+    flex-direction: column;
+}
+
+.cs-sub-card:hover {
+    border-color: rgba(255, 255, 255, 0.1);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+.cs-sub-card.recommended {
+    border-color: rgba(155, 108, 248, 0.35);
+    background: linear-gradient(180deg, rgba(155, 108, 248, 0.08) 0%, #141414 40%);
+}
+
+.cs-rec-badge {
+    position: absolute;
+    top: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #9b6cf8, #7c3aed);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 4px 16px;
+    border-radius: 0 0 10px 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.cs-sub-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    font-size: 18px;
+    margin-bottom: 16px;
+}
+
+.cs-sub-name {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0 0 12px;
+}
+
+.cs-sub-price-row {
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+    margin-bottom: 4px;
+}
+
+.cs-sub-price {
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.cs-r {
+    font-size: 16px;
+    font-weight: 600;
+    color: #888;
+}
+
+.cs-sub-per {
+    font-size: 13px;
+    color: #555;
+    font-weight: 500;
+}
+
+.cs-billed-annual {
+    font-size: 11px;
+    color: #555;
+    margin: 2px 0 0;
+    font-weight: 400;
+}
+
+.cs-sub-credits {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #fbbf24;
+    font-weight: 600;
+    margin: 14px 0 16px;
+    padding: 8px 12px;
+    background: rgba(251, 191, 36, 0.06);
+    border-radius: 8px;
+    width: fit-content;
+}
+
+.cs-sub-credits i {
+    font-size: 11px;
+}
+
+.cs-feature-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cs-feature-list li {
+    font-size: 12px;
+    color: #888;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    line-height: 1.4;
+}
+
+.cs-feature-list li i {
+    color: #4ade80;
+    font-size: 10px;
+    flex-shrink: 0;
+}
+
+.cs-sub-btn {
+    width: 100%;
+    padding: 11px 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    color: #fff;
+    font-family: 'Poppins', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cs-sub-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.cs-sub-btn.primary {
+    background: linear-gradient(135deg, #9b6cf8, #7c3aed);
+    border-color: transparent;
+}
+
+.cs-sub-btn.primary:hover:not(:disabled) {
+    box-shadow: 0 6px 20px rgba(155, 108, 248, 0.3);
+}
+
+.cs-sub-btn.current {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.06);
+    color: #555;
+    cursor: default;
+}
+
+/* ---------- HISTORY ---------- */
+.cs-empty {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.cs-empty i {
+    font-size: 40px;
+    color: #222;
+    margin-bottom: 14px;
+}
+
+.cs-empty p {
+    font-size: 15px;
+    font-weight: 600;
+    color: #555;
+    margin: 0 0 4px;
+}
+
+.cs-empty span {
+    font-size: 12px;
+    color: #333;
+}
+
+.cs-tx-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.cs-tx {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+    background: #141414;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 12px;
+    transition: background 0.2s;
+}
+
+.cs-tx:hover {
+    background: #1a1a1a;
+}
+
+.cs-tx-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.cs-tx-icon.credit {
+    background: rgba(74, 222, 128, 0.08);
+    color: #4ade80;
+}
+
+.cs-tx-icon.debit {
+    background: rgba(248, 113, 113, 0.08);
+    color: #f87171;
+}
+
+.cs-tx-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.cs-tx-type {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.cs-tx-desc {
+    font-size: 11px;
+    color: #555;
+    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cs-tx-date {
+    font-size: 9px;
+    color: #333;
+    margin-top: 3px;
+    font-weight: 500;
+}
+
+.cs-tx-amt {
+    font-size: 15px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.cs-tx-amt.credit {
+    color: #4ade80;
+}
+
+.cs-tx-amt.debit {
+    color: #f87171;
+}
+
+/* ---------- RESPONSIVE ---------- */
+@media (max-width: 1024px) {
+    .cs-sub-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .cs-coin-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .cs-sub-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .cs-custom-row {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .cs-custom-input-box {
+        flex: none;
+        width: 100%;
+    }
+
+    .cs-custom-total-box {
+        width: 100%;
+        text-align: center;
+    }
+
+    .cs-sub-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .cs-section {
+        padding: 20px 16px;
+    }
+
+    .cs-balance-bar {
+        padding: 14px 16px;
+        gap: 0;
+    }
+
+    .cs-coin-grid {
+        gap: 8px;
+    }
+
+    .cs-coin-card {
+        padding: 18px 12px 16px;
+    }
+
+    .cs-coin-price span:last-child {
+        font-size: 22px;
+    }
+
+    .cs-sub-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .cs-sub-card {
+        padding: 24px 18px 20px;
+    }
+}

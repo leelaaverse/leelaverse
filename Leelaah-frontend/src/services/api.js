@@ -150,6 +150,14 @@ const apiService = {
 		markAsRead: (conversationId) => apiClient.patch('/api/messages/read', { conversationId }),
 	},
 
+	// Payments API
+	payments: {
+		getPlans: () => apiClient.get('/api/payments/plans'),
+		createOrder: (data) => apiClient.post('/api/payments/create-order', data),
+		verifyPayment: (data) => apiClient.post('/api/payments/verify', data),
+		getHistory: (params) => apiClient.get('/api/payments/history', { params }),
+	},
+
 	// Health check
 	health: () => apiClient.get('/api/health'),
 };
