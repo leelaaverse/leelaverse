@@ -239,8 +239,8 @@
     color: #c084fc;
 }
 
-.cs-nav-btn i {
-    font-size: 12px;
+.cs-nav-btn svg {
+    font-size: 14px;
 }
 
 /* ---------- SECTION ---------- */
@@ -257,139 +257,193 @@
 }
 
 .cs-coin-card {
-    background: #141414;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 14px;
-    padding: 24px 18px 20px;
+    background: rgba(20, 20, 20, 0.4);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 20px;
+    padding: 32px 20px 24px;
     text-align: center;
     position: relative;
-    transition: all 0.25s;
+    transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+}
+
+.cs-coin-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 50%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
 }
 
 .cs-coin-card:hover {
-    border-color: rgba(155, 108, 248, 0.2);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+    border-color: rgba(255, 255, 255, 0.12);
+    transform: translateY(-6px);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+    background: rgba(26, 26, 26, 0.6);
+}
+
+.cs-coin-card:hover::before {
+    opacity: 1;
 }
 
 .cs-coin-card.featured {
-    border-color: rgba(155, 108, 248, 0.3);
-    background: linear-gradient(180deg, rgba(155, 108, 248, 0.06) 0%, #141414 50%);
+    border-color: rgba(155, 108, 248, 0.4);
+    background: linear-gradient(180deg, rgba(155, 108, 248, 0.08) 0%, rgba(20, 20, 20, 0.7) 100%);
+    box-shadow: 0 8px 32px rgba(155, 108, 248, 0.15);
+}
+
+.cs-coin-card.featured:hover {
+    border-color: rgba(155, 108, 248, 0.7);
+    box-shadow: 0 16px 48px rgba(155, 108, 248, 0.25);
+    background: linear-gradient(180deg, rgba(155, 108, 248, 0.12) 0%, rgba(26, 26, 26, 0.8) 100%);
 }
 
 .cs-badge {
     position: absolute;
-    top: -1px;
+    top: 0px;
     left: 50%;
     transform: translateX(-50%);
-    background: linear-gradient(135deg, #9b6cf8, #7c3aed);
+    background: linear-gradient(135deg, #a78bfa, #7c3aed);
     color: #fff;
-    font-size: 9px;
+    font-size: 10px;
     font-weight: 700;
-    padding: 3px 14px;
-    border-radius: 0 0 8px 8px;
+    padding: 6px 16px;
+    border-radius: 0 0 12px 12px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.8px;
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+    z-index: 2;
 }
 
 .cs-coin-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 14px;
-    margin: 0 auto 14px;
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    margin: 0 auto 16px;
     display: grid;
     place-items: center;
-    font-size: 20px;
+    font-size: 22px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 .cs-coin-icon.starter {
-    background: rgba(251, 191, 36, 0.08);
+    background: rgba(251, 191, 36, 0.1);
     color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.2);
 }
 
 .cs-coin-icon.popular {
-    background: rgba(249, 115, 22, 0.08);
+    background: rgba(249, 115, 22, 0.1);
     color: #f97316;
+    border: 1px solid rgba(249, 115, 22, 0.2);
 }
 
 .cs-coin-icon.pro {
-    background: rgba(59, 130, 246, 0.08);
+    background: rgba(59, 130, 246, 0.1);
     color: #3b82f6;
+    border: 1px solid rgba(59, 130, 246, 0.2);
 }
 
 .cs-coin-icon.ultra {
-    background: rgba(155, 108, 248, 0.08);
-    color: #c084fc;
+    background: rgba(168, 85, 247, 0.1);
+    color: #d8b4fe;
+    border: 1px solid rgba(168, 85, 247, 0.2);
 }
 
 .cs-coin-card h3 {
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 700;
-    margin: 0 0 6px;
+    margin: 0 0 8px;
+    letter-spacing: 0.3px;
 }
 
 .cs-coin-amount {
-    font-size: 12px;
+    font-size: 13px;
     color: #fbbf24;
-    font-weight: 600;
-    margin-bottom: 6px;
+    font-weight: 700;
+    margin-bottom: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 5px;
+    gap: 6px;
+    text-shadow: 0 2px 12px rgba(251, 191, 36, 0.25);
 }
 
-.cs-coin-amount i {
-    font-size: 11px;
+.cs-coin-amount svg {
+    font-size: 14px;
 }
 
 .cs-coin-desc {
-    font-size: 11px;
-    color: #555;
-    margin: 0 0 16px;
+    font-size: 12px;
+    color: #888;
+    margin: 0 0 20px;
     line-height: 1.5;
 }
 
 .cs-coin-price {
-    margin-bottom: 2px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 4px;
 }
 
 .cs-rupee {
-    font-size: 13px;
-    color: #888;
+    font-size: 16px;
+    color: #a1a1aa;
     font-weight: 600;
-    vertical-align: top;
-    line-height: 1.8;
 }
 
-.cs-coin-price span:last-child {
-    font-size: 28px;
+.cs-price-num {
+    font-size: 36px;
     font-weight: 800;
+    color: #fff;
+    line-height: 1;
+    letter-spacing: -0.5px;
 }
 
 .cs-per {
     display: block;
-    font-size: 10px;
-    color: #444;
-    margin-bottom: 16px;
+    font-size: 11px;
+    color: #666;
+    margin-bottom: 20px;
 }
 
 .cs-buy {
     width: 100%;
-    padding: 10px 0;
-    background: rgba(155, 108, 248, 0.12);
-    border: 1px solid rgba(155, 108, 248, 0.2);
-    border-radius: 8px;
-    color: #c084fc;
+    padding: 12px 0;
+    background: rgba(155, 108, 248, 0.1);
+    border: 1px solid rgba(155, 108, 248, 0.25);
+    border-radius: 12px;
+    color: #d8b4fe;
     font-family: 'Poppins', sans-serif;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
 }
 
 .cs-buy:hover:not(:disabled) {
-    background: rgba(155, 108, 248, 0.22);
+    background: rgba(155, 108, 248, 0.25);
+    color: #fff;
+    border-color: rgba(155, 108, 248, 0.5);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(155, 108, 248, 0.2);
+}
+
+.cs-buy:active:not(:disabled) {
+    transform: translateY(1px);
+    box-shadow: none;
 }
 
 .cs-buy:disabled {
@@ -411,16 +465,32 @@
     gap: 8px;
 }
 
-.cs-sec-title i {
+.cs-sec-title svg {
     color: #9b6cf8;
-    font-size: 14px;
+    font-size: 16px;
 }
 
 .cs-custom-card {
-    background: #141414;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 14px;
-    padding: 24px;
+    background: rgba(20, 20, 20, 0.4);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 20px;
+    padding: 28px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.cs-custom-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 50%);
+    pointer-events: none;
 }
 
 .cs-custom-row {
@@ -454,9 +524,9 @@
     padding: 10px 14px;
 }
 
-.cs-input-field i {
+.cs-input-field svg {
     color: #fbbf24;
-    font-size: 13px;
+    font-size: 15px;
 }
 
 .cs-input-field input {
@@ -647,40 +717,71 @@
 }
 
 .cs-sub-card {
-    background: #141414;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 16px;
-    padding: 28px 22px 24px;
+    background: rgba(20, 20, 20, 0.4);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 24px;
+    padding: 32px 24px 28px;
     position: relative;
-    transition: all 0.25s;
+    transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
     display: flex;
     flex-direction: column;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+}
+
+.cs-sub-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 50%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
 }
 
 .cs-sub-card:hover {
-    border-color: rgba(255, 255, 255, 0.1);
-    transform: translateY(-3px);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    border-color: rgba(255, 255, 255, 0.12);
+    transform: translateY(-6px);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+    background: rgba(26, 26, 26, 0.6);
+}
+
+.cs-sub-card:hover::before {
+    opacity: 1;
 }
 
 .cs-sub-card.recommended {
-    border-color: rgba(155, 108, 248, 0.35);
-    background: linear-gradient(180deg, rgba(155, 108, 248, 0.08) 0%, #141414 40%);
+    border-color: rgba(155, 108, 248, 0.4);
+    background: linear-gradient(180deg, rgba(155, 108, 248, 0.08) 0%, rgba(20, 20, 20, 0.7) 100%);
+    box-shadow: 0 8px 32px rgba(155, 108, 248, 0.15);
+}
+
+.cs-sub-card.recommended:hover {
+    border-color: rgba(155, 108, 248, 0.7);
+    box-shadow: 0 16px 48px rgba(155, 108, 248, 0.25);
+    background: linear-gradient(180deg, rgba(155, 108, 248, 0.12) 0%, rgba(26, 26, 26, 0.8) 100%);
 }
 
 .cs-rec-badge {
     position: absolute;
-    top: -1px;
+    top: 0px;
     left: 50%;
     transform: translateX(-50%);
-    background: linear-gradient(135deg, #9b6cf8, #7c3aed);
+    background: linear-gradient(135deg, #a78bfa, #7c3aed);
     color: #fff;
-    font-size: 9px;
+    font-size: 10px;
     font-weight: 700;
-    padding: 4px 16px;
-    border-radius: 0 0 10px 10px;
+    padding: 6px 16px;
+    border-radius: 0 0 12px 12px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.8px;
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+    z-index: 2;
 }
 
 .cs-sub-icon {
@@ -745,8 +846,8 @@
     width: fit-content;
 }
 
-.cs-sub-credits i {
-    font-size: 11px;
+.cs-sub-credits svg {
+    font-size: 13px;
 }
 
 .cs-feature-list {
@@ -768,9 +869,9 @@
     line-height: 1.4;
 }
 
-.cs-feature-list li i {
+.cs-feature-list li svg {
     color: #4ade80;
-    font-size: 10px;
+    font-size: 12px;
     flex-shrink: 0;
 }
 

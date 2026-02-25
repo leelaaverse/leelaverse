@@ -219,7 +219,8 @@ const CoinStore = ({ onBack }) => {
                                     <div className="cs-coin-amount"><PiCoinsBold /> {plan.coins.toLocaleString()}</div>
                                     <p className="cs-coin-desc">{plan.description}</p>
                                     <div className="cs-coin-price">
-                                        <span className="cs-rupee">₹</span>{plan.price}
+                                        <span className="cs-rupee">₹</span>
+                                        <span className="cs-price-num">{plan.price}</span>
                                     </div>
                                     <span className="cs-per">₹{(plan.price / plan.coins).toFixed(2)}/coin</span>
                                     <button className="cs-buy" onClick={() => handlePurchase(plan.id)} disabled={processing}>
