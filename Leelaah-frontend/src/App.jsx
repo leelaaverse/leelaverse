@@ -7,6 +7,7 @@ import UserProfile from './components/UserProfile/UserProfile';
 import SinglePost from './components/SinglePost/SinglePost';
 import ChatPage from './components/ChatPage/ChatPage';
 import Bloops from './components/Bloops/Bloops';
+import Community from './components/Community/Community';
 
 // ... (existing imports)
 
@@ -83,6 +84,10 @@ function App() {
     setCurrentView('home');
   };
 
+  const handleBackFromCommunity = () => {
+    setCurrentView('home');
+  };
+
   const handleOpenAuth = useCallback((mode = 'signup') => {
     setAuthMode(mode);
     setIsAuthModalOpen(true);
@@ -135,6 +140,12 @@ function App() {
             setSelectedPostId(postId);
             setCurrentView('post');
           }}
+        />
+      )}
+      {currentView === 'community' && (
+        <Community
+          onBack={handleBackFromCommunity}
+          onShowAuthModal={() => handleOpenAuth('login')}
         />
       )}
       {currentView === 'chat' && (

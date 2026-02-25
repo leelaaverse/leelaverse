@@ -1,0 +1,722 @@
+/* Community.css */
+/* Editable Prompt Input */
+.tpl-prompt-input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  border-radius: 14px;
+  padding: 12px;
+  font-size: 13px;
+  color: #ddd;
+  resize: none;
+  box-shadow: none;
+}
+
+/* Focus State */
+.tpl-prompt-input:focus {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: #a855f7;
+  box-shadow: 0 0 0 0.2rem rgba(168, 85, 247, 0.25);
+  color: #fff;
+}
+
+/* Scrollbar Styling (Optional Premium Look) */
+.tpl-prompt-input::-webkit-scrollbar {
+  width: 6px;
+}
+.tpl-prompt-input::-webkit-scrollbar-thumb {
+  background: #a855f7;
+  border-radius: 6px;
+}
+/* Modal Base */
+.tpl-modal {
+  background: radial-gradient(circle at top, #1b0b2e, #06010d 75%);
+  border-radius: 22px;
+  border: 1px solid rgba(168, 85, 247, 0.6);
+  box-shadow: 0 0 45px rgba(168, 85, 247, 0.35);
+  color: #fff;
+}
+
+/* Close */
+.tpl-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+}
+
+/* Header */
+.tpl-header {
+  position: relative;
+}
+
+.tpl-title {
+  font-weight: 600;
+}
+
+.tpl-chip {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Trending */
+.tpl-trending {
+  position: absolute;
+  top: 60px;
+  right: 20px;
+  background: linear-gradient(90deg, #ffb703, #fb8500);
+  color: #000;
+  font-size: 11px;
+  padding: 5px 10px;
+  border-radius: 14px;
+}
+
+/* Preview Image */
+.tpl-preview-img {
+  height: 230px;
+  border-radius: 16px;
+  background: url("https://images.unsplash.com/photo-1517694712202-14dd9538aa97")
+    center/cover no-repeat;
+  margin-top: 12px;
+}
+
+/* Thumbs */
+.tpl-thumbs img {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  margin-right: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Section */
+.tpl-section-title {
+  font-size: 13px;
+  color: #bbb;
+  margin-bottom: 6px;
+}
+
+/* Prompt Box */
+.tpl-prompt-box {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 14px;
+  padding: 12px;
+  font-size: 13px;
+  color: #ddd;
+}
+
+.tpl-prompt-box span {
+  color: #a855f7;
+  font-weight: 600;
+}
+
+/* Upload */
+.tpl-upload {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 10px;
+  border-radius: 14px;
+}
+
+.tpl-upload img {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+}
+
+.tpl-upload p {
+  font-size: 13px;
+}
+
+.tpl-upload small {
+  color: #aaa;
+  font-size: 11px;
+}
+
+.tpl-replace {
+  margin-left: auto;
+  background: linear-gradient(90deg, #a855f7, #7c3aed);
+  border: none;
+  border-radius: 16px;
+  padding: 6px 14px;
+  color: #fff;
+  font-size: 12px;
+}
+
+/* Stats */
+.tpl-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #ccc;
+}
+
+/* Actions */
+.tpl-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.tpl-btn-outline {
+  flex: 1;
+  background: transparent;
+  border: 1px solid #a855f7;
+  color: #fff;
+  border-radius: 18px;
+  padding: 8px;
+}
+
+.tpl-btn-primary {
+  flex: 1;
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+  border: none;
+  color: #000;
+  font-weight: 600;
+  border-radius: 18px;
+  padding: 8px;
+}
+/* Modal Background */
+.competition-modal {
+  background: radial-gradient(circle at top, #0f172a, #05070d 70%);
+  border-radius: 20px;
+  border: 1px solid rgba(0, 255, 180, 0.3);
+  color: #fff;
+  box-shadow: 0 0 40px rgba(0, 255, 180, 0.2);
+}
+
+/* Close */
+.modal-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 10;
+}
+
+/* Title */
+.competition-title {
+  font-weight: 700;
+  color: #8fff2f;
+}
+
+/* Banner */
+.banner-img {
+  height: 150px;
+  border-radius: 16px;
+  background: url("https://images.unsplash.com/photo-1506744038136-46273834b3fb")
+    center/cover no-repeat;
+}
+
+/* Trending */
+.trending-badge {
+  background: linear-gradient(90deg, #ffcc00, #ff8800);
+  color: #000;
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 20px;
+}
+
+.participants {
+  font-size: 13px;
+  color: #aaa;
+}
+
+/* Timer */
+.time-left {
+  color: #8fff2f;
+  font-weight: 600;
+}
+
+/* Highlight Box */
+.highlight-box {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  color: #ccc;
+}
+
+/* Section Title */
+.section-title {
+  font-size: 14px;
+  color: #aaa;
+}
+
+/* Gain List */
+.gain-list p {
+  font-size: 13px;
+  margin: 6px 0;
+  color: #ddd;
+}
+
+/* Avatars */
+.participants-avatars img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  margin-left: -10px;
+  border: 2px solid #0f172a;
+}
+
+.participants-avatars img:first-child {
+  margin-left: 0;
+}
+
+.more-text {
+  font-size: 12px;
+  color: #8fff2f;
+  margin-left: 8px;
+}
+
+/* Submission Badge */
+.submission-badge {
+  background: linear-gradient(90deg, #8fff2f, #00ff99);
+  color: #000;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+}
+
+/* Detail List */
+.detail-list {
+  padding-left: 16px;
+  font-size: 13px;
+  color: #ccc;
+}
+
+/* Buttons */
+.btn-rules {
+  background: linear-gradient(90deg, #6a00ff, #a855f7);
+  color: #fff;
+  border-radius: 20px;
+  padding: 8px 18px;
+}
+
+.btn-confirm {
+  background: linear-gradient(90deg, #00ff99, #00cc66);
+  color: #000;
+  font-weight: 600;
+  border-radius: 20px;
+  padding: 8px 18px;
+}
+
+.btn-rules:hover,
+.btn-confirm:hover {
+  opacity: 0.9;
+}
+/* Modal Wrapper */
+.leader-modal {
+  background: radial-gradient(circle at top, #1c2350, #090b14 70%);
+  border-radius: 24px;
+  color: #fff;
+  border: 1px solid rgba(0, 255, 180, 0.3);
+  box-shadow: 0 0 40px rgba(0, 255, 180, 0.2);
+}
+
+/* Header */
+.leader-header {
+  padding: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.leader-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 16px;
+  object-fit: cover;
+}
+
+.leader-category {
+  font-size: 13px;
+  color: #6c7cff;
+}
+
+/* Section title */
+.section-title {
+  font-size: 14px;
+  color: #aaa;
+  margin-bottom: 12px;
+}
+
+/* Stat Cards */
+.stat-card {
+  border-radius: 16px;
+  padding: 14px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+}
+
+.stat-card i {
+  font-size: 22px;
+  margin-bottom: 6px;
+}
+
+.stat-card p {
+  font-size: 12px;
+  margin: 0;
+  color: #ccc;
+}
+
+.stat-card h5 {
+  margin: 4px 0 0;
+  font-weight: 600;
+}
+
+/* Color Variants */
+.stat-card.gold {
+  box-shadow: 0 0 25px rgba(255, 193, 7, 0.25);
+}
+.stat-card.orange {
+  box-shadow: 0 0 25px rgba(255, 140, 0, 0.25);
+}
+.stat-card.blue {
+  box-shadow: 0 0 25px rgba(108, 124, 255, 0.25);
+}
+.stat-card.green {
+  box-shadow: 0 0 25px rgba(89, 255, 122, 0.25);
+}
+
+/* Engagement */
+.engagement-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.eng-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 14px;
+  padding: 10px 14px;
+  font-size: 13px;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Achievements */
+.achievement-card {
+  border-radius: 16px;
+  padding: 14px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.achievement-card.purple {
+  background: linear-gradient(90deg, #240f4c, #441766);
+}
+
+.achievement-card.green {
+  background: linear-gradient(90deg, #3ddc84, #2ea44f);
+}
+.dashboard-wrapper {
+  padding: 40px;
+  margin-top: 60px; /* Offset for floating bar/navbar if needed */
+  background: #000;
+  min-height: 100vh;
+}
+
+.panel {
+  background: #0d0f14;
+  border-radius: 20px;
+  height: 100%;
+}
+
+.panel-header {
+  font-weight: 600;
+  font-size: 20px;
+  padding: 10px;
+  border-radius: 20px 20px 0px 0px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.leadership-header {
+  background: #8c9317;
+  color: #fff;
+}
+
+.competition-header {
+  background: #2e3b63;
+  color: #fff;
+}
+
+.templates-header {
+  background: #2e3b63;
+  color: #fff;
+}
+
+.search-box input {
+  background: #11151c;
+  border: 1px solid #1b2029;
+  border-radius: 20px;
+  padding: 8px 15px;
+  color: #fff;
+  font-size: 13px;
+}
+
+.filter-btn {
+  background: #1b2029;
+  border: none;
+  border-radius: 20px;
+  padding: 6px 14px;
+  color: #aaa;
+  font-size: 13px;
+}
+
+/* Leadership Card */
+.leader-card {
+  background: linear-gradient(90deg, #11151c, #1c1028);
+  border-radius: 15px;
+  padding: 15px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.leader-card:hover {
+  transform: translateY(-2px);
+}
+
+.my-card {
+  background: linear-gradient(90deg, #11151c, #1e2870);
+  border-radius: 15px;
+  padding: 15px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-decoration: none;
+}
+
+.leader-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.leader-img {
+  width: 55px;
+  height: 55px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.leader-name {
+  font-weight: 600;
+  font-size: 15px;
+  color: #fff;
+}
+
+.leader-tag {
+  font-size: 12px;
+  color: #6c7cff;
+}
+
+.members {
+  font-size: 12px;
+  color: #59ff7a;
+  margin-top: 2px;
+}
+
+.score-badge {
+  border: 2px solid #6c7cff;
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 13px;
+  color: #6c7cff;
+}
+
+/* Competition Card */
+.competition-card {
+  border: 1px solid #5a6616;
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 20px;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.competition-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.competition-content {
+  position: relative;
+  z-index: 2;
+}
+
+.competition-title {
+  color: #a6ff00;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.timer {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 5px 0;
+  color: #fff;
+}
+
+.participate-btn {
+  background: linear-gradient(90deg, #949414 -21.19%, #1936c8 100%);
+  border: none;
+  border-radius: 20px;
+  padding: 6px 18px;
+  font-size: 13px;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* Templates */
+.template-card {
+  border-radius: 20px;
+  border: 1px solid #5a6616;
+  overflow: hidden;
+  position: relative;
+  margin-bottom: 20px;
+  cursor: pointer;
+}
+
+.template-card img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+}
+
+.template-body {
+  padding: 15px;
+  padding-top: 50px;
+}
+
+.use-btn {
+  background: linear-gradient(90deg, #949414 -21.19%, #1936c8 100%);
+  border: none;
+  border-radius: 20px;
+  padding: 6px 18px;
+  font-size: 13px;
+  color: #fff;
+  font-weight: 600;
+}
+
+.user-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: #67a412;
+  color: #000;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
+.search-box input::placeholder {
+  color: #424242;
+  opacity: 1; 
+}
+.search-box input::-webkit-input-placeholder { color: #424242; }
+.search-box input::-moz-placeholder { color: #424242; }
+.search-box input:-ms-input-placeholder { color: #424242; }
+
+/* Dark dropdown menu */
+.dropdown-dark {
+  background-color: #1b2029;
+  border-radius: 12px;
+  border: none;
+  padding: 6px;
+}
+
+.dropdown-dark .dropdown-item {
+  color: #fff;
+  font-size: 13px;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.dropdown-dark .dropdown-item:hover {
+  background: #505050;
+  color: #fff;
+}
+
+.filter-btn:focus {
+  box-shadow: none;
+}
+
+.main-lead {
+  padding: 20px;
+  padding-top: 0px;
+}
+
+a {
+  text-decoration: none;
+}
+
+.offcanvas-body {
+  background: #0d0f14;
+}
+.offcanvas-header {
+  background: #0d0f14;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.progress-container {
+  display: flex;
+  justify-content: space-between;
+}
+.progress-bar {
+  height: 6px;
+  background: #333;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.progress-fill {
+  width: 50%;
+  height: 100%;
+  background: #a855f7;
+}
+
+.border-bottom_1 {
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.sidenav-items h4 {
+  color: #ccc;
+}
+.logoutbtn .btn {
+  background: #ef4444;
+  color: #fff;
+  border-radius: 20px;
+  padding: 8px 24px;
+}
+
+/* Nav */
+.bg-mainColor {
+  background-color: rgba(6, 1, 13, 0.95);
+  backdrop-filter: blur(10px);
+}
+.bg-dark-2 {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+.navigationRight button {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 20px;
+}
+
+/* Navbar top padding for back button */
+.community-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  width: 100%;
+}

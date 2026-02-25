@@ -54,7 +54,7 @@ const FloatingBar = ({ onOpenAuth, onNavigate }) => {
                                 </button>
                             </div>
                             <div className="f-bar-item">
-                                <button>
+                                <button onClick={() => onNavigate && onNavigate('community')}>
                                     <img src="/assets/globe.svg" alt="Community" />
                                     <p className="f-bar-label">Community</p>
                                 </button>

@@ -1,0 +1,1579 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LEELA</title>
+    <!-- Include Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
+      integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+  </head>
+  <style>
+    /* Editable Prompt Input */
+    .tpl-prompt-input {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(168, 85, 247, 0.4);
+      border-radius: 14px;
+      padding: 12px;
+      font-size: 13px;
+      color: #ddd;
+      resize: none;
+      box-shadow: none;
+    }
+
+    /* Focus State */
+    .tpl-prompt-input:focus {
+      background: rgba(255, 255, 255, 0.07);
+      border-color: #a855f7;
+      box-shadow: 0 0 0 0.2rem rgba(168, 85, 247, 0.25);
+      color: #fff;
+    }
+
+    /* Scrollbar Styling (Optional Premium Look) */
+    .tpl-prompt-input::-webkit-scrollbar {
+      width: 6px;
+    }
+    .tpl-prompt-input::-webkit-scrollbar-thumb {
+      background: #a855f7;
+      border-radius: 6px;
+    }
+    /* Modal Base */
+    .tpl-modal {
+      background: radial-gradient(circle at top, #1b0b2e, #06010d 75%);
+      border-radius: 22px;
+      border: 1px solid rgba(168, 85, 247, 0.6);
+      box-shadow: 0 0 45px rgba(168, 85, 247, 0.35);
+      color: #fff;
+    }
+
+    /* Close */
+    .tpl-close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+    }
+
+    /* Header */
+    .tpl-header {
+      position: relative;
+    }
+
+    .tpl-title {
+      font-weight: 600;
+    }
+
+    .tpl-chip {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    /* Trending */
+    .tpl-trending {
+      position: absolute;
+      top: 60px;
+      right: 20px;
+      background: linear-gradient(90deg, #ffb703, #fb8500);
+      color: #000;
+      font-size: 11px;
+      padding: 5px 10px;
+      border-radius: 14px;
+    }
+
+    /* Preview Image */
+    .tpl-preview-img {
+      height: 230px;
+      border-radius: 16px;
+      background: url("https://images.unsplash.com/photo-1517694712202-14dd9538aa97")
+        center/cover no-repeat;
+      margin-top: 12px;
+    }
+
+    /* Thumbs */
+    .tpl-thumbs img {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      margin-right: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    /* Section */
+    .tpl-section-title {
+      font-size: 13px;
+      color: #bbb;
+      margin-bottom: 6px;
+    }
+
+    /* Prompt Box */
+    .tpl-prompt-box {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 14px;
+      padding: 12px;
+      font-size: 13px;
+      color: #ddd;
+    }
+
+    .tpl-prompt-box span {
+      color: #a855f7;
+      font-weight: 600;
+    }
+
+    /* Upload */
+    .tpl-upload {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 10px;
+      border-radius: 14px;
+    }
+
+    .tpl-upload img {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+    }
+
+    .tpl-upload p {
+      font-size: 13px;
+    }
+
+    .tpl-upload small {
+      color: #aaa;
+      font-size: 11px;
+    }
+
+    .tpl-replace {
+      margin-left: auto;
+      background: linear-gradient(90deg, #a855f7, #7c3aed);
+      border: none;
+      border-radius: 16px;
+      padding: 6px 14px;
+      color: #fff;
+      font-size: 12px;
+    }
+
+    /* Stats */
+    .tpl-stats {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: #ccc;
+    }
+
+    /* Actions */
+    .tpl-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .tpl-btn-outline {
+      flex: 1;
+      background: transparent;
+      border: 1px solid #a855f7;
+      color: #fff;
+      border-radius: 18px;
+      padding: 8px;
+    }
+
+    .tpl-btn-primary {
+      flex: 1;
+      background: linear-gradient(90deg, #22c55e, #16a34a);
+      border: none;
+      color: #000;
+      font-weight: 600;
+      border-radius: 18px;
+      padding: 8px;
+    }
+    /* Modal Background */
+    .competition-modal {
+      background: radial-gradient(circle at top, #0f172a, #05070d 70%);
+      border-radius: 20px;
+      border: 1px solid rgba(0, 255, 180, 0.3);
+      color: #fff;
+      box-shadow: 0 0 40px rgba(0, 255, 180, 0.2);
+    }
+
+    /* Close */
+    .modal-close {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+    }
+
+    /* Title */
+    .competition-title {
+      font-weight: 700;
+      color: #8fff2f;
+    }
+
+    /* Banner */
+    .banner-img {
+      height: 150px;
+      border-radius: 16px;
+      background: url("https://images.unsplash.com/photo-1506744038136-46273834b3fb")
+        center/cover no-repeat;
+    }
+
+    /* Trending */
+    .trending-badge {
+      background: linear-gradient(90deg, #ffcc00, #ff8800);
+      color: #000;
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 20px;
+    }
+
+    .participants {
+      font-size: 13px;
+      color: #aaa;
+    }
+
+    /* Timer */
+    .time-left {
+      color: #8fff2f;
+      font-weight: 600;
+    }
+
+    /* Highlight Box */
+    .highlight-box {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 13px;
+      color: #ccc;
+    }
+
+    /* Section Title */
+    .section-title {
+      font-size: 14px;
+      color: #aaa;
+    }
+
+    /* Gain List */
+    .gain-list p {
+      font-size: 13px;
+      margin: 6px 0;
+      color: #ddd;
+    }
+
+    /* Avatars */
+    .participants-avatars img {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      margin-left: -10px;
+      border: 2px solid #0f172a;
+    }
+
+    .participants-avatars img:first-child {
+      margin-left: 0;
+    }
+
+    .more-text {
+      font-size: 12px;
+      color: #8fff2f;
+      margin-left: 8px;
+    }
+
+    /* Submission Badge */
+    .submission-badge {
+      background: linear-gradient(90deg, #8fff2f, #00ff99);
+      color: #000;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+    }
+
+    /* Detail List */
+    .detail-list {
+      padding-left: 16px;
+      font-size: 13px;
+      color: #ccc;
+    }
+
+    /* Buttons */
+    .btn-rules {
+      background: linear-gradient(90deg, #6a00ff, #a855f7);
+      color: #fff;
+      border-radius: 20px;
+      padding: 8px 18px;
+    }
+
+    .btn-confirm {
+      background: linear-gradient(90deg, #00ff99, #00cc66);
+      color: #000;
+      font-weight: 600;
+      border-radius: 20px;
+      padding: 8px 18px;
+    }
+
+    .btn-rules:hover,
+    .btn-confirm:hover {
+      opacity: 0.9;
+    }
+    /* Modal Wrapper */
+    .leader-modal {
+      background: radial-gradient(circle at top, #1c2350, #090b14 70%);
+      border-radius: 24px;
+      color: #fff;
+      border: 1px solid rgba(0, 255, 180, 0.3);
+      box-shadow: 0 0 40px rgba(0, 255, 180, 0.2);
+    }
+
+    /* Close button */
+    .modal-close {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      z-index: 10;
+    }
+
+    /* Header */
+    .leader-header {
+      padding: 24px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .leader-avatar {
+      width: 72px;
+      height: 72px;
+      border-radius: 16px;
+      object-fit: cover;
+    }
+
+    .leader-category {
+      font-size: 13px;
+      color: #6c7cff;
+    }
+
+    /* Section title */
+    .section-title {
+      font-size: 14px;
+      color: #aaa;
+      margin-bottom: 12px;
+    }
+
+    /* Stat Cards */
+    .stat-card {
+      border-radius: 16px;
+      padding: 14px;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+    }
+
+    .stat-card i {
+      font-size: 22px;
+      margin-bottom: 6px;
+    }
+
+    .stat-card p {
+      font-size: 12px;
+      margin: 0;
+      color: #ccc;
+    }
+
+    .stat-card h5 {
+      margin: 4px 0 0;
+      font-weight: 600;
+    }
+
+    /* Color Variants */
+    .stat-card.gold {
+      box-shadow: 0 0 25px rgba(255, 193, 7, 0.25);
+    }
+    .stat-card.orange {
+      box-shadow: 0 0 25px rgba(255, 140, 0, 0.25);
+    }
+    .stat-card.blue {
+      box-shadow: 0 0 25px rgba(108, 124, 255, 0.25);
+    }
+    .stat-card.green {
+      box-shadow: 0 0 25px rgba(89, 255, 122, 0.25);
+    }
+
+    /* Engagement */
+    .engagement-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+    }
+
+    .eng-card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 14px;
+      padding: 10px 14px;
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* Achievements */
+    .achievement-card {
+      border-radius: 16px;
+      padding: 14px;
+      font-weight: 500;
+      text-align: center;
+    }
+
+    .achievement-card.purple {
+      background: linear-gradient(90deg, #240f4c, #441766);
+    }
+
+    .achievement-card.green {
+      background: linear-gradient(90deg, #3ddc84, #2ea44f);
+    }
+    .dashboard-wrapper {
+      padding: 40px;
+    }
+
+    .panel {
+      background: #0d0f14;
+      border-radius: 20px;
+      /* padding: 20px; */
+      height: 100%;
+    }
+
+    .panel-header {
+      font-weight: 600;
+      font-size: 20px;
+      padding: 10px;
+      border-radius: 20px 20px 0px 0px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .leadership-header {
+      background: #8c9317;
+      color: #fff;
+    }
+
+    .competition-header {
+      background: #2e3b63;
+      color: #fff;
+    }
+
+    .templates-header {
+      background: #2e3b63;
+      color: #fff;
+    }
+
+    .search-box input {
+      background: #11151c;
+      border: 1px solid #1b2029;
+      border-radius: 20px;
+      padding: 8px 15px;
+      color: #fff;
+      font-size: 13px;
+    }
+
+    .filter-btn {
+      background: #1b2029;
+      border: none;
+      border-radius: 20px;
+      padding: 6px 14px;
+      color: #aaa;
+      font-size: 13px;
+    }
+
+    /* Leadership Card */
+    .leader-card {
+      background: linear-gradient(90deg, #11151c, #1c1028);
+      border-radius: 15px;
+      padding: 15px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .my-card {
+      background: linear-gradient(90deg, #11151c, #1e2870);
+      border-radius: 15px;
+      padding: 15px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .leader-info {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .leader-img {
+      width: 55px;
+      height: 55px;
+      border-radius: 12px;
+      object-fit: cover;
+    }
+
+    .leader-name {
+      font-weight: 600;
+      font-size: 15px;
+      color: #fff;
+    }
+
+    .leader-tag {
+      font-size: 12px;
+      color: #6c7cff;
+    }
+
+    .members {
+      font-size: 12px;
+      color: #59ff7a;
+      margin-top: 2px;
+    }
+
+    .score-badge {
+      border: 2px solid #6c7cff;
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 13px;
+      color: #6c7cff;
+    }
+
+    /* Competition Card */
+    .competition-card {
+      border: 1px solid #5a6616;
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 20px;
+      background-size: cover;
+      background-position: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .competition-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 70%);
+    }
+
+    .competition-content {
+      position: relative;
+      z-index: 2;
+    }
+
+    .competition-title {
+      color: #a6ff00;
+      font-weight: 600;
+      font-size: 18px;
+    }
+
+    .timer {
+      font-size: 20px;
+      font-weight: 600;
+      margin: 5px 0;
+    }
+
+    .participate-btn {
+      background: linear-gradient(90deg, #949414 -21.19%, #1936c8 100%);
+      border: none;
+      border-radius: 20px;
+      padding: 6px 18px;
+      font-size: 13px;
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    /* Templates */
+    .template-card {
+      border-radius: 20px;
+      border: 1px solid #5a6616;
+      overflow: hidden;
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    .template-card img {
+      width: 100%;
+      height: 140px;
+      object-fit: cover;
+    }
+
+    .template-body {
+      padding: 15px;
+      padding-top: 50px;
+    }
+
+    .use-btn {
+      background: linear-gradient(90deg, #949414 -21.19%, #1936c8 100%);
+      border: none;
+      border-radius: 20px;
+      padding: 6px 18px;
+      font-size: 13px;
+      color: #000;
+      font-weight: 600;
+    }
+
+    .user-badge {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: #67a412;
+      color: #000;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+    .search-box input::placeholder {
+      color: #424242;
+      opacity: 1; /* Ensures full white visibility */
+    }
+
+    /* For better browser support */
+    .search-box input::-webkit-input-placeholder {
+      color: #424242;
+    }
+    .search-box input::-moz-placeholder {
+      color: #424242;
+    }
+    .search-box input:-ms-input-placeholder {
+      color: #424242;
+    }
+    /* Dark dropdown menu */
+    .dropdown-dark {
+      background-color: #1b2029;
+      border-radius: 12px;
+      border: none;
+      padding: 6px;
+    }
+
+    .dropdown-dark .dropdown-item {
+      color: #fff;
+      font-size: 13px;
+      border-radius: 8px;
+      padding: 8px 12px;
+    }
+
+    .dropdown-dark .dropdown-item:hover {
+      background: #505050;
+      color: #fff;
+    }
+
+    /* Remove Bootstrap caret focus outline */
+    .filter-btn:focus {
+      box-shadow: none;
+    }
+    .main-lead {
+      padding: 20px;
+      padding-top: 0px;
+    }
+  </style>
+  <body>
+    <nav class="navbar navbar-expand-lg sticky-top py-2 bg-mainColor Header">
+      <div class="container-fluid flex-wrap px-4">
+        <!-- Logo -->
+        <a
+          class="navbar-brand d-flex align-items-center order-1 order-lg-1"
+          href="#"
+        >
+          <img
+            src="assets/logo-web.png"
+            alt="LELAA Logo"
+            class="img-fluid"
+            style="max-height: 100px"
+          />
+        </a>
+
+        <!-- Navigation -->
+        <div
+          class="justify-content-center order-3 order-lg-2"
+          id="navbarMain"
+        ></div>
+
+        <!-- Right Icons -->
+        <div
+          class="d-flex align-items-center justify-content-end bg-dark-2 px-md-5 py-md-3 px-lg-5 py-lg-3 px-sm-5 py-sm-2 px-3 py-2 rounded-pill navigationRight ms-2 gap-lg-4 gap-md-4 gap-sm-3 gap-3 order-2 order-lg-3"
+        >
+          <button><i class="fa-solid fa-message"></i></button>
+          <button><i class="fa-solid fa-bell"></i></button>
+          <button
+            type="button"
+            data-bs-toggle="offcanvas"
+            data-bs-target="#offcanvasRight"
+            aria-controls="offcanvasRight"
+          >
+            <i class="fa-solid fa-border-all"></i>
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <main>
+      <div class="container-fluid dashboard-wrapper">
+        <div class="row g-4">
+          <!-- Leadership -->
+          <div class="col-lg-4">
+            <div class="panel">
+              <div class="panel-header leadership-header">Leadership</div>
+
+              <div class="main-lead">
+                <div class="search-box mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    placeholder="Search User..."
+                  />
+                </div>
+
+                <div class="d-flex gap-2 mb-3">
+                  <!-- Audio Filter -->
+                  <div class="dropdown">
+                    <button
+                      class="filter-btn dropdown-toggle"
+                      type="button"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                    >
+                      Audio
+                    </button>
+                    <ul class="dropdown-menu dropdown-dark">
+                      <li>
+                        <a class="dropdown-item" href="#" data-filter="audio"
+                          >Audio</a
+                        >
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="#" data-filter="video"
+                          >Video</a
+                        >
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="#" data-filter="image"
+                          >Image</a
+                        >
+                      </li>
+                    </ul>
+                  </div>
+
+                  <!-- Today Filter -->
+                  <div class="dropdown">
+                    <button
+                      class="filter-btn dropdown-toggle"
+                      type="button"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                    >
+                      Today
+                    </button>
+                    <ul class="dropdown-menu dropdown-dark">
+                      <li>
+                        <a class="dropdown-item" href="#" data-filter="today"
+                          >Today</a
+                        >
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="#" data-filter="week"
+                          >This Week</a
+                        >
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="#" data-filter="month"
+                          >This Month</a
+                        >
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <!-- Leader Card -->
+                <a id="leader-link" role="button">
+                  <div class="leader-card">
+                    <div class="leader-info">
+                      <img
+                        src="https://i.pravatar.cc/100?img=1"
+                        class="leader-img"
+                      />
+                      <div>
+                        <div class="leader-name">Arjun Verma</div>
+                        <div class="leader-tag">
+                          AI Art <i class="fa-solid fa-angle-right"></i>
+                        </div>
+                        <div class="members">
+                          <i class="fa-solid fa-users"></i> 2.5k members
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="d-flex flex-column flex-wrap justify-content-center align-items-center"
+                    >
+                      <p class="m-0 text-light">#1</p>
+                      <div class="score-badge">12,677</div>
+                    </div>
+                  </div>
+                </a>
+
+                <a href="">
+                  <div class="leader-card">
+                    <div class="leader-info">
+                      <img
+                        src="https://i.pravatar.cc/100?img=2"
+                        class="leader-img"
+                      />
+                      <div>
+                        <div class="leader-name">Maya Kapoor</div>
+                        <div class="leader-tag">
+                          Storytelling <i class="fa-solid fa-angle-right"></i>
+                        </div>
+                        <div class="members">
+                          <i class="fa-solid fa-users"></i> 1.5k members
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="d-flex flex-column flex-wrap justify-content-center align-items-center"
+                    >
+                      <p class="m-0 text-light">#2</p>
+                      <div class="score-badge">10,707</div>
+                    </div>
+                  </div>
+                </a>
+                <a href="">
+                  <div class="leader-card">
+                    <div class="leader-info">
+                      <img
+                        src="https://i.pravatar.cc/100?img=3"
+                        class="leader-img"
+                      />
+                      <div>
+                        <div class="leader-name">Raman Sharma</div>
+                        <div class="leader-tag">
+                          Al Art <i class="fa-solid fa-angle-right"></i>
+                        </div>
+                        <div class="members">
+                          <i class="fa-solid fa-users"></i> 1k members
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="d-flex flex-column flex-wrap justify-content-center align-items-center"
+                    >
+                      <p class="m-0 text-light">#3</p>
+                      <div class="score-badge">10,707</div>
+                    </div>
+                  </div>
+                </a>
+                <hr style="color: #fff" />
+
+                <a href="">
+                  <div class="my-card">
+                    <div class="leader-info">
+                      <img
+                        src="https://i.pravatar.cc/100?img=4"
+                        class="leader-img"
+                      />
+                      <div>
+                        <div class="leader-name">My Profile</div>
+                        <div class="leader-tag">
+                          Al Art <i class="fa-solid fa-angle-right"></i>
+                        </div>
+                        <div class="members">
+                          <i class="fa-solid fa-users"></i> 1k members
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="d-flex flex-column flex-wrap justify-content-center align-items-center"
+                    >
+                      <p class="m-0 text-light">#100</p>
+                      <div class="score-badge">10,707</div>
+                    </div>
+                  </div>
+                </a>
+                <a href="">
+                  <div class="leader-card">
+                    <div class="leader-info">
+                      <img
+                        src="https://i.pravatar.cc/100?img=5"
+                        class="leader-img"
+                      />
+                      <div>
+                        <div class="leader-name">Raman Sharma</div>
+                        <div class="leader-tag">
+                          Al Art <i class="fa-solid fa-angle-right"></i>
+                        </div>
+                        <div class="members">
+                          <i class="fa-solid fa-users"></i> 1k members
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="d-flex flex-column flex-wrap justify-content-center align-items-center"
+                    >
+                      <p class="m-0 text-light">#221</p>
+                      <div class="score-badge">10,707</div>
+                    </div>
+                  </div>
+                </a>
+                <a href="">
+                  <div class="leader-card">
+                    <div class="leader-info">
+                      <img
+                        src="https://i.pravatar.cc/100?img=6"
+                        class="leader-img"
+                      />
+                      <div>
+                        <div class="leader-name">Raman Sharma</div>
+                        <div class="leader-tag">
+                          Al Art <i class="fa-solid fa-angle-right"></i>
+                        </div>
+                        <div class="members">
+                          <i class="fa-solid fa-users"></i> 1k members
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="d-flex flex-column flex-wrap justify-content-center align-items-center"
+                    >
+                      <p class="m-0 text-light">#222</p>
+                      <div class="score-badge">10,707</div>
+                    </div>
+                  </div>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Competitions -->
+          <div class="col-lg-4">
+            <div class="panel">
+              <div class="panel-header competition-header">Competitions</div>
+
+              <div class="main-lead">
+                <div class="search-box mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    placeholder="Search User..."
+                  />
+                </div>
+
+                <div class="d-flex gap-2 mb-3">
+                  <!-- Audio Filter -->
+                  <div class="dropdown">
+                    <button
+                      class="filter-btn dropdown-toggle"
+                      type="button"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                    >
+                      Upcoming
+                    </button>
+                    <ul class="dropdown-menu dropdown-dark">
+                      <li>
+                        <a class="dropdown-item" href="#" data-filter="audio"
+                          >Live</a
+                        >
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="#" data-filter="video"
+                          >Upcoming</a
+                        >
+                      </li>
+                    </ul>
+                  </div>
+
+                  <!-- Today Filter -->
+                </div>
+
+                <a
+                  href="javascript:void(0)"
+                  id="competition-profile"
+                  data-bs-toggle="modal"
+                  data-bs-target="#competitionModal"
+                >
+                  <div
+                    class="competition-card"
+                    style="
+                      background-image: url(&quot;https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b&quot;);
+                    "
+                  >
+                    <div class="competition-overlay"></div>
+                    <div class="competition-content">
+                      <div class="competition-title">Cyberpunk Legends</div>
+                      <div class="timer text-light">15H:20m:2s</div>
+                      <div
+                        class="d-flex flex-wrap align-items-center justify-content-between"
+                      >
+                        <div class="members text-light">
+                          <i class="fa-solid fa-users"></i> 1.5k members
+                        </div>
+                        <button class="participate-btn">Participate</button>
+                      </div>
+                    </div>
+                  </div>
+                </a>
+
+                <a href="">
+                  <div
+                    class="competition-card"
+                    style="
+                      background-image: url(&quot;https://images.unsplash.com/photo-1446776811953-b23d57bd21aa&quot;);
+                    "
+                  >
+                    <div class="competition-overlay"></div>
+                    <div class="competition-content">
+                      <div class="competition-title">Celestial Voyages</div>
+                      <div class="timer text-light">15H:20m:2s</div>
+                      <div
+                        class="d-flex flex-wrap align-items-center justify-content-between"
+                      >
+                        <div class="members text-light">
+                          <i class="fa-solid fa-users"></i> 1.5k members
+                        </div>
+                        <button class="participate-btn">Participate</button>
+                      </div>
+                    </div>
+                  </div>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Templates -->
+          <div class="col-lg-4">
+            <div class="panel">
+              <div class="panel-header templates-header">Templates</div>
+
+              <div class="main-lead">
+                <div class="search-box mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    placeholder="Search User..."
+                  />
+                </div>
+                <div class="d-flex gap-2 mb-3">
+                  <div class="dropdown">
+                    <button
+                      class="filter-btn dropdown-toggle"
+                      type="button"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                    >
+                      Trending
+                    </button>
+                    <ul class="dropdown-menu dropdown-dark">
+                      <li>
+                        <a class="dropdown-item" href="#" data-filter="audio"
+                          >Most Rated</a
+                        >
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="#" data-filter="video"
+                          >Most Used</a
+                        >
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div class="row g-3">
+                  <div class="col-6">
+                    <a
+                      role="button"
+                      data-bs-toggle="modal"
+                      data-bs-target="#templateModal"
+                    >
+                      <div
+                        class="template-card"
+                        style="
+                          background-image: url(&quot;https://images.unsplash.com/photo-1534447677768-be436bb09401&quot;);
+                        "
+                      >
+                        <div class=""></div>
+                        <div class="competition-content">
+                          <div>
+                            <span class="user-badge">1K User</span>
+                          </div>
+                          <div class="template-body mt-3">
+                            <div class="mb-2 text-light">Cinematic Close-up</div>
+                            <button class="use-btn text-light">Use</button>
+                          </div>
+                        </div>
+                      </div>
+                    </a>
+                  </div>
+
+                  <div class="col-6">
+                    <a href="">
+                      <div
+                        class="template-card"
+                        style="
+                          background-image: url(&quot;https://images.unsplash.com/photo-1534447677768-be436bb09401&quot;);
+                        "
+                      >
+                        <div class=""></div>
+                        <div class="competition-content">
+                          <div>
+                            <span class="user-badge">1K User</span>
+                          </div>
+                          <div class="template-body mt-3">
+                            <div class="mb-2 text-light">Cinematic Close-up</div>
+                            <button class="use-btn text-light">Use</button>
+                          </div>
+                        </div>
+                      </div>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Your Off-Canvas Code Here -->
+    <div
+      class="offcanvas offcanvas-end"
+      tabindex="-1"
+      id="offcanvasRight"
+      aria-labelledby="offcanvasRightLabel"
+    >
+      <div class="offcanvas-header">
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+          <div>
+            <img src="assets/profile.png" alt="" />
+          </div>
+          <div>
+            <h4 class="m-0 font-15 text-light">Junadi ALi</h4>
+            <p class="m-0 font-13 font-light-2">@junaidali0077</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="offcanvas"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="offcanvas-body">
+        <div class="row">
+          <div class="col-md-4">
+            <div class="text-center">
+              <h4 class="m-0 font-15 text-light font-weight-700">Posts</h4>
+              <p class="m-0 font-13 font-light-2">40</p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="text-center">
+              <h4 class="m-0 font-15 text-light font-weight-700">Followers</h4>
+              <p class="m-0 font-13 font-light-2">2.5k</p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="text-center">
+              <h4 class="m-0 font-15 text-light font-weight-700">Following</h4>
+              <p class="m-0 font-13 font-light-2">15</p>
+            </div>
+          </div>
+        </div>
+        <div class="creditscore row mt-3">
+          <a href="">
+            <div
+              class="d-flex flex-wrap justify-content-between align-items-center"
+            >
+              <div class="d-flex flex-wrap gap-2 align-items-center">
+                <div><img src="assets/data-usage.png" alt="" /></div>
+                <h4 class="font-14 font-weight-700 m-0 text-light mt-1">
+                  Ai Credit Usage
+                </h4>
+              </div>
+              <div>
+                <img class="mt-1" src="assets/arrow-right.png " alt="" />
+              </div>
+            </div>
+          </a>
+        </div>
+        <div class="mt-1">
+          <div class="progress-container">
+            <div class="progress-text">
+              <span class="font-13 font-weight-500 text-light">Spent 50</span>
+              <span class="font-13 font-weight-500 text-light">Limit 100</span>
+            </div>
+          </div>
+          <div class="progress-bar mt-1">
+            <div class="progress-fill"></div>
+          </div>
+        </div>
+        <div class="sidenav-items mt-3">
+          <a href="#"
+            ><div class="py-2 border-bottom_1 d-flex gap-2 align-items-center">
+              <img src="assets/uil_setting.png" alt="" />
+              <h4 class="font-15 font-weight-400 m-0 mt-1">Setting</h4>
+            </div>
+          </a>
+          <a href="#"
+            ><div class="py-2 border-bottom_1 d-flex gap-2 align-items-center">
+              <img src="assets/line-md_discord.png" alt="" />
+              <h4 class="font-15 font-weight-400 m-0 mt-1">Discord</h4>
+            </div>
+          </a>
+          <div
+            class="d-flex flex-wrap justify-content-between border-bottom_1 align-items-center"
+          >
+            <div class="py-2 d-flex gap-2 align-items-center">
+              <img src="assets/fluent_dark-theme-20-filled.png" alt="" />
+              <h4 class="font-15 font-weight-400 m-0 mt-1">Theme</h4>
+            </div>
+            <div class="selectheme">
+              <select name="" id="">
+                <option value="Light">Light</option>
+                <option value="Dark">Dark</option>
+              </select>
+            </div>
+          </div>
+          <div
+            class="d-flex flex-wrap justify-content-between border-bottom_1 align-items-center"
+          >
+            <div class="py-2 d-flex gap-2 align-items-center">
+              <img src="assets/clarity_language-line.png" alt="" />
+              <h4 class="font-15 font-weight-400 m-0 mt-1">Language</h4>
+            </div>
+            <div class="selectlang">
+              <select name="" id="">
+                <option value="English">English</option>
+                <option value="Hindi">Hindi</option>
+              </select>
+            </div>
+          </div>
+          <a href="#"
+            ><div class="py-2 border-bottom_1 d-flex gap-2 align-items-center">
+              <img src="assets/ix_support.png" alt="" />
+              <h4 class="font-15 font-weight-400 m-0 mt-1">Help & Support</h4>
+            </div>
+          </a>
+
+          <div class="logoutbtn text-center mt-3">
+            <button class="btn-danger btn">
+              <i class="fa-solid fa-right-from-bracket"></i>
+              Logout
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Your button or element to toggle offcanvas -->
+
+    <!-- Bootstrap JS and Popper.js -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+      integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js"
+      integrity="sha384-G/EV+4j2dNv+tEPo3++6LCgdCROaejBqfUeNjuKAiuXbjrxilcCdDz6ZAVfHWe1Y"
+      crossorigin="anonymous"
+    ></script>
+    <!-- Leader Details Modal -->
+    <!-- Leader Profile Modal -->
+    <div class="modal fade" id="leaderProfileModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content leader-modal">
+          <!-- Close -->
+          <button
+            type="button"
+            class="btn-close btn-close-white modal-close"
+            data-bs-dismiss="modal"
+          ></button>
+
+          <!-- Header -->
+          <div class="leader-header d-flex align-items-center gap-3">
+            <img src="https://i.pravatar.cc/150?img=1" class="leader-avatar" />
+
+            <div>
+              <h4 class="m-0 text-white">
+                <i class="fa-solid fa-crown text-warning me-1"></i>
+                Arjun Verma
+              </h4>
+              <p class="leader-category m-0">
+                AI Art <i class="fa-solid fa-angle-right"></i>
+              </p>
+              <p class="members mt-1">
+                <i class="fa-solid fa-users"></i> 2.5k members
+              </p>
+            </div>
+          </div>
+
+          <!-- Body -->
+          <div class="modal-body pt-3">
+            <!-- Performance Stats -->
+            <h6 class="section-title">Performance Stats</h6>
+            <div class="row g-3">
+              <div class="col-6 col-md-3">
+                <div class="stat-card">
+                  <i class="fa-solid fa-trophy"></i>
+                  <p>Total Competitions</p>
+                  <h5>87</h5>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="stat-card">
+                  <i class="fa-solid fa-medal"></i>
+                  <p>Competitions Won</p>
+                  <h5>22</h5>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="stat-card">
+                  <i class="fa-solid fa-chart-column"></i>
+                  <p>Avg. Rank</p>
+                  <h5>Top 2.8</h5>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="stat-card">
+                  <i class="fa-solid fa-fire"></i>
+                  <p>Current Streak</p>
+                  <h5>5 Days</h5>
+                </div>
+              </div>
+            </div>
+
+            <!-- Engagement -->
+            <h6 class="section-title mt-4">Engagement Stats</h6>
+            <div class="engagement-grid">
+              <div class="eng-card">❤️ Likes Received <span>58.3k</span></div>
+              <div class="eng-card">👍 Reactions <span>97.8k</span></div>
+              <div class="eng-card">💬 Comments <span>13.6k</span></div>
+            </div>
+
+            <!-- Achievements -->
+            <h6 class="section-title mt-4">Achievements</h6>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="achievement-card purple">⭐ Top Creator</div>
+              </div>
+              <div class="col-md-6">
+                <div class="achievement-card green">
+                  🏆 Consistent Performer
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="modal-footer border-0 d-flex justify-content-between">
+            <button class="btn btn-outline-light rounded-pill px-4">
+              View Full Profile
+            </button>
+
+            <div class="d-flex gap-2">
+              <button class="btn btn-dark rounded-pill px-4">Compare</button>
+              <button class="btn btn-success rounded-pill px-4">
+                <i class="fa-solid fa-user-plus"></i> Follow
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Competition Modal -->
+    <div class="modal fade" id="competitionModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content competition-modal">
+          <!-- Close -->
+          <button
+            type="button"
+            class="btn-close btn-close-white modal-close"
+            data-bs-dismiss="modal"
+          ></button>
+
+          <div class="modal-body p-4">
+            <!-- Title -->
+            <p class="small text-light mb-1">Participate in</p>
+            <h4 class="competition-title">Cyberpink Legends</h4>
+
+            <!-- Banner -->
+            <div class="banner-img mt-3"></div>
+
+            <!-- Info Row -->
+            <div class="d-flex justify-content-between align-items-center mt-3">
+              <div>
+                <span class="badge trending-badge">🔥 Trending</span>
+                <p class="participants mt-2 mb-0">
+                  <i class="fa-solid fa-users"></i> 2.5k Participants
+                </p>
+              </div>
+
+              <div class="text-end">
+                <small class="text-light">Time left</small>
+                <h5 class="time-left">15H:20m:2s</h5>
+              </div>
+            </div>
+
+            <!-- Highlight Box -->
+            <div class="highlight-box mt-3">
+              Stand out in a live competition with over
+              <strong>2,500 creators!</strong>
+            </div>
+
+            <!-- What You'll Gain -->
+            <div
+              class="mt-4 d-flex flex-wrap justify-content-between align-items-center"
+            >
+              <div>
+                <h6 class="section-title">What you'll Gain</h6>
+
+                <div class="gain-list">
+                  <p>🏆 Win XP, Badges & Rewards</p>
+                  <p>🔓 Unlock Achievements Badge</p>
+                  <p>📈 Climb the LeaderBoard</p>
+                </div>
+              </div>
+
+              <!-- Avatars -->
+              <div
+                class="participants-avatars mt-2 d-flex flex-column align-items-center justify-content-center"
+              >
+                <div>
+                  <img src="https://i.pravatar.cc/40?img=1" />
+                  <img src="https://i.pravatar.cc/40?img=2" />
+                  <img src="https://i.pravatar.cc/40?img=3" />
+                  <img src="https://i.pravatar.cc/40?img=4" />
+                </div>
+                <span class="more-text">+12 More Participating</span>
+              </div>
+            </div>
+
+            <!-- Competition Detail -->
+            <div class="mt-4">
+              <h6 class="section-title">Competition Detail</h6>
+
+              <span class="badge submission-badge">Image Submission</span>
+
+              <ul class="detail-list mt-2">
+                <li>Submit your best cyberpunk-themed artwork</li>
+                <li>Follow specified guidelines & rules</li>
+                <li>Must submit before timer ends</li>
+              </ul>
+            </div>
+
+            <!-- Buttons -->
+            <div class="d-flex justify-content-between mt-4">
+              <button class="btn btn-rules">View Rules</button>
+              <button class="btn btn-confirm">Confirm Participation</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Template Preview Modal -->
+    <div class="modal fade" id="templateModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content tpl-modal">
+          <!-- Close -->
+          <button
+            type="button"
+            class="btn-close btn-close-white tpl-close"
+            data-bs-dismiss="modal"
+          ></button>
+
+          <div class="modal-body p-4">
+            <!-- Header -->
+            <div class="tpl-header text-center mb-3">
+              <h6 class="tpl-title">Cinematic Close-Up</h6>
+              <span class="tpl-chip">Cinematic</span>
+            </div>
+
+            <!-- Trending -->
+            <!-- <span class="tpl-trending">🔥 Trending</span> -->
+
+            <!-- Preview Image -->
+            <div class="tpl-preview-img"></div>
+
+            <!-- Thumbnails -->
+            <!-- <div class="tpl-thumbs mt-2">
+              <img src="https://i.pravatar.cc/50?img=11" />
+              <img src="https://i.pravatar.cc/50?img=12" />
+              <img src="https://i.pravatar.cc/50?img=13" />
+            </div> -->
+
+            <!-- Prompt Preview -->
+            <div class="tpl-section mt-4">
+              <h6 class="tpl-section-title">Prompt Preview</h6>
+
+              <textarea class="tpl-prompt-input form-control" rows="4">
+Ultra-cinematic close-up portrait of [subject], dramatic lighting, shallow depth of field, high contrast, bokeh, cinematic sharp focus, sci-fi
+  </textarea
+              >
+            </div>
+
+            <!-- Upload Image -->
+            <div class="tpl-section mt-3">
+              <h6 class="tpl-section-title">Upload Your Image</h6>
+              <div class="tpl-upload">
+                <img src="https://i.pravatar.cc/60?img=14" />
+                <div>
+                  <p class="mb-1">Upload image to apply this template</p>
+                  <small>JPG, PNG or WEBP, up to 20MB</small>
+                </div>
+                <button class="tpl-replace">Replace</button>
+              </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="tpl-stats mt-3">
+              <span>👁 1K Uses</span>
+              <span>⭐ 4.9+</span>
+            </div>
+
+            <!-- Actions -->
+            <div class="tpl-actions mt-4">
+              <button class="tpl-btn-outline">Edit Prompt</button>
+              <button class="tpl-btn-primary">Use Template</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      const leaderLink = document.getElementById("leader-link");
+      const leaderModal = new bootstrap.Modal(
+        document.getElementById("leaderProfileModal"),
+      );
+
+      leaderLink.addEventListener("click", function () {
+        leaderModal.show();
+      });
+    </script>
+    <script>
+      const promptField = document.querySelector(".tpl-prompt-input");
+
+      promptField.addEventListener("focus", function () {
+        const text = this.value;
+        const start = text.indexOf("[subject]");
+        if (start !== -1) {
+          this.setSelectionRange(start, start + 9);
+        }
+      });
+    </script>
+  </body>
+</html>
