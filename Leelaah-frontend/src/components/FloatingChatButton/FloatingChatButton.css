@@ -3,8 +3,8 @@
 	position: fixed;
 	bottom: 20px;
 	left: 20px;
-	background: #1a1a1a;
-	border: 1px solid rgba(255, 255, 255, 0.15);
+	background: #f0f0f0;
+	border: 1px solid rgba(0, 0, 0, 0.12);
 	border-radius: 24px;
 	padding: 12px 20px;
 	display: flex;
@@ -13,25 +13,42 @@
 	cursor: pointer;
 	transition: all 0.3s ease;
 	z-index: 1000;
+	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.dark .floating-chat-button {
+	background: #1a1a1a;
+	border: 1px solid rgba(255, 255, 255, 0.15);
 	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
 .floating-chat-button:hover {
-	background: #252525;
 	transform: translateY(-2px);
+}
+
+.dark .floating-chat-button:hover {
+	background: #252525;
 	box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6);
 }
 
 .chat-button-icon {
 	font-size: 20px;
+	color: #333;
+}
+
+.dark .chat-button-icon {
 	color: #fff;
 }
 
 .chat-button-text {
-	color: #fff;
+	color: #333;
 	font-size: 14px;
 	font-weight: 600;
 	font-family: 'Poppins', sans-serif;
+}
+
+.dark .chat-button-text {
+	color: #fff;
 }
 
 /* Avatar Stack */
@@ -44,10 +61,14 @@
 	width: 28px;
 	height: 28px;
 	border-radius: 50%;
-	border: 2px solid #1a1a1a;
+	border: 2px solid #f0f0f0;
 	object-fit: cover;
 	margin-left: -10px;
 	transition: all 0.2s;
+}
+
+.dark .chat-button-avatar {
+	border: 2px solid #1a1a1a;
 }
 
 .chat-button-avatar:first-child {
@@ -82,7 +103,6 @@
 	.floating-chat-button {
 		padding: 12px;
 		bottom: 80px;
-		/* Above mobile nav if exists */
 	}
 
 	.chat-button-avatars {

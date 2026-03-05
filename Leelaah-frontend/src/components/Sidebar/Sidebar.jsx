@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
+import { setTheme } from '../../store/slices/themeSlice';
 import apiService from '../../services/api';
 import toast from 'react-hot-toast';
 import './Sidebar.css';
@@ -8,10 +9,10 @@ import './Sidebar.css';
 const Sidebar = ({ onNavigate }) => {
     const dispatch = useDispatch();
     const { user } = useSelector((state) => state.auth);
+    const { theme } = useSelector((state) => state.theme);
     const [userStats, setUserStats] = useState(null);
     const [loading, setLoading] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
-    const [theme, setTheme] = useState(localStorage.getItem('theme') || 'Dark');
     const [language, setLanguage] = useState(localStorage.getItem('language') || 'English');
 
     // Fetch user profile with stats
@@ -61,9 +62,7 @@ const Sidebar = ({ onNavigate }) => {
     // Handle theme change
     const handleThemeChange = (e) => {
         const newTheme = e.target.value;
-        setTheme(newTheme);
-        localStorage.setItem('theme', newTheme);
-        // TODO: Implement actual theme switching logic
+        dispatch(setTheme(newTheme));
     };
 
     // Handle language change

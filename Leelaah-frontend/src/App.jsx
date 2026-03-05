@@ -20,6 +20,7 @@ import './App.css';
 function App() {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
+  const { theme } = useSelector((state) => state.theme);
   const [currentView, setCurrentView] = useState('home'); // 'home', 'profile', 'user', or 'post'
   const [selectedPostId, setSelectedPostId] = useState(null);
   const [selectedUserId, setSelectedUserId] = useState(null);
@@ -40,6 +41,33 @@ function App() {
       }
     };
   }, [user]);
+
+  // Handle dark mode application on html element
+  useEffect(() => {
+    const applyTheme = () => {
+      if (theme === 'Dark') {
+        document.documentElement.classList.add('dark');
+      } else if (theme === 'Light') {
+        document.documentElement.classList.remove('dark');
+      } else if (theme === 'Auto') {
+        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+    };
+
+    applyTheme();
+
+    // Listener for system preference changes when in 'Auto' mode
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => {
+      if (theme === 'Auto') applyTheme();
+    };
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, [theme]);
 
   const handleNavigate = (view, data = null) => {
     if (view === 'post' && data) {

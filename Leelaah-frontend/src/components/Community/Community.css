@@ -23,10 +23,12 @@
 .tpl-prompt-input::-webkit-scrollbar {
   width: 6px;
 }
+
 .tpl-prompt-input::-webkit-scrollbar-thumb {
   background: #a855f7;
   border-radius: 6px;
 }
+
 /* Modal Base */
 .tpl-modal {
   background: radial-gradient(circle at top, #1b0b2e, #06010d 75%);
@@ -75,8 +77,7 @@
 .tpl-preview-img {
   height: 230px;
   border-radius: 16px;
-  background: url("https://images.unsplash.com/photo-1517694712202-14dd9538aa97")
-    center/cover no-repeat;
+  background: url("https://images.unsplash.com/photo-1517694712202-14dd9538aa97") center/cover no-repeat;
   margin-top: 12px;
 }
 
@@ -177,6 +178,7 @@
   border-radius: 18px;
   padding: 8px;
 }
+
 /* Modal Background */
 .competition-modal {
   background: radial-gradient(circle at top, #0f172a, #05070d 70%);
@@ -204,8 +206,7 @@
 .banner-img {
   height: 150px;
   border-radius: 16px;
-  background: url("https://images.unsplash.com/photo-1506744038136-46273834b3fb")
-    center/cover no-repeat;
+  background: url("https://images.unsplash.com/photo-1506744038136-46273834b3fb") center/cover no-repeat;
 }
 
 /* Trending */
@@ -305,6 +306,7 @@
 .btn-confirm:hover {
   opacity: 0.9;
 }
+
 /* Modal Wrapper */
 .leader-modal {
   background: radial-gradient(circle at top, #1c2350, #090b14 70%);
@@ -368,12 +370,15 @@
 .stat-card.gold {
   box-shadow: 0 0 25px rgba(255, 193, 7, 0.25);
 }
+
 .stat-card.orange {
   box-shadow: 0 0 25px rgba(255, 140, 0, 0.25);
 }
+
 .stat-card.blue {
   box-shadow: 0 0 25px rgba(108, 124, 255, 0.25);
 }
+
 .stat-card.green {
   box-shadow: 0 0 25px rgba(89, 255, 122, 0.25);
 }
@@ -409,17 +414,28 @@
 .achievement-card.green {
   background: linear-gradient(90deg, #3ddc84, #2ea44f);
 }
+
 .dashboard-wrapper {
   padding: 40px;
-  margin-top: 60px; /* Offset for floating bar/navbar if needed */
-  background: #000;
+  margin-top: 60px;
+  background: #f8f8fa;
   min-height: 100vh;
+  transition: background 0.3s ease;
+}
+
+.dark .dashboard-wrapper {
+  background: #000;
 }
 
 .panel {
-  background: #0d0f14;
+  background: #fff;
   border-radius: 20px;
   height: 100%;
+  transition: background 0.3s ease;
+}
+
+.dark .panel {
+  background: #0d0f14;
 }
 
 .panel-header {
@@ -447,26 +463,39 @@
 }
 
 .search-box input {
-  background: #11151c;
-  border: 1px solid #1b2029;
+  background: #f0f0f0;
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 20px;
   padding: 8px 15px;
-  color: #fff;
+  color: #333;
   font-size: 13px;
+  transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+.dark .search-box input {
+  background: #11151c;
+  border: 1px solid #1b2029;
+  color: #fff;
 }
 
 .filter-btn {
-  background: #1b2029;
+  background: #e8e8e8;
   border: none;
   border-radius: 20px;
   padding: 6px 14px;
-  color: #aaa;
+  color: #666;
   font-size: 13px;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.dark .filter-btn {
+  background: #1b2029;
+  color: #aaa;
 }
 
 /* Leadership Card */
 .leader-card {
-  background: linear-gradient(90deg, #11151c, #1c1028);
+  background: linear-gradient(90deg, #f0f0f5, #e8e0f5);
   border-radius: 15px;
   padding: 15px;
   margin-bottom: 15px;
@@ -475,14 +504,19 @@
   justify-content: space-between;
   text-decoration: none;
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: transform 0.2s, background 0.3s ease;
 }
+
+.dark .leader-card {
+  background: linear-gradient(90deg, #11151c, #1c1028);
+}
+
 .leader-card:hover {
   transform: translateY(-2px);
 }
 
 .my-card {
-  background: linear-gradient(90deg, #11151c, #1e2870);
+  background: linear-gradient(90deg, #f0f0f5, #e0e3f5);
   border-radius: 15px;
   padding: 15px;
   margin-bottom: 15px;
@@ -490,6 +524,11 @@
   align-items: center;
   justify-content: space-between;
   text-decoration: none;
+  transition: background 0.3s ease;
+}
+
+.dark .my-card {
+  background: linear-gradient(90deg, #11151c, #1e2870);
 }
 
 .leader-info {
@@ -508,6 +547,11 @@
 .leader-name {
   font-weight: 600;
   font-size: 15px;
+  color: #1a1a1a;
+  transition: color 0.3s ease;
+}
+
+.dark .leader-name {
   color: #fff;
 }
 
@@ -622,11 +666,20 @@
 
 .search-box input::placeholder {
   color: #424242;
-  opacity: 1; 
+  opacity: 1;
 }
-.search-box input::-webkit-input-placeholder { color: #424242; }
-.search-box input::-moz-placeholder { color: #424242; }
-.search-box input:-ms-input-placeholder { color: #424242; }
+
+.search-box input::-webkit-input-placeholder {
+  color: #424242;
+}
+
+.search-box input::-moz-placeholder {
+  color: #424242;
+}
+
+.search-box input:-ms-input-placeholder {
+  color: #424242;
+}
 
 /* Dark dropdown menu */
 .dropdown-dark {
@@ -662,23 +715,37 @@ a {
 }
 
 .offcanvas-body {
+  background: #fff;
+  transition: background 0.3s ease;
+}
+
+.dark .offcanvas-body {
   background: #0d0f14;
 }
+
 .offcanvas-header {
+  background: #fff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.dark .offcanvas-header {
   background: #0d0f14;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .progress-container {
   display: flex;
   justify-content: space-between;
 }
+
 .progress-bar {
   height: 6px;
   background: #333;
   border-radius: 6px;
   overflow: hidden;
 }
+
 .progress-fill {
   width: 50%;
   height: 100%;
@@ -686,11 +753,13 @@ a {
 }
 
 .border-bottom_1 {
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
+
 .sidenav-items h4 {
   color: #ccc;
 }
+
 .logoutbtn .btn {
   background: #ef4444;
   color: #fff;
@@ -700,17 +769,34 @@ a {
 
 /* Nav */
 .bg-mainColor {
-  background-color: rgba(6, 1, 13, 0.95);
+  background-color: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
+  transition: background-color 0.3s ease;
 }
+
+.dark .bg-mainColor {
+  background-color: rgba(6, 1, 13, 0.95);
+}
+
 .bg-dark-2 {
+  background-color: rgba(0, 0, 0, 0.04);
+  transition: background-color 0.3s ease;
+}
+
+.dark .bg-dark-2 {
   background-color: rgba(255, 255, 255, 0.05);
 }
+
 .navigationRight button {
   background: transparent;
   border: none;
-  color: #fff;
+  color: #333;
   font-size: 20px;
+  transition: color 0.3s ease;
+}
+
+.dark .navigationRight button {
+  color: #fff;
 }
 
 /* Navbar top padding for back button */

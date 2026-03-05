@@ -21,14 +21,22 @@
 }
 
 
+
 .cs-page {
     min-height: 100vh;
     width: 100%;
-    background: #000;
-    color: #fff;
+    background: #f8f8fa;
+    color: #1a1a1a;
     font-family: 'Poppins', sans-serif;
     padding-bottom: 100px;
+    transition: background 0.3s ease, color 0.3s ease;
 }
+
+.dark .cs-page {
+    background: #000;
+    color: #fff;
+}
+
 
 .cs-page>.cs-section,
 .cs-page>.cs-balance-bar,
@@ -76,11 +84,17 @@
     align-items: center;
     justify-content: space-between;
     padding: 14px 24px;
-    background: #0a0a0a;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: #f0f0f0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
     position: sticky;
     top: 0;
     z-index: 100;
+    transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.dark .cs-header {
+    background: #0a0a0a;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .cs-header-left {
@@ -111,6 +125,11 @@
     font-size: 18px;
     font-weight: 700;
     margin: 0;
+    color: #1a1a1a;
+}
+
+.dark .cs-title {
+    color: #fff;
 }
 
 .cs-header-coins {
@@ -137,6 +156,12 @@
     align-items: center;
     gap: 0;
     padding: 18px 24px;
+    background: #f0f0f0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+    transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.dark .cs-balance-bar {
     background: #0f0f0f;
     border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
@@ -183,6 +208,10 @@
     display: block;
     font-size: 16px;
     font-weight: 700;
+    color: #1a1a1a;
+}
+
+.dark .cs-bal-num {
     color: #fff;
 }
 
@@ -229,6 +258,11 @@
 }
 
 .cs-nav-btn:hover {
+    background: rgba(0, 0, 0, 0.04);
+    color: #555;
+}
+
+.dark .cs-nav-btn:hover {
     background: rgba(255, 255, 255, 0.04);
     color: #888;
 }
@@ -257,17 +291,23 @@
 }
 
 .cs-coin-card {
-    background: rgba(20, 20, 20, 0.4);
+    background: #fff;
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(0, 0, 0, 0.08);
     border-radius: 20px;
     padding: 32px 20px 24px;
     text-align: center;
     position: relative;
     transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
     overflow: hidden;
+}
+
+.dark .cs-coin-card {
+    background: rgba(20, 20, 20, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
 }
 
 .cs-coin-card::before {
@@ -277,15 +317,21 @@
     left: 0;
     right: 0;
     height: 100%;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 50%);
+    background: linear-gradient(180deg, rgba(155, 108, 248, 0.03) 0%, transparent 50%);
     opacity: 0;
     transition: opacity 0.4s ease;
     pointer-events: none;
 }
 
 .cs-coin-card:hover {
-    border-color: rgba(255, 255, 255, 0.12);
+    border-color: rgba(155, 108, 248, 0.2);
     transform: translateY(-6px);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.1);
+    background: #fafafa;
+}
+
+.dark .cs-coin-card:hover {
+    border-color: rgba(255, 255, 255, 0.12);
     box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
     background: rgba(26, 26, 26, 0.6);
 }
@@ -295,12 +341,23 @@
 }
 
 .cs-coin-card.featured {
-    border-color: rgba(155, 108, 248, 0.4);
+    border-color: rgba(155, 108, 248, 0.3);
+    background: linear-gradient(180deg, rgba(155, 108, 248, 0.06) 0%, #fff 100%);
+    box-shadow: 0 8px 32px rgba(155, 108, 248, 0.1);
+}
+
+.dark .cs-coin-card.featured {
     background: linear-gradient(180deg, rgba(155, 108, 248, 0.08) 0%, rgba(20, 20, 20, 0.7) 100%);
     box-shadow: 0 8px 32px rgba(155, 108, 248, 0.15);
 }
 
 .cs-coin-card.featured:hover {
+    border-color: rgba(155, 108, 248, 0.5);
+    box-shadow: 0 16px 48px rgba(155, 108, 248, 0.15);
+    background: linear-gradient(180deg, rgba(155, 108, 248, 0.1) 0%, #fafafa 100%);
+}
+
+.dark .cs-coin-card.featured:hover {
     border-color: rgba(155, 108, 248, 0.7);
     box-shadow: 0 16px 48px rgba(155, 108, 248, 0.25);
     background: linear-gradient(180deg, rgba(155, 108, 248, 0.12) 0%, rgba(26, 26, 26, 0.8) 100%);
@@ -405,9 +462,13 @@
 .cs-price-num {
     font-size: 36px;
     font-weight: 800;
-    color: #fff;
+    color: #1a1a1a;
     line-height: 1;
     letter-spacing: -0.5px;
+}
+
+.dark .cs-price-num {
+    color: #fff;
 }
 
 .cs-per {
@@ -471,15 +532,21 @@
 }
 
 .cs-custom-card {
-    background: rgba(20, 20, 20, 0.4);
+    background: #fff;
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(0, 0, 0, 0.08);
     border-radius: 20px;
     padding: 28px;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
     position: relative;
     overflow: hidden;
+}
+
+.dark .cs-custom-card {
+    background: rgba(20, 20, 20, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
 }
 
 .cs-custom-card::before {
@@ -518,10 +585,15 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(0, 0, 0, 0.08);
     border-radius: 10px;
     padding: 10px 14px;
+}
+
+.dark .cs-input-field {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .cs-input-field svg {
@@ -533,11 +605,15 @@
     background: none;
     border: none;
     outline: none;
-    color: #fff;
+    color: #1a1a1a;
     font-family: 'Poppins', sans-serif;
     font-size: 18px;
     font-weight: 700;
     width: 100%;
+}
+
+.dark .cs-input-field input {
+    color: #fff;
 }
 
 .cs-input-field input::-webkit-inner-spin-button,
@@ -554,9 +630,13 @@
     height: 4px;
     -webkit-appearance: none;
     appearance: none;
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(0, 0, 0, 0.08);
     border-radius: 2px;
     outline: none;
+}
+
+.dark .cs-range {
+    background: rgba(255, 255, 255, 0.06);
 }
 
 .cs-range::-webkit-slider-thumb {
@@ -609,8 +689,12 @@
     display: block;
     font-size: 22px;
     font-weight: 800;
-    color: #fff;
+    color: #1a1a1a;
     margin-top: 2px;
+}
+
+.dark .cs-ct-price {
+    color: #fff;
 }
 
 .cs-custom-buy {

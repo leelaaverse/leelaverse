@@ -1,10 +1,20 @@
 .home-feed {
     min-height: 100vh;
-    background-color: #000;
+    background-color: #f5f5f5;
     position: relative;
+    transition: background-color 0.3s ease;
+}
+
+.dark .home-feed {
+    background-color: #000;
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }

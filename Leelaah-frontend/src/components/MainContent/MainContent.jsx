@@ -140,7 +140,7 @@ const MainContent = ({ activeTab, onShowAuthModal, onPostClick, onUserClick }) =
 
                 {/* Error State */}
                 {!loading && error && (
-                    <div className="text-center py-12 px-8 text-red-400">
+                    <div className="text-center py-12 px-8 text-red-500 dark:text-red-400">
                         <p className="text-xl mb-4">⚠️ Error loading posts</p>
                         <p className="text-sm text-red-400/70 mb-4">{error}</p>
                         <button
@@ -154,9 +154,9 @@ const MainContent = ({ activeTab, onShowAuthModal, onPostClick, onUserClick }) =
 
                 {/* Posts Content */}
                 {!loading && !error && posts.length === 0 && (
-                    <div className="text-center py-16 px-8 text-white/60 font-['Poppins']">
+                    <div className="text-center py-16 px-8 text-gray-500 dark:text-white/60 font-['Poppins']">
                         <p className="text-xl">No posts available at the moment.</p>
-                        <p className="text-sm text-white/50 mt-2">
+                        <p className="text-sm text-gray-400 dark:text-white/50 mt-2">
                             Be the first to create a post!
                         </p>
                     </div>
@@ -203,7 +203,7 @@ const MainContent = ({ activeTab, onShowAuthModal, onPostClick, onUserClick }) =
 
                 {/* No More Posts */}
                 {!loading && posts.length > 0 && !hasMore && (
-                    <div className="text-center py-8 text-white/50 font-['Poppins'] mt-8">
+                    <div className="text-center py-8 text-gray-400 dark:text-white/50 font-['Poppins'] mt-8">
                         <p className="text-sm">You've reached the end!</p>
                     </div>
                 )}

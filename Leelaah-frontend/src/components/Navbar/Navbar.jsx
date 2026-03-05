@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import socketService from '../../services/socket';
 import './Navbar.css';
 
 const Navbar = ({ activeTab, setActiveTab, isLoggedIn = false, onLogin, onSignup, showBackButton = false, onBack, onChatClick }) => {
+    const { theme } = useSelector((state) => state.theme);
     const [unreadMessages, setUnreadMessages] = useState(0);
     const [unreadNotifications, setUnreadNotifications] = useState(0);
 
@@ -55,10 +57,14 @@ const Navbar = ({ activeTab, setActiveTab, isLoggedIn = false, onLogin, onSignup
                         href="#"
                     >
                         <img
-                            src="/assets/logo-web.png"
+                            src={
+                                theme === 'Light' || (theme === 'Auto' && !document.documentElement.classList.contains('dark'))
+                                    ? '/assets/Logo-leela-white.jpg'
+                                    : '/assets/Logo-leela-black.jpg'
+                            }
                             alt="LELAA Logo"
                             className="img-fluid"
-                            style={{ maxHeight: '100px' }}
+                            style={{ maxHeight: '60px' }} // Adjusted max-height so these big images don't overshadow header
                         />
                     </a>
                 )}

@@ -152,6 +152,23 @@ exports.generateImage = async (req, res) => {
 			inputParams.acceleration = 'regular';
 		}
 
+		// Calculate total cost
+		const modelConfig = getModelConfig(selectedModel);
+		const creditCostPerImage = modelConfig ? modelConfig.creditCost : (selectedModel === 'flux-schnell' ? 50 : 100);
+		const totalCreditCost = creditCostPerImage * imageCount;
+
+		// Verify User has enough coins before generating
+		const dbUser = await prisma.user.findUnique({
+			where: { id: userId }
+		});
+
+		if (!dbUser || dbUser.coinBalance < totalCreditCost) {
+			return res.status(400).json({
+				success: false,
+				message: `Insufficient coins. You need ${totalCreditCost} coins to generate ${imageCount} ${modelName} image(s), but you currently have ${dbUser?.coinBalance || 0}.`
+			});
+		}
+
 		// Generate multiple images by submitting multiple requests
 		const generations = [];
 
@@ -186,13 +203,37 @@ exports.generateImage = async (req, res) => {
 			});
 		}
 
+		// Deduct coins and log transaction
+		const updatedUser = await prisma.user.update({
+			where: { id: userId },
+			data: {
+				coinBalance: {
+					decrement: totalCreditCost
+				},
+				totalCoinsSpent: {
+					increment: totalCreditCost
+				}
+			}
+		});
+
+		await prisma.coinTransaction.create({
+			data: {
+				userId: userId,
+				type: 'spend',
+				amount: totalCreditCost,
+				balanceAfter: updatedUser.coinBalance,
+				description: `Generated ${imageCount} AI Image(s) using ${modelName}`
+			}
+		});
+
 		// Return array of request IDs for tracking
 		res.json({
 			success: true,
-			message: `${imageCount} image generation(s) started`,
+			message: `${imageCount} image generation(s) started. ${totalCreditCost} coins deducted.`,
 			generations: generations,
 			count: imageCount,
-			estimatedTime: '15-30 seconds per image'
+			estimatedTime: '15-30 seconds per image',
+			newBalance: updatedUser.coinBalance
 		});
 
 	} catch (error) {
@@ -262,9 +303,48 @@ exports.generateVideo = async (req, res) => {
 			inputParams.aspect_ratio = aspectMap[aspectRatio] || '16:9';
 		}
 
+		// Calculate total cost
+		const creditCost = modelConfig.creditCost || 150; // default for unknown models
+		const totalCreditCost = creditCost; // Currently we only generate one video at a time
+
+		// Verify User has enough coins before generating
+		const dbUser = await prisma.user.findUnique({
+			where: { id: userId }
+		});
+
+		if (!dbUser || dbUser.coinBalance < totalCreditCost) {
+			return res.status(400).json({
+				success: false,
+				message: `Insufficient coins. You need ${totalCreditCost} coins to generate a ${modelName} video, but you currently have ${dbUser?.coinBalance || 0}.`
+			});
+		}
+
 		// Submit to FAL
 		const { request_id } = await fal.queue.submit(falModel, {
 			input: inputParams
+		});
+
+		// Deduct coins and log transaction
+		const updatedUser = await prisma.user.update({
+			where: { id: userId },
+			data: {
+				coinBalance: {
+					decrement: totalCreditCost
+				},
+				totalCoinsSpent: {
+					increment: totalCreditCost
+				}
+			}
+		});
+
+		await prisma.coinTransaction.create({
+			data: {
+				userId: userId,
+				type: 'spend',
+				amount: totalCreditCost,
+				balanceAfter: updatedUser.coinBalance,
+				description: `Generated AI Video using ${modelName}`
+			}
 		});
 
 		// Create record

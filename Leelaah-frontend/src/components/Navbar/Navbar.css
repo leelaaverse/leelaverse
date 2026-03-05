@@ -1,12 +1,27 @@
 .bg-mainColor {
+    background-color: #fff;
+    transition: background-color 0.3s ease;
+}
+
+.dark .bg-mainColor {
     background-color: #000;
 }
 
 .Header {
+    border-bottom: 1px solid #e0e0e0 !important;
+    transition: border-color 0.3s ease;
+}
+
+.dark .Header {
     border-bottom: 1px solid #525151 !important;
 }
 
 .bg-dark-2 {
+    background-color: rgba(0, 0, 0, 0.05);
+    transition: background-color 0.3s ease;
+}
+
+.dark .bg-dark-2 {
     background-color: #38383863;
 }
 
@@ -19,10 +34,24 @@
 }
 
 .nav-pills .nav-link {
-    color: #fff;
+    color: #333;
     border-radius: 50rem !important;
     font-weight: 500;
     transition: 0.3s;
+}
+
+.nav-pills .nav-link:hover {
+    color: #9b6cf8;
+    background-color: rgba(155, 108, 248, 0.08);
+}
+
+.dark .nav-pills .nav-link {
+    color: #fff;
+}
+
+.dark .nav-pills .nav-link:hover {
+    color: #d8b4fe;
+    background-color: rgba(155, 108, 248, 0.15);
 }
 
 /* Right Section */
@@ -35,6 +64,11 @@
 
 .navigationRight button i {
     font-size: 20px;
+    color: #333;
+    transition: color 0.3s ease;
+}
+
+.dark .navigationRight button i {
     color: #fff;
 }
 
@@ -49,15 +83,21 @@
 
 /* Back Button */
 .navbar-back-btn {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(0, 0, 0, 0.12);
     border-radius: 8px;
     padding: 0.625rem 1.25rem;
-    color: #fff;
+    color: #333;
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
+}
+
+.dark .navbar-back-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
 }
 
 .navbar-back-btn:hover {

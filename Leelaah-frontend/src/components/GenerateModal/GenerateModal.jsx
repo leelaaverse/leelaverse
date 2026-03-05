@@ -4,6 +4,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import './GenerateModal.css';
 import apiService from '../../services/api';
 import { fetchFeedPosts } from '../../store/slices/postsSlice';
+import { fetchModels } from '../../store/slices/modelsSlice';
 
 const GenerateModal = ({ isOpen, onClose, onOpenAuth }) => {
     const dispatch = useDispatch();
@@ -17,9 +18,8 @@ const GenerateModal = ({ isOpen, onClose, onOpenAuth }) => {
     const [aiTab, setAiTab] = useState('image');
 
     // Dynamic AI Models state
-    const [imageModels, setImageModels] = useState([]);
-    const [videoModels, setVideoModels] = useState([]);
-    const [modelsLoading, setModelsLoading] = useState(true);
+    const { imageModels, videoModels, status: modelsStatus } = useSelector((state) => state.models);
+    const modelsLoading = modelsStatus === 'loading';
     const [isVideo, setIsVideo] = useState(false);
 
     const [formData, setFormData] = useState({
@@ -48,29 +48,19 @@ const GenerateModal = ({ isOpen, onClose, onOpenAuth }) => {
     // Post creation state
     const [isPosting, setIsPosting] = useState(false);
 
-    // Fetch AI models on component mount
+    // Fetch AI models when navigating to AI tab
     useEffect(() => {
-        const fetchModels = async () => {
-            try {
-                setModelsLoading(true);
-                const response = await apiService.posts.getModels();
-                if (response.data.success) {
-                    setImageModels(response.data.models.image || []);
-                    setVideoModels(response.data.models.video || []);
-                }
-            } catch (error) {
-                console.error('Failed to load AI models:', error);
-                // Fallback to default models if API fails
-                setImageModels([
-                    { id: 'flux-schnell', name: 'FLUX Schnell', description: 'Fast (15-20s)' },
-                    { id: 'flux-1-srpo', name: 'FLUX.1 SRPO', description: 'Quality (25-35s)' }
-                ]);
-            } finally {
-                setModelsLoading(false);
-            }
-        };
-        fetchModels();
-    }, []);
+        if (modalStep === 'ai' && modelsStatus === 'idle') {
+            dispatch(fetchModels());
+        }
+    }, [modalStep, modelsStatus, dispatch]);
+
+    // Calculate dynamic cost based on selected model
+    const currentCost = React.useMemo(() => {
+        const currentModels = aiTab === 'image' ? imageModels : videoModels;
+        const selectedModelData = currentModels.find(m => m.id === formData.selectedModel);
+        return selectedModelData?.creditCost || (formData.selectedModel === 'flux-schnell' ? 50 : 150);
+    }, [aiTab, imageModels, videoModels, formData.selectedModel]);
 
     // Update form defaults when model changes
     const handleModelChange = (e) => {
@@ -805,7 +795,7 @@ const GenerateModal = ({ isOpen, onClose, onOpenAuth }) => {
                                                             <label className="form-label font-12 font-weight-600 mb-2">PROMPT</label>
                                                             <div className="d-flex gap-2 align-items-center">
                                                                 <img src="/assets/ri_dvd-ai-line.png" alt="" />
-                                                                <p className="mb-0 font-12 fadefont">Spend 150 Credit Coins</p>
+                                                                <p className="mb-0 font-12 fadefont">Spend {currentCost} Credit Coins</p>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -923,7 +913,13 @@ const GenerateModal = ({ isOpen, onClose, onOpenAuth }) => {
                                             <div className="p-4">
                                                 <div className="row">
                                                     <div className="col-md-12 position-relative">
-                                                        <label className="form-label font-12 font-weight-600 mb-2">PROMPT</label>
+                                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                                            <label className="form-label font-12 font-weight-600 mb-0">PROMPT</label>
+                                                            <div className="d-flex gap-2 align-items-center">
+                                                                <img src="/assets/ri_dvd-ai-line.png" alt="" />
+                                                                <p className="mb-0 font-12 fadefont">Spend {currentCost} Credit Coins</p>
+                                                            </div>
+                                                        </div>
                                                         <textarea
                                                             className="form-control prompttextarea fadefont font-12"
                                                             rows="4"
@@ -1186,11 +1182,6 @@ const GenerateModal = ({ isOpen, onClose, onOpenAuth }) => {
                                                     value={formData.caption}
                                                     onChange={handleInputChange}
                                                     placeholder={aiGenerationIds.length > 0 ? `Generated prompt: ${formData.prompt}` : "Share something about the picture..."}
-                                                    style={{
-                                                        backgroundColor: '#1a1a1a',
-                                                        color: '#fff',
-                                                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                                                    }}
                                                 ></textarea>
                                                 <div className="d-flex justify-content-between align-items-center mt-2">
                                                     <button className="btn_none">
