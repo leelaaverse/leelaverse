@@ -7,6 +7,31 @@ const Navbar = ({ activeTab, setActiveTab, isLoggedIn = false, onLogin, onSignup
     const { theme } = useSelector((state) => state.theme);
     const [unreadMessages, setUnreadMessages] = useState(0);
     const [unreadNotifications, setUnreadNotifications] = useState(0);
+    const [isDarkMode, setIsDarkMode] = useState(false);
+
+    // Determine actual dark mode state
+    useEffect(() => {
+        const updateDarkMode = () => {
+            if (theme === 'Dark') {
+                setIsDarkMode(true);
+            } else if (theme === 'Light') {
+                setIsDarkMode(false);
+            } else {
+                // Auto mode - check system preference
+                setIsDarkMode(window.matchMedia('(prefers-color-scheme: dark)').matches);
+            }
+        };
+
+        updateDarkMode();
+
+        // Listen for system preference changes
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        const handleChange = () => {
+            if (theme === 'Auto') updateDarkMode();
+        };
+        mediaQuery.addEventListener('change', handleChange);
+        return () => mediaQuery.removeEventListener('change', handleChange);
+    }, [theme]);
 
     // Subscribe to socket notifications
     useEffect(() => {
@@ -57,11 +82,7 @@ const Navbar = ({ activeTab, setActiveTab, isLoggedIn = false, onLogin, onSignup
                         href="#"
                     >
                         <img
-                            src={
-                                theme === 'Light' || (theme === 'Auto' && !document.documentElement.classList.contains('dark'))
-                                    ? '/assets/Logo-leela-white.jpg'
-                                    : '/assets/Logo-leela-black.jpg'
-                            }
+                            src={isDarkMode ? '/assets/Logo-leela-black.jpg' : '/assets/Logo-leela-white.jpg'}
                             alt="LELAA Logo"
                             className="img-fluid"
                             style={{ maxHeight: '60px' }} // Adjusted max-height so these big images don't overshadow header
