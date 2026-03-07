@@ -537,3 +537,61 @@
 		max-width: 85%;
 	}
 }
+
+/* Shared Post Card in Chat Modal */
+.chat-msg-bubble .shared-post-card {
+	display: block;
+	text-decoration: none;
+	color: inherit;
+	border-radius: 10px;
+	overflow: hidden;
+	max-width: 220px;
+	background: #1a1a1a;
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	cursor: pointer;
+	transition: opacity 0.2s;
+}
+.chat-msg-bubble .shared-post-card:hover {
+	opacity: 0.85;
+}
+.chat-msg-bubble .shared-post-thumb {
+	width: 100%;
+	aspect-ratio: 1;
+	overflow: hidden;
+	background: #111;
+}
+.chat-msg-bubble .shared-post-thumb img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+.chat-msg-bubble .shared-post-info {
+	padding: 6px 8px;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+.chat-msg-bubble .shared-post-label {
+	font-size: 0.6rem;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: rgba(255, 255, 255, 0.45);
+}
+.chat-msg-bubble .shared-post-title {
+	font-size: 0.75rem;
+	color: #fff;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.chat-msg.sent .shared-post-card {
+	background: #0a2540;
+	border-color: rgba(0, 149, 246, 0.2);
+}
+.chat-msg-bubble .chat-msg-image {
+	max-width: 100%;
+	border-radius: 8px;
+	margin-top: 6px;
+	display: block;
+}

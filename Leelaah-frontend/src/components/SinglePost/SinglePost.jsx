@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
-import { FaHeart, FaRegHeart, FaComment, FaArrowLeft, FaTrash, FaPaperPlane, FaEdit } from 'react-icons/fa';
+import { FaHeart, FaRegHeart, FaRegComment, FaArrowLeft, FaTrash, FaPaperPlane } from 'react-icons/fa';
+import { HiOutlinePencilSquare } from 'react-icons/hi2';
+import { PiShareFatDuotone } from 'react-icons/pi';
+import { IoSparklesSharp } from 'react-icons/io5';
 import apiService from '../../services/api';
+import ShareModal from '../ShareModal/ShareModal';
 import toast from 'react-hot-toast';
 import './SinglePost.css';
 
-const SinglePost = ({ postId, onBack, onShowAuthModal }) => {
+const SinglePost = ({ postId, onBack, onShowAuthModal, onNavigate }) => {
 	const { isLoggedIn, user } = useSelector((state) => state.auth);
 	const [post, setPost] = useState(null);
 	const [loading, setLoading] = useState(true);
@@ -27,6 +31,7 @@ const SinglePost = ({ postId, onBack, onShowAuthModal }) => {
 	const [newComment, setNewComment] = useState('');
 	const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 	const [commentsPagination, setCommentsPagination] = useState({ page: 1, pages: 1 });
+	const [showShareModal, setShowShareModal] = useState(false);
 
 	// Fetch post details
 	useEffect(() => {
@@ -274,6 +279,23 @@ const SinglePost = ({ postId, onBack, onShowAuthModal }) => {
 			'/assets/placeholder.png';
 	};
 
+	// Handle share
+	const handleShare = () => {
+		setShowShareModal(true);
+	};
+
+	// Handle remix
+	const handleRemix = () => {
+		if (!isLoggedIn) {
+			onShowAuthModal?.();
+			return;
+		}
+		toast.success('Remix started! Create your version.');
+	};
+
+	// Prevent right-click download on media
+	const preventContextMenu = (e) => e.preventDefault();
+
 	if (loading) {
 		return (
 			<div className="single-post-container">
@@ -304,61 +326,86 @@ const SinglePost = ({ postId, onBack, onShowAuthModal }) => {
 			<div className="single-post-header">
 				<button onClick={onBack} className="back-btn">
 					<FaArrowLeft />
-					<span>Back</span>
 				</button>
-				{user?.id === post.authorId && (
-					<div className="post-actions-header">
-						{!isEditing ? (
-							<>
-								<button onClick={handleStartEdit} className="edit-btn">
-									<FaEdit />
-									<span>Edit</span>
-								</button>
-								<button onClick={handleDeletePost} className="delete-btn">
-									<FaTrash />
-									<span>Delete</span>
-								</button>
-							</>
-						) : (
-							<>
-								<button onClick={handleCancelEdit} className="cancel-btn">
-									Cancel
-								</button>
-								<button onClick={handleSaveEdit} className="save-btn" disabled={isSaving}>
-									{isSaving ? 'Saving...' : 'Save'}
-								</button>
-							</>
-						)}
-					</div>
-				)}
+
+				<div className="header-actions">
+					{user?.id === post.authorId && (
+						<>
+							{!isEditing ? (
+								<>
+									<button onClick={handleStartEdit} className="icon-btn edit-btn" title="Edit">
+										<HiOutlinePencilSquare />
+									</button>
+									<button onClick={handleDeletePost} className="icon-btn delete-btn" title="Delete">
+										<FaTrash />
+									</button>
+								</>
+							) : (
+								<>
+									<button onClick={handleCancelEdit} className="pill-btn cancel-btn">
+										Cancel
+									</button>
+									<button onClick={handleSaveEdit} className="pill-btn save-btn" disabled={isSaving}>
+										{isSaving ? 'Saving...' : 'Save'}
+									</button>
+								</>
+							)}
+						</>
+					)}
+					<button onClick={handleRemix} className="pill-btn remix-btn" title="Remix">
+						<IoSparklesSharp />
+						<span>Remix</span>
+					</button>
+				</div>
 			</div>
 
 			<div className="single-post-content">
 				{/* Media Section */}
-				<div className="post-image-section">
-					{isVideo ? (
-						<video
-							src={getMediaUrl(post)}
-							controls
-							autoPlay
-							loop
-							muted
-							playsInline
-							className="post-full-image"
-							style={{
-								width: '100%',
-								height: 'auto',
-								maxHeight: '80vh',
-								objectFit: 'contain'
-							}}
-						/>
-					) : (
-						<img
-							src={getMediaUrl(post)}
-							alt={post.title || post.caption || 'Post'}
-							className="post-full-image"
-						/>
-					)}
+				<div className="post-media-section">
+					<div className="media-wrapper">
+						{isVideo ? (
+							<video
+								src={getMediaUrl(post)}
+								autoPlay
+								loop
+								muted
+								playsInline
+								className="post-media"
+								controlsList="nodownload nofullscreen noremoteplayback"
+								disablePictureInPicture
+								onContextMenu={preventContextMenu}
+								onClick={() => onNavigate && onNavigate('bloops')}
+								style={{ cursor: 'pointer' }}
+							/>
+						) : (
+							<img
+								src={getMediaUrl(post)}
+								alt={post.title || post.caption || 'Post'}
+								className="post-media"
+								draggable="false"
+								onContextMenu={preventContextMenu}
+							/>
+						)}
+					</div>
+
+					{/* Floating action bar on media */}
+					<div className="media-floating-actions">
+						<button
+							className={`floating-action-btn ${isLiked ? 'liked' : ''} ${isLiking ? 'loading' : ''}`}
+							onClick={handleLike}
+							disabled={isLiking}
+						>
+							{isLiked ? <FaHeart /> : <FaRegHeart />}
+							<span>{likeCount}</span>
+						</button>
+						<button className="floating-action-btn" onClick={() => document.querySelector('.comment-input')?.focus()}>
+							<FaRegComment />
+							<span>{commentsCount}</span>
+						</button>
+						<button className="floating-action-btn" onClick={handleShare}>
+							<PiShareFatDuotone />
+						</button>
+					</div>
 				</div>
 
 				{/* Details Section */}
@@ -419,22 +466,6 @@ const SinglePost = ({ postId, onBack, onShowAuthModal }) => {
 						</>
 					)}
 
-					{/* Actions */}
-					<div className="post-actions">
-						<button
-							className={`action-btn ${isLiked ? 'liked' : ''} ${isLiking ? 'loading' : ''}`}
-							onClick={handleLike}
-							disabled={isLiking}
-						>
-							{isLiked ? <FaHeart /> : <FaRegHeart />}
-							<span>{likeCount} {likeCount === 1 ? 'like' : 'likes'}</span>
-						</button>
-						<div className="comments-count">
-							<FaComment />
-							<span>{commentsCount} {commentsCount === 1 ? 'comment' : 'comments'}</span>
-						</div>
-					</div>
-
 					{/* Comments Section */}
 					<div className="comments-section">
 						<h3>Comments</h3>
@@ -445,6 +476,7 @@ const SinglePost = ({ postId, onBack, onShowAuthModal }) => {
 								<div className="comment-input-wrapper">
 									<input
 										type="text"
+										className="comment-input"
 										placeholder="Write a comment..."
 										value={newComment}
 										onChange={(e) => setNewComment(e.target.value)}
@@ -522,6 +554,14 @@ const SinglePost = ({ postId, onBack, onShowAuthModal }) => {
 					</div>
 				</div>
 			</div>
+
+			<ShareModal
+				isOpen={showShareModal}
+				onClose={() => setShowShareModal(false)}
+				postId={postId}
+				postTitle={post?.title}
+				postMediaUrl={post ? getMediaUrl(post) : undefined}
+			/>
 		</div>
 	);
 };

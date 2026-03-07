@@ -184,7 +184,7 @@ const AuthModal = ({ isOpen, onClose, mode, onSuccess }) => {
                 <div className="auth-modal-content">
                     {/* Logo */}
                     <div className="auth-modal-logo">
-                        <img src="/assets/logo-web.png" alt="Leelaah Logo" />
+                        <img src="/assets/Logo-leela-black.jpg" alt="Leelaah Logo" />
                     </div>
 
                     {/* Title */}

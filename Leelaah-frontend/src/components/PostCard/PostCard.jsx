@@ -1,7 +1,9 @@
 import React, { useState, memo, useCallback, useRef, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { FaHeart, FaRegHeart, FaComment, FaRegComment, FaPlay } from 'react-icons/fa';
+import { PiShareFatDuotone } from 'react-icons/pi';
 import apiService from '../../services/api';
+import ShareModal from '../ShareModal/ShareModal';
 import './PostCard.css';
 
 const PostCard = memo(({ post, aspectRatio = 'square', size = 'medium', onShowAuthModal, onPostClick, onUserClick }) => {
@@ -15,6 +17,8 @@ const PostCard = memo(({ post, aspectRatio = 'square', size = 'medium', onShowAu
   const [imageHeight, setImageHeight] = useState(null);
   const videoRef = useRef(null);
   const [isVideoInView, setIsVideoInView] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+
 
   // Get aspect ratio class for proper image sizing in masonry layout
   const getAspectClass = () => {
@@ -138,6 +142,11 @@ const PostCard = memo(({ post, aspectRatio = 'square', size = 'medium', onShowAu
     onPostClick?.(post.id);
   }, [post.id, onPostClick]);
 
+  const handleShare = useCallback((e) => {
+    e?.stopPropagation();
+    setShowShareModal(true);
+  }, []);
+
   const handleCardClick = useCallback(() => {
     onPostClick?.(post.id);
   }, [post.id, onPostClick]);
@@ -177,6 +186,7 @@ const PostCard = memo(({ post, aspectRatio = 'square', size = 'medium', onShowAu
   }, [isVideo]);
 
   return (
+    <>
     <div
       className="relative w-full overflow-hidden rounded-lg cursor-pointer transition-all duration-300 hover:scale-[1.02] group mb-2 md:mb-3"
       onMouseEnter={() => setIsHovered(true)}
@@ -249,13 +259,7 @@ const PostCard = memo(({ post, aspectRatio = 'square', size = 'medium', onShowAu
 
           {/* Top Right: Category/Date */}
           <div className="absolute top-3 right-3 z-10 flex gap-2">
-            {isVideo && (
-              <span className="px-3 py-1 text-xs font-medium bg-red-500/90 backdrop-blur-md rounded-full text-white border border-red-400/30 flex items-center gap-1">
-                <FaPlay className="text-[10px]" />
-                Video
-              </span>
-            )}
-            {post.category && !isVideo && (
+            {post.category && (
               <span className="px-3 py-1 text-xs font-medium bg-white/20 backdrop-blur-md rounded-full text-white border border-white/30">
                 {post.category}
               </span>
@@ -285,30 +289,44 @@ const PostCard = memo(({ post, aspectRatio = 'square', size = 'medium', onShowAu
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <button
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full backdrop-blur-md transition-all duration-200 ${isLiked
-                  ? 'bg-red-500/90 text-white'
-                  : 'bg-white/20 text-white hover:bg-white/30'
+                className={`flex items-center gap-2 transition-all duration-200 ${isLiked
+                  ? 'text-red-400 hover:text-red-300'
+                  : 'text-white hover:text-red-400'
                   } ${isLiking ? 'opacity-50 cursor-not-allowed' : ''}`}
                 onClick={handleLike}
                 disabled={isLiking}
               >
-                {isLiked ? <FaHeart className="text-sm" /> : <FaRegHeart className="text-sm" />}
-                <span className="text-xs font-medium">{likeCount}</span>
+                {isLiked ? <FaHeart className="text-xl" /> : <FaRegHeart className="text-xl" />}
+                <span className="text-sm font-semibold">{likeCount}</span>
               </button>
               <button
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-md text-white hover:bg-white/30 transition-all duration-200"
+                className="flex items-center gap-2 text-white hover:text-blue-300 transition-all duration-200"
                 onClick={handleCommentClick}
               >
-                <FaRegComment className="text-sm" />
-                <span className="text-xs font-medium">{post.commentsCount || 0}</span>
+                <FaRegComment className="text-xl" />
+                <span className="text-sm font-semibold">{post.commentsCount || 0}</span>
               </button>
+              <PiShareFatDuotone
+                className="ml-auto text-xl text-white cursor-pointer hover:text-purple-300 transition-colors duration-200"
+                onClick={handleShare}
+              />
             </div>
           </div>
         </div>
       </div>
+
     </div>
+
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        postId={post.id}
+        postTitle={post.title}
+        postMediaUrl={mediaUrl}
+      />
+    </>
   );
 });
 

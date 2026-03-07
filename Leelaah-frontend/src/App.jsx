@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Provider, useDispatch, useSelector } from 'react-redux';
+import { Toaster } from 'react-hot-toast';
 import socketService from './services/socket';
 import HomeFeed from './components/HomeFeed/HomeFeed';
 import ViewProfile from './components/ViewProfile/ViewProfile';
@@ -141,6 +142,27 @@ function App() {
 
   return (
     <div className="App">
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: 'rgba(28, 28, 35, 0.95)',
+            color: '#fff',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '12px',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
+            padding: '12px 16px',
+            fontSize: '14px',
+            fontWeight: '500',
+            zIndex: 99999,
+          },
+          success: { iconTheme: { primary: '#10b981', secondary: '#fff' } },
+          error: { duration: 4000, iconTheme: { primary: '#ef4444', secondary: '#fff' } },
+        }}
+      />
       {currentView === 'home' && (
         <HomeFeed
           onNavigate={handleNavigate}
@@ -164,6 +186,7 @@ function App() {
           onBack={handleBackFromPost}
           onShowAuthModal={() => handleOpenAuth('login')}
           onUserClick={handleUserClick}
+          onNavigate={handleNavigate}
         />
       )}
       {currentView === 'bloops' && (
@@ -182,7 +205,7 @@ function App() {
         />
       )}
       {currentView === 'chat' && (
-        <ChatPage onBack={() => setCurrentView('home')} />
+        <ChatPage onBack={() => setCurrentView('home')} onNavigate={handleNavigate} />
       )}
       {currentView === 'coinStore' && (
         <CoinStore onBack={handleBackFromCoinStore} />

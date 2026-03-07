@@ -10,7 +10,7 @@ import socketService from '../../services/socket';
 import { compressImage, uploadImageToCloudinary } from '../../utils/imageCompression';
 import './ChatPage.css';
 
-const ChatPage = ({ onBack }) => {
+const ChatPage = ({ onBack, onNavigate }) => {
 	const { user, token } = useSelector((state) => state.auth);
 	const [activeTab, setActiveTab] = useState('primary'); // 'primary' or 'requests'
 	const [conversations, setConversations] = useState([]);
@@ -528,28 +528,60 @@ const ChatPage = ({ onBack }) => {
 								<div className="message-loading">Loading...</div>
 							) : (
 								<>
-									{messages.map((msg, idx) => (
-										<div
-											key={idx}
-											className={`message ${msg.senderId === user.id ? 'sent' : 'received'}`}
-										>
-											<div className="message-bubble">
-												{msg.content && <p>{msg.content}</p>}
-												{msg.mediaUrl && (
-													<img
-														src={msg.mediaUrl}
-														alt="Shared media"
-														className="message-image"
-														onError={(e) => {
-															console.error('Image failed to load:', msg.mediaUrl);
-															e.target.style.display = 'none';
-														}}
-													/>
-												)}
-												<span className="message-time">{formatTime(msg.createdAt)}</span>
+									{messages.map((msg, idx) => {
+										// Detect shared post: has mediaUrl + content contains ?post=
+										const isSharedPost = msg.mediaUrl && msg.content?.includes('?post=');
+										const sharedPostId = isSharedPost
+											? (() => { try { const u = msg.content.split('\n').find(l => l.includes('?post=')); return new URL(u).searchParams.get('post'); } catch { return null; } })()
+											: null;
+										const postCaption = isSharedPost
+											? msg.content.split('\n').filter(l => !l.includes('?post='))[0]
+											: null;
+
+										return (
+											<div
+												key={idx}
+												className={`message ${msg.senderId === user.id ? 'sent' : 'received'}`}
+											>
+												<div className="message-bubble">
+													{isSharedPost ? (
+														<div
+															className="shared-post-card"
+															onClick={() => sharedPostId && onNavigate && onNavigate('post', sharedPostId)}
+														>
+															<div className="shared-post-thumb">
+																<img
+																	src={msg.mediaUrl}
+																	alt="Shared post"
+																	onError={(e) => { e.target.style.display = 'none'; }}
+																/>
+															</div>
+															<div className="shared-post-info">
+																<span className="shared-post-label">Shared Post</span>
+																<span className="shared-post-title">{postCaption || 'View post'}</span>
+															</div>
+														</div>
+													) : (
+														<>
+															{msg.content && <p>{msg.content}</p>}
+															{msg.mediaUrl && (
+																<img
+																	src={msg.mediaUrl}
+																	alt="Shared media"
+																	className="message-image"
+																	onError={(e) => {
+																		console.error('Image failed to load:', msg.mediaUrl);
+																		e.target.style.display = 'none';
+																	}}
+																/>
+															)}
+														</>
+													)}
+													<span className="message-time">{formatTime(msg.createdAt)}</span>
+												</div>
 											</div>
-										</div>
-									))}
+										);
+									})}
 									{isTyping && (
 										<div className="typing-indicator">
 											<span></span>

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import apiService from '../../services/api';
 import BloopItem from './BloopItem';
 import toast from 'react-hot-toast';
+import { IoArrowBack } from 'react-icons/io5';
+import { PiFilmReelLight } from 'react-icons/pi';
 
 const Bloops = ({ onBack, onViewPost }) => {
     const [videos, setVideos] = useState([]);
@@ -106,14 +108,14 @@ const Bloops = ({ onBack, onViewPost }) => {
     return (
         <div className="fixed inset-0 z-50 bg-black flex items-center justify-center">
             {/* Header / Back Button */}
-            <div className="absolute top-0 left-0 w-full z-20 p-4 bg-gradient-to-b from-black/80 to-transparent flex justify-between items-center">
+            <div className="absolute top-0 left-0 w-full z-20 px-4 py-3 bg-linear-to-b from-black/60 to-transparent flex justify-between items-center">
                 <button
                     onClick={onBack}
                     className="text-white p-2 rounded-full hover:bg-white/10 transition-colors"
                 >
-                    <i className="fa-solid fa-arrow-left text-2xl drop-shadow-md"></i>
+                    <IoArrowBack size={22} className="drop-shadow-md" />
                 </button>
-                <h1 className="text-white font-bold text-xl drop-shadow-md tracking-wider">Bloops</h1>
+                <h1 className="text-white font-semibold text-lg drop-shadow-md tracking-wide">Bloops</h1>
                 <div className="w-10"></div> {/* Spacer for centering */}
             </div>
 
@@ -161,16 +163,16 @@ const Bloops = ({ onBack, onViewPost }) => {
                 })}
 
                 {loading && (
-                    <div className="w-full h-full flex items-center justify-center snap-start bg-gray-900">
-                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+                    <div className="w-full h-full flex items-center justify-center snap-start bg-black">
+                        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-white/40"></div>
                     </div>
                 )}
 
                 {!loading && videos.length === 0 && (
-                    <div className="w-full h-full flex flex-col items-center justify-center snap-start bg-gray-900 text-white">
-                        <i className="fa-solid fa-film text-6xl mb-4 text-gray-600"></i>
-                        <p className="text-xl font-semibold">No Bloops yet</p>
-                        <p className="text-gray-400 mt-2">Be the first to create one!</p>
+                    <div className="w-full h-full flex flex-col items-center justify-center snap-start bg-black text-white">
+                        <PiFilmReelLight size={56} className="mb-4 text-white/20" />
+                        <p className="text-lg font-semibold text-white/70">No Bloops yet</p>
+                        <p className="text-white/30 mt-1 text-sm">Be the first to create one!</p>
                     </div>
                 )}
             </div>

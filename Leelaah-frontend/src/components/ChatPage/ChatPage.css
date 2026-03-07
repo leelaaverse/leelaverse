@@ -823,3 +823,58 @@
 	font-size: 1.2rem;
 	line-height: 1.5;
 }
+
+/* Shared Post Card in Chat */
+.shared-post-card {
+	display: block;
+	text-decoration: none;
+	color: inherit;
+	border-radius: 12px;
+	overflow: hidden;
+	max-width: 260px;
+	background: #1a1a1a;
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	cursor: pointer;
+	transition: opacity 0.2s;
+}
+.shared-post-card:hover {
+	opacity: 0.85;
+}
+.shared-post-thumb {
+	width: 100%;
+	aspect-ratio: 1;
+	overflow: hidden;
+	background: #111;
+}
+.shared-post-thumb img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+.shared-post-info {
+	padding: 8px 10px;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+.shared-post-label {
+	font-size: 0.65rem;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: rgba(255, 255, 255, 0.45);
+}
+.shared-post-title {
+	font-size: 0.8rem;
+	color: #fff;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.message.sent .shared-post-card {
+	background: #0a2540;
+	border-color: rgba(0, 149, 246, 0.2);
+}
+.message.received .shared-post-card {
+	background: #1a1a1a;
+}

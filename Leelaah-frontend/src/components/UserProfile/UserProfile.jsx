@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import apiService from '../../services/api';
 import Navbar from '../Navbar/Navbar';
 import Sidebar from '../Sidebar/Sidebar';
@@ -150,7 +150,6 @@ const UserProfile = ({ userId, onNavigate, onBack, onChatClick }) => {
 
 	return (
 		<div className="user-profile">
-			<Toaster position="top-center" />
 			<Navbar
 				isLoggedIn={!!currentUser}
 				onBack={onBack}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
+import { IoChatbubbleEllipsesOutline, IoNotificationsOutline, IoMenuOutline } from 'react-icons/io5';
 import socketService from '../../services/socket';
 import './Navbar.css';
 
@@ -161,7 +162,7 @@ const Navbar = ({ activeTab, setActiveTab, isLoggedIn = false, onLogin, onSignup
                 {isLoggedIn && (
                     <div className="d-flex align-items-center justify-content-end bg-dark-2 px-md-5 py-md-3 px-lg-5 py-lg-3 px-sm-5 py-sm-2 px-3 py-2 rounded-pill navigationRight ms-2 gap-lg-4 gap-md-4 gap-sm-3 gap-3 order-2 order-lg-3">
                         <button title="Messages" onClick={handleChatClick} className="position-relative">
-                            <i className="fa-regular fa-comment-dots"></i>
+                            <IoChatbubbleEllipsesOutline size={22} />
                             {unreadMessages > 0 && (
                                 <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: '0.6rem', padding: '0.25em 0.4em' }}>
                                     {unreadMessages > 9 ? '9+' : unreadMessages}
@@ -169,7 +170,7 @@ const Navbar = ({ activeTab, setActiveTab, isLoggedIn = false, onLogin, onSignup
                             )}
                         </button>
                         <button title="Notifications" onClick={handleNotificationClick} className="position-relative">
-                            <i className="fa-regular fa-bell"></i>
+                            <IoNotificationsOutline size={22} />
                             {unreadNotifications > 0 && (
                                 <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: '0.6rem', padding: '0.25em 0.4em' }}>
                                     {unreadNotifications > 9 ? '9+' : unreadNotifications}
@@ -184,7 +185,7 @@ const Navbar = ({ activeTab, setActiveTab, isLoggedIn = false, onLogin, onSignup
                             data-bs-backdrop="false"
                             title="Menu"
                         >
-                            <i className="fa-solid fa-bars"></i>
+                            <IoMenuOutline size={24} />
                         </button>
                     </div>
                 )}

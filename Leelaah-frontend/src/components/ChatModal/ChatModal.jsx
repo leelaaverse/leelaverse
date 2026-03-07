@@ -8,7 +8,7 @@ import apiService from '../../services/api';
 import socketService from '../../services/socket';
 import './ChatModal.css';
 
-const ChatModal = ({ isOpen, onClose }) => {
+const ChatModal = ({ isOpen, onClose, onNavigate }) => {
 	const { user, token } = useSelector((state) => state.auth);
 	const [activeView, setActiveView] = useState('list'); // 'list', 'chat', 'requests'
 	const [conversations, setConversations] = useState([]);
@@ -463,17 +463,56 @@ const ChatModal = ({ isOpen, onClose }) => {
 								<div className="chat-loading">Loading...</div>
 							) : (
 								<>
-									{messages.map((msg, idx) => (
-										<div
-											key={idx}
-											className={`chat-msg ${msg.senderId === user.id ? 'sent' : 'received'}`}
-										>
-											<div className="chat-msg-bubble">
-												<p>{msg.content}</p>
-												<span className="chat-msg-time">{formatTime(msg.createdAt)}</span>
+									{messages.map((msg, idx) => {
+										const isSharedPost = msg.mediaUrl && msg.content?.includes('?post=');
+										const sharedPostId = isSharedPost
+											? (() => { try { const u = msg.content.split('\n').find(l => l.includes('?post=')); return new URL(u).searchParams.get('post'); } catch { return null; } })()
+											: null;
+										const postCaption = isSharedPost
+											? msg.content.split('\n').filter(l => !l.includes('?post='))[0]
+											: null;
+
+										return (
+											<div
+												key={idx}
+												className={`chat-msg ${msg.senderId === user.id ? 'sent' : 'received'}`}
+											>
+												<div className="chat-msg-bubble">
+													{isSharedPost ? (
+														<div
+															className="shared-post-card"
+															onClick={() => sharedPostId && onNavigate && onNavigate('post', sharedPostId)}
+														>
+															<div className="shared-post-thumb">
+																<img
+																	src={msg.mediaUrl}
+																	alt="Shared post"
+																	onError={(e) => { e.target.style.display = 'none'; }}
+																/>
+															</div>
+															<div className="shared-post-info">
+																<span className="shared-post-label">Shared Post</span>
+																<span className="shared-post-title">{postCaption || 'View post'}</span>
+															</div>
+														</div>
+													) : (
+														<>
+															<p>{msg.content}</p>
+															{msg.mediaUrl && (
+																<img
+																	src={msg.mediaUrl}
+																	alt="Shared media"
+																	className="chat-msg-image"
+																	onError={(e) => { e.target.style.display = 'none'; }}
+																/>
+															)}
+														</>
+													)}
+													<span className="chat-msg-time">{formatTime(msg.createdAt)}</span>
+												</div>
 											</div>
-										</div>
-									))}
+										);
+									})}
 									{isTyping && (
 										<div className="chat-typing">
 											<span></span>
