@@ -27,6 +27,7 @@ const userRoutes = require('./src/routes/users');
 const messageRoutes = require('./src/routes/messageRoutes');
 const paymentRoutes = require('./src/routes/paymentRoutes');
 const adminRoutes = require('./src/routes/adminRoutes');
+const searchRoutes = require('./src/routes/searchRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -210,6 +211,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/search', searchRoutes);
 
 // Handle 404 errors
 app.use('*', (req, res) => {

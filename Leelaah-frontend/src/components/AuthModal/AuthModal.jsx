@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import './AuthModal.css';
 
 const AuthModal = ({ isOpen, onClose, mode, onSuccess }) => {
-    const [isLogin, setIsLogin] = useState(mode === 'login');
+    // 'login' | 'signup' | 'forgot' | 'resetSent'
+    const [viewMode, setViewMode] = useState(mode === 'login' ? 'login' : 'signup');
     const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState({
         email: '',
@@ -11,14 +12,17 @@ const AuthModal = ({ isOpen, onClose, mode, onSuccess }) => {
         firstName: '',
         lastName: ''
     });
+    const [forgotEmail, setForgotEmail] = useState('');
     const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
 
+    const isLogin = viewMode === 'login';
+
     // Update mode when prop changes
     React.useEffect(() => {
-        setIsLogin(mode === 'login');
+        setViewMode(mode === 'login' ? 'login' : 'signup');
     }, [mode]);
 
     const handleChange = (e) => {
@@ -27,7 +31,6 @@ const AuthModal = ({ isOpen, onClose, mode, onSuccess }) => {
             ...prev,
             [name]: value
         }));
-        // Clear error for this field when user starts typing
         if (errors[name]) {
             setErrors(prev => ({
                 ...prev,
@@ -39,28 +42,24 @@ const AuthModal = ({ isOpen, onClose, mode, onSuccess }) => {
     const validateForm = () => {
         const newErrors = {};
 
-        // Email validation
         if (!formData.email) {
             newErrors.email = 'Email is required';
         } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
             newErrors.email = 'Email is invalid';
         }
 
-        // Password validation
         if (!formData.password) {
             newErrors.password = 'Password is required';
         } else if (formData.password.length < 6) {
             newErrors.password = 'Password must be at least 6 characters';
         }
 
-        // Signup-specific validations
         if (!isLogin) {
             if (!formData.username) {
                 newErrors.username = 'Username is required';
             } else if (formData.username.length < 3) {
                 newErrors.username = 'Username must be at least 3 characters';
             }
-
             if (!formData.firstName) {
                 newErrors.firstName = 'First name is required';
             }
@@ -75,9 +74,7 @@ const AuthModal = ({ isOpen, onClose, mode, onSuccess }) => {
         setErrorMessage('');
         setSuccessMessage('');
 
-        if (!validateForm()) {
-            return;
-        }
+        if (!validateForm()) return;
 
         setIsLoading(true);
 
@@ -86,10 +83,7 @@ const AuthModal = ({ isOpen, onClose, mode, onSuccess }) => {
             const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
             const payload = isLogin
-                ? {
-                    email: formData.email,
-                    password: formData.password
-                }
+                ? { email: formData.email, password: formData.password }
                 : {
                     email: formData.email,
                     password: formData.password,
@@ -100,9 +94,7 @@ const AuthModal = ({ isOpen, onClose, mode, onSuccess }) => {
 
             const response = await fetch(`${baseURL}${endpoint}`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
@@ -111,18 +103,10 @@ const AuthModal = ({ isOpen, onClose, mode, onSuccess }) => {
             if (response.ok && data.success) {
                 setSuccessMessage(data.message || (isLogin ? 'Login successful!' : 'Registration successful!'));
 
-                // Store tokens in localStorage
-                if (data.data?.accessToken) {
-                    localStorage.setItem('accessToken', data.data.accessToken);
-                }
-                if (data.data?.refreshToken) {
-                    localStorage.setItem('refreshToken', data.data.refreshToken);
-                }
-                if (data.data?.user) {
-                    localStorage.setItem('user', JSON.stringify(data.data.user));
-                }
+                if (data.data?.accessToken) localStorage.setItem('accessToken', data.data.accessToken);
+                if (data.data?.refreshToken) localStorage.setItem('refreshToken', data.data.refreshToken);
+                if (data.data?.user) localStorage.setItem('user', JSON.stringify(data.data.user));
 
-                // Call success callback after a short delay
                 setTimeout(() => {
                     onSuccess(data.data);
                     handleClose();
@@ -138,35 +122,62 @@ const AuthModal = ({ isOpen, onClose, mode, onSuccess }) => {
         }
     };
 
+    const handleForgotPassword = async (e) => {
+        e.preventDefault();
+        setErrorMessage('');
+        setSuccessMessage('');
+
+        if (!forgotEmail || !/\S+@\S+\.\S+/.test(forgotEmail)) {
+            setErrorMessage('Please enter a valid email address');
+            return;
+        }
+
+        setIsLoading(true);
+
+        try {
+            const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+            const response = await fetch(`${baseURL}/api/auth/forgot-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: forgotEmail })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setViewMode('resetSent');
+                setSuccessMessage('');
+                setErrorMessage('');
+            } else {
+                setErrorMessage(data.message || 'Something went wrong. Please try again.');
+            }
+        } catch (error) {
+            console.error('Forgot password error:', error);
+            setErrorMessage('Network error. Please check your connection and try again.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const handleGoogleAuth = () => {
         const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
-        // Store a flag to handle OAuth callback
         localStorage.setItem('oauthInProgress', 'true');
-
-        // Redirect to Google OAuth
         window.location.href = `${baseURL}/api/oauth/google`;
     };
 
     const handleClose = () => {
-        setFormData({
-            email: '',
-            password: '',
-            username: '',
-            firstName: '',
-            lastName: ''
-        });
+        setFormData({ email: '', password: '', username: '', firstName: '', lastName: '' });
+        setForgotEmail('');
         setErrors({});
         setErrorMessage('');
         setSuccessMessage('');
         setShowPassword(false);
-        // Reset isLogin state to match the mode prop
-        setIsLogin(mode === 'login');
+        setViewMode(mode === 'login' ? 'login' : 'signup');
         onClose();
     };
 
     const switchMode = () => {
-        setIsLogin(!isLogin);
+        setViewMode(isLogin ? 'signup' : 'login');
         setErrors({});
         setErrorMessage('');
         setSuccessMessage('');
@@ -174,6 +185,116 @@ const AuthModal = ({ isOpen, onClose, mode, onSuccess }) => {
 
     if (!isOpen) return null;
 
+    // ─── Forgot Password View ───
+    if (viewMode === 'forgot') {
+        return (
+            <div className="auth-modal-overlay" onClick={handleClose}>
+                <div className="auth-modal-container" onClick={(e) => e.stopPropagation()}>
+                    <button className="auth-modal-close" onClick={handleClose}>
+                        <i className="fa-solid fa-xmark"></i>
+                    </button>
+                    <div className="auth-modal-content">
+                        <div className="auth-modal-logo">
+                            <img src="/assets/Logo-leela-black.jpg" alt="Leelaah Logo" />
+                        </div>
+                        <h2 className="auth-modal-title">Reset Password</h2>
+                        <p className="auth-modal-subtitle">
+                            Enter your email and we'll send you a reset link
+                        </p>
+
+                        {errorMessage && (
+                            <div className="auth-alert auth-alert-error">
+                                <i className="fa-solid fa-circle-exclamation"></i>
+                                {errorMessage}
+                            </div>
+                        )}
+
+                        <form className="auth-modal-form" onSubmit={handleForgotPassword}>
+                            <div className="form-group">
+                                <label htmlFor="forgot-email">Email</label>
+                                <input
+                                    type="email"
+                                    id="forgot-email"
+                                    value={forgotEmail}
+                                    onChange={(e) => setForgotEmail(e.target.value)}
+                                    placeholder="Enter your email address"
+                                    autoFocus
+                                />
+                            </div>
+                            <button type="submit" className="auth-submit-btn" disabled={isLoading}>
+                                {isLoading ? (
+                                    <>
+                                        <i className="fa-solid fa-spinner fa-spin"></i>
+                                        Sending...
+                                    </>
+                                ) : (
+                                    'Send Reset Link'
+                                )}
+                            </button>
+                        </form>
+
+                        <div className="auth-switch">
+                            <p>
+                                Remember your password?
+                                <button
+                                    onClick={() => {
+                                        setViewMode('login');
+                                        setErrorMessage('');
+                                    }}
+                                    className="switch-btn"
+                                >
+                                    Back to Login
+                                </button>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // ─── Reset Link Sent Confirmation ───
+    if (viewMode === 'resetSent') {
+        return (
+            <div className="auth-modal-overlay" onClick={handleClose}>
+                <div className="auth-modal-container" onClick={(e) => e.stopPropagation()}>
+                    <button className="auth-modal-close" onClick={handleClose}>
+                        <i className="fa-solid fa-xmark"></i>
+                    </button>
+                    <div className="auth-modal-content" style={{ textAlign: 'center' }}>
+                        <div style={{
+                            width: '64px', height: '64px', borderRadius: '50%',
+                            background: 'rgba(74, 181, 142, 0.1)', display: 'flex',
+                            alignItems: 'center', justifyContent: 'center',
+                            margin: '0 auto 20px', fontSize: '28px', color: '#4ab58e'
+                        }}>
+                            <i className="fa-solid fa-envelope-circle-check"></i>
+                        </div>
+                        <h2 className="auth-modal-title">Check Your Email</h2>
+                        <p className="auth-modal-subtitle" style={{ marginBottom: '12px' }}>
+                            If an account exists for <strong style={{ color: '#fff' }}>{forgotEmail}</strong>,
+                            you'll receive a password reset link shortly.
+                        </p>
+                        <p className="auth-modal-subtitle" style={{ fontSize: '12px', marginBottom: '28px' }}>
+                            Didn't receive it? Check your spam folder or try again.
+                        </p>
+                        <button
+                            className="auth-submit-btn"
+                            onClick={() => {
+                                setViewMode('login');
+                                setForgotEmail('');
+                                setErrorMessage('');
+                            }}
+                        >
+                            Back to Login
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // ─── Login / Signup View ───
     return (
         <div className="auth-modal-overlay" onClick={handleClose}>
             <div className="auth-modal-container" onClick={(e) => e.stopPropagation()}>
@@ -310,7 +431,19 @@ const AuthModal = ({ isOpen, onClose, mode, onSuccess }) => {
                                     <input type="checkbox" />
                                     <span>Remember me</span>
                                 </label>
-                                <a href="#" className="forgot-password">Forgot Password?</a>
+                                <button
+                                    type="button"
+                                    className="forgot-password"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        setViewMode('forgot');
+                                        setErrorMessage('');
+                                        setSuccessMessage('');
+                                        setForgotEmail(formData.email || '');
+                                    }}
+                                >
+                                    Forgot Password?
+                                </button>
                             </div>
                         )}
 
@@ -335,14 +468,10 @@ const AuthModal = ({ isOpen, onClose, mode, onSuccess }) => {
                         <span>or continue with</span>
                     </div>
 
-                    <div className="auth-oauth-buttons">
+                    <div className="auth-oauth-buttons" style={{ gridTemplateColumns: '1fr' }}>
                         <button className="oauth-btn" onClick={handleGoogleAuth} type="button">
                             <i className="fa-brands fa-google"></i>
                             Google
-                        </button>
-                        <button className="oauth-btn" type="button" disabled>
-                            <i className="fa-brands fa-discord"></i>
-                            Discord
                         </button>
                     </div>
 

@@ -1,0 +1,149 @@
+/* Search Page — Custom animations & glassmorphic styles */
+
+/* Staggered grid item entry */
+@keyframes searchFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes suggestionSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+  }
+}
+
+@keyframes skeletonWave {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Grid item stagger animation */
+.search-grid-item {
+  animation: searchFadeIn 0.5s ease-out both;
+}
+
+/* Apply stagger delay via inline style (--delay) */
+.search-grid-item {
+  animation-delay: var(--delay, 0ms);
+}
+
+/* Suggestion dropdown animation */
+.search-suggestions-dropdown {
+  animation: suggestionSlide 0.2s ease-out;
+}
+
+/* Search input focus glow */
+.search-input-glow:focus-within {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+/* Skeleton shimmer */
+.search-skeleton {
+  background: linear-gradient(90deg, 
+    rgba(200, 200, 200, 0.1) 25%, 
+    rgba(200, 200, 200, 0.25) 50%, 
+    rgba(200, 200, 200, 0.1) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeletonWave 1.5s ease-in-out infinite;
+}
+
+.dark .search-skeleton {
+  background: linear-gradient(90deg, 
+    rgba(255, 255, 255, 0.03) 25%, 
+    rgba(255, 255, 255, 0.08) 50%, 
+    rgba(255, 255, 255, 0.03) 75%
+  );
+  background-size: 200% 100%;
+}
+
+/* Smooth view transitions */
+.search-view-enter {
+  animation: searchFadeIn 0.35s ease-out;
+}
+
+/* Masonry grid responsive columns */
+.search-explore-grid {
+  display: grid;
+  gap: 4px;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (min-width: 640px) {
+  .search-explore-grid {
+    gap: 6px;
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .search-explore-grid {
+    gap: 8px;
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Tab indicator transition */
+.search-tab-active {
+  position: relative;
+}
+
+.search-tab-active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 2px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, #949414, #1936c8);
+}
+
+/* Hide scrollbar on explore grid */
+.search-page-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(150, 150, 150, 0.3) transparent;
+}
+
+.search-page-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.search-page-scroll::-webkit-scrollbar-thumb {
+  background: rgba(150, 150, 150, 0.3);
+  border-radius: 2px;
+}
+
+.dark .search-page-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Video badge pulse */
+.video-badge-pulse {
+  animation: pulseGlow 2.5s ease-in-out infinite;
+}

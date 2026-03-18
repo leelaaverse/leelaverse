@@ -30,7 +30,16 @@ const FloatingBar = ({ onOpenAuth, onNavigate }) => {
                     </button>
 
                     {/* Explore */}
-                    <button className="flex flex-col items-center gap-0.5 bg-transparent border-none outline-none cursor-pointer p-2.5 sm:p-3 rounded-xl transition-all duration-200 hover:bg-white/10 active:scale-95 group">
+                    <button
+                        className="flex flex-col items-center gap-0.5 bg-transparent border-none outline-none cursor-pointer p-2.5 sm:p-3 rounded-xl transition-all duration-200 hover:bg-white/10 active:scale-95 group"
+                        onClick={() => {
+                            if (!isLoggedIn) {
+                                if (onOpenAuth) onOpenAuth('login');
+                                return;
+                            }
+                            onNavigate && onNavigate('search');
+                        }}
+                    >
                         <img src="/assets/search.svg" alt="Explore" className="w-5.5 h-5.5 sm:w-6 sm:h-6 brightness-100 transition-transform duration-200 group-hover:scale-110" />
                     </button>
 

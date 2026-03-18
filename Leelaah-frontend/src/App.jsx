@@ -10,6 +10,7 @@ import ChatPage from './components/ChatPage/ChatPage';
 import Bloops from './components/Bloops/Bloops';
 import Community from './components/Community/Community';
 import CoinStore from './components/CoinStore/CoinStore';
+import SearchPage from './components/Search/SearchPage';
 
 // ... (existing imports)
 
@@ -209,6 +210,14 @@ function App() {
       )}
       {currentView === 'coinStore' && (
         <CoinStore onBack={handleBackFromCoinStore} />
+      )}
+      {currentView === 'search' && (
+        <SearchPage
+          onBack={() => setCurrentView('home')}
+          onNavigate={handleNavigate}
+          onUserClick={handleUserClick}
+          onPostClick={handlePostClick}
+        />
       )}
 
       {/* Global Auth Modal for SinglePost */}
