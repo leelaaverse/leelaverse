@@ -2,7 +2,7 @@
 .model-selector-container {
 	position: relative;
 	width: 100%;
-	font-family: 'Inter', sans-serif;
+	font-family: inherit;
 	/* Assuming Inter or similar */
 	z-index: 10;
 	/* Ensure container is above other elements */

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import apiService from '../../services/api';
 import Navbar from '../Navbar/Navbar';
-import Sidebar from '../Sidebar/Sidebar';
 import EditProfileModal from '../EditProfileModal/EditProfileModal';
 import SinglePost from '../SinglePost/SinglePost';
 import './ViewProfile.css';
@@ -109,7 +108,14 @@ const ViewProfile = ({ onNavigate }) => {
 
     return (
         <div className="view-profile">
-            <Navbar isLoggedIn={true} onBack={() => onNavigate && onNavigate('home')} showBackButton={true} />
+            <Navbar
+                isLoggedIn={true}
+                onBack={() => onNavigate && onNavigate('home')}
+                showBackButton={true}
+                onNavigate={onNavigate}
+                setActiveTab={(tab) => onNavigate && onNavigate('home')}
+                onChatClick={() => onNavigate && onNavigate('chat')}
+            />
 
             <main className="profile-main">
                 {/* Profile Hero Section */}
@@ -364,7 +370,6 @@ const ViewProfile = ({ onNavigate }) => {
                 </div>
             </main>
 
-            <Sidebar onNavigate={onNavigate} />
 
             {/* Edit Profile Modal */}
             <EditProfileModal

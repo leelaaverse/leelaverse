@@ -44,7 +44,7 @@
 	color: #333;
 	font-size: 14px;
 	font-weight: 600;
-	font-family: 'Poppins', sans-serif;
+	font-family: inherit;
 }
 
 .dark .chat-button-text {

@@ -8,7 +8,7 @@
 	display: flex;
 	background: #fff;
 	color: #1a1a1a;
-	font-family: 'Poppins', sans-serif;
+	font-family: inherit;
 	z-index: 9999;
 	transition: background 0.3s ease, color 0.3s ease;
 }

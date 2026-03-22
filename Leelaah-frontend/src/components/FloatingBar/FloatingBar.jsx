@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
-import GenerateModal from '../GenerateModal/GenerateModal';
+import CreateModal from '../CreateModal/CreateModal';
 
 const FloatingBar = ({ onOpenAuth, onNavigate }) => {
     const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
@@ -45,6 +45,7 @@ const FloatingBar = ({ onOpenAuth, onNavigate }) => {
 
                     {/* Generate (center) */}
                     <button
+                        data-floating-plus="true"
                         className="flex items-center justify-center bg-white/10 backdrop-blur-sm border-none outline-none cursor-pointer p-3 sm:p-3.5 rounded-2xl overflow-hidden transition-all duration-200 hover:bg-white/20 hover:scale-105 active:scale-95 -my-1"
                         onClick={handleGenerateClick}
                     >
@@ -69,10 +70,11 @@ const FloatingBar = ({ onOpenAuth, onNavigate }) => {
                 </div>
             </section>
 
-            <GenerateModal
+            <CreateModal
                 isOpen={isGenerateModalOpen}
                 onClose={handleCloseModal}
                 onOpenAuth={onOpenAuth}
+                onNavigate={onNavigate}
             />
         </>
     );

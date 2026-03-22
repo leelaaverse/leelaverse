@@ -11,6 +11,9 @@ import Bloops from './components/Bloops/Bloops';
 import Community from './components/Community/Community';
 import CoinStore from './components/CoinStore/CoinStore';
 import SearchPage from './components/Search/SearchPage';
+import Settings from './components/Settings/Settings';
+import AIStudio from './components/AIStudio/AIStudio';
+import ModelsPage from './components/AIStudio/ModelsPage';
 
 // ... (existing imports)
 
@@ -71,6 +74,24 @@ function App() {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, [theme]);
 
+  // Sync currentView from hash on page load
+  useEffect(() => {
+    const hash = window.location.hash.replace('#', '');
+    if (hash && ['aiStudio', 'modelsPage', 'search', 'community', 'coinStore', 'settings', 'bloops'].includes(hash)) {
+      setCurrentView(hash);
+    }
+    const onHashChange = () => {
+      const h = window.location.hash.replace('#', '');
+      if (h && ['aiStudio', 'modelsPage', 'search', 'community', 'coinStore', 'settings', 'bloops'].includes(h)) {
+        setCurrentView(h);
+      } else if (!h) {
+        setCurrentView('home');
+      }
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
   const handleNavigate = (view, data = null) => {
     if (view === 'post' && data) {
       setSelectedPostId(data);
@@ -79,11 +100,18 @@ function App() {
       // If navigating to own profile, go to ViewProfile instead
       if (user && data === user.id) {
         setCurrentView('profile');
+        window.location.hash = '';
         return;
       }
       setSelectedUserId(data);
     }
     setCurrentView(view);
+    // Update URL hash for bookmarkable views
+    if (['aiStudio', 'modelsPage', 'search', 'community', 'coinStore', 'settings', 'bloops'].includes(view)) {
+      window.location.hash = view;
+    } else {
+      window.location.hash = '';
+    }
   };
 
   const handlePostClick = (postId) => {
@@ -179,6 +207,7 @@ function App() {
           userId={selectedUserId}
           onNavigate={handleNavigate}
           onBack={handleBackFromUser}
+          onChatClick={() => setCurrentView('chat')}
         />
       )}
       {currentView === 'post' && selectedPostId && (
@@ -217,6 +246,24 @@ function App() {
           onNavigate={handleNavigate}
           onUserClick={handleUserClick}
           onPostClick={handlePostClick}
+        />
+      )}
+      {currentView === 'aiStudio' && (
+        <AIStudio
+          onBack={() => setCurrentView('home')}
+          onNavigate={handleNavigate}
+        />
+      )}
+      {currentView === 'modelsPage' && (
+        <ModelsPage
+          onBack={() => setCurrentView('home')}
+          onNavigate={handleNavigate}
+        />
+      )}
+      {currentView === 'settings' && (
+        <Settings
+          onBack={() => setCurrentView('home')}
+          onNavigate={handleNavigate}
         />
       )}
 

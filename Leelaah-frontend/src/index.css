@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Epilogue:ital,wght@0,100..900;1,100..900&display=swap');
 @import "tailwindcss";
 
 * {
@@ -9,13 +9,20 @@
 
 body {
   margin: 0;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Epilogue', sans-serif;
+  font-optical-sizing: auto;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: #fff;
   color: #1a1a1a;
   min-height: 100vh;
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ── Heading hierarchy ── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Epilogue', sans-serif;
+  font-weight: 700;
 }
 
 .dark body,

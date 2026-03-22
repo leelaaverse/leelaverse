@@ -65,7 +65,7 @@
 	color: #fff;
 	font-size: 0.95rem;
 	font-weight: 600;
-	font-family: 'Poppins', sans-serif;
+	font-family: inherit;
 	margin: 0;
 	padding-top: 4px;
 }
@@ -118,7 +118,7 @@
 	padding: 10px 14px 10px 38px;
 	color: #fff;
 	font-size: 0.88rem;
-	font-family: 'Poppins', sans-serif;
+	font-family: inherit;
 	outline: none;
 	transition: border-color 0.2s ease;
 }
@@ -207,7 +207,7 @@
 	color: #fff;
 	font-size: 0.88rem;
 	font-weight: 500;
-	font-family: 'Poppins', sans-serif;
+	font-family: inherit;
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -216,7 +216,7 @@
 .share-user-handle {
 	color: rgba(255, 255, 255, 0.35);
 	font-size: 0.78rem;
-	font-family: 'Poppins', sans-serif;
+	font-family: inherit;
 }
 
 /* Select Circle */
@@ -276,7 +276,7 @@
 	padding: 3rem 1.5rem;
 	color: rgba(255, 255, 255, 0.3);
 	font-size: 0.85rem;
-	font-family: 'Poppins', sans-serif;
+	font-family: inherit;
 	text-align: center;
 }
 
@@ -301,7 +301,7 @@
 	color: rgba(255, 255, 255, 0.7);
 	font-size: 0.82rem;
 	font-weight: 500;
-	font-family: 'Poppins', sans-serif;
+	font-family: inherit;
 	cursor: pointer;
 	transition: all 0.2s ease;
 }
@@ -332,7 +332,7 @@
 	color: #fff;
 	font-size: 0.82rem;
 	font-weight: 600;
-	font-family: 'Poppins', sans-serif;
+	font-family: inherit;
 	cursor: pointer;
 	transition: all 0.25s ease;
 }

@@ -154,6 +154,9 @@ const UserProfile = ({ userId, onNavigate, onBack, onChatClick }) => {
 				isLoggedIn={!!currentUser}
 				onBack={onBack}
 				showBackButton={true}
+				onNavigate={onNavigate}
+				setActiveTab={(tab) => onNavigate && onNavigate('home')}
+				onChatClick={onChatClick}
 			/>
 
 			<main className="profile-main">

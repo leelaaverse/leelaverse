@@ -61,7 +61,7 @@ const OAuthCallback = ({ onSuccess }) => {
             height: '100vh',
             backgroundColor: '#000',
             color: '#fff',
-            fontFamily: 'Poppins, sans-serif'
+            fontFamily: 'inherit'
         }}>
             <div style={{ textAlign: 'center' }}>
                 <div style={{

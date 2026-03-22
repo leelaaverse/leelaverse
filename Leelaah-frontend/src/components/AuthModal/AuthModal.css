@@ -179,7 +179,7 @@
     border-radius: 10px;
     color: #fff;
     font-size: 14px;
-    font-family: 'Poppins', sans-serif;
+    font-family: inherit;
     transition: all 0.2s ease;
 }
 
@@ -284,7 +284,7 @@
     color: #fff;
     font-size: 14px;
     font-weight: 600;
-    font-family: 'Poppins', sans-serif;
+    font-family: inherit;
     cursor: pointer;
     transition: all 0.2s ease;
     display: flex;
@@ -370,7 +370,7 @@
     color: rgba(255, 255, 255, 0.8);
     font-size: 13px;
     font-weight: 500;
-    font-family: 'Poppins', sans-serif;
+    font-family: inherit;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -413,7 +413,7 @@
     color: #5d5fef;
     font-size: 13px;
     font-weight: 600;
-    font-family: 'Poppins', sans-serif;
+    font-family: inherit;
     cursor: pointer;
     margin-left: 4px;
     transition: color 0.2s ease;

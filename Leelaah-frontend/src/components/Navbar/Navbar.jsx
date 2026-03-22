@@ -1,35 +1,38 @@
-import React, { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
-import { IoChatbubbleEllipsesOutline, IoNotificationsOutline, IoMenuOutline } from 'react-icons/io5';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { logout } from '../../store/slices/authSlice';
+import { IoChatbubbleEllipsesOutline, IoNotificationsOutline } from 'react-icons/io5';
+import { FiUser, FiSettings, FiLogOut } from 'react-icons/fi';
+import { PiCoinsBold } from 'react-icons/pi';
+import { HiOutlineSparkles } from 'react-icons/hi';
 import socketService from '../../services/socket';
+import apiService from '../../services/api';
+import toast from 'react-hot-toast';
 import './Navbar.css';
 
-const Navbar = ({ activeTab, setActiveTab, isLoggedIn = false, onLogin, onSignup, showBackButton = false, onBack, onChatClick }) => {
+const Navbar = ({ activeTab, setActiveTab, isLoggedIn = false, onLogin, onSignup, showBackButton = false, onBack, onChatClick, onNavigate }) => {
+    const dispatch = useDispatch();
+    const { user } = useSelector((state) => state.auth);
     const { theme } = useSelector((state) => state.theme);
     const [unreadMessages, setUnreadMessages] = useState(0);
     const [unreadNotifications, setUnreadNotifications] = useState(0);
     const [isDarkMode, setIsDarkMode] = useState(false);
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [userStats, setUserStats] = useState(null);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
+    const dropdownRef = useRef(null);
+    const avatarBtnRef = useRef(null);
 
     // Determine actual dark mode state
     useEffect(() => {
         const updateDarkMode = () => {
-            if (theme === 'Dark') {
-                setIsDarkMode(true);
-            } else if (theme === 'Light') {
-                setIsDarkMode(false);
-            } else {
-                // Auto mode - check system preference
-                setIsDarkMode(window.matchMedia('(prefers-color-scheme: dark)').matches);
-            }
+            if (theme === 'Dark') setIsDarkMode(true);
+            else if (theme === 'Light') setIsDarkMode(false);
+            else setIsDarkMode(window.matchMedia('(prefers-color-scheme: dark)').matches);
         };
-
         updateDarkMode();
-
-        // Listen for system preference changes
         const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-        const handleChange = () => {
-            if (theme === 'Auto') updateDarkMode();
-        };
+        const handleChange = () => { if (theme === 'Auto') updateDarkMode(); };
         mediaQuery.addEventListener('change', handleChange);
         return () => mediaQuery.removeEventListener('change', handleChange);
     }, [theme]);
@@ -37,130 +40,105 @@ const Navbar = ({ activeTab, setActiveTab, isLoggedIn = false, onLogin, onSignup
     // Subscribe to socket notifications
     useEffect(() => {
         if (!isLoggedIn) return;
-
-        const handleNewMessage = () => {
-            setUnreadMessages(prev => prev + 1);
-        };
-
-        const handleNewNotification = () => {
-            setUnreadNotifications(prev => prev + 1);
-        };
-
+        const handleNewMessage = () => setUnreadMessages(prev => prev + 1);
+        const handleNewNotification = () => setUnreadNotifications(prev => prev + 1);
         socketService.onNewMessageNotification(handleNewMessage);
         socketService.onNotification(handleNewNotification);
-
         return () => {
             socketService.off('new:message:notification', handleNewMessage);
             socketService.off('new:notification', handleNewNotification);
         };
     }, [isLoggedIn]);
 
+    // Fetch user stats for credit usage
+    useEffect(() => {
+        if (!isLoggedIn || !user) return;
+        const fetchStats = async () => {
+            try {
+                const response = await apiService.auth.getProfile();
+                setUserStats(response.data.data.user);
+            } catch (err) {
+                console.error('Failed to fetch user stats:', err);
+            }
+        };
+        fetchStats();
+    }, [isLoggedIn, user]);
+
+    // Close dropdown on outside click
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (
+                dropdownRef.current && !dropdownRef.current.contains(e.target) &&
+                avatarBtnRef.current && !avatarBtnRef.current.contains(e.target)
+            ) {
+                setIsDropdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     const handleChatClick = () => {
         setUnreadMessages(0);
-        onChatClick();
+        if (onChatClick) onChatClick();
     };
 
     const handleNotificationClick = () => {
         setUnreadNotifications(0);
-        // Future: Open notification dropdown/page
     };
+
+    const handleLogout = async () => {
+        setIsLoggingOut(true);
+        toast.loading('Logging out...', { id: 'logout' });
+        try {
+            await apiService.auth.logout();
+            dispatch(logout());
+            toast.success('Logged out successfully!', { id: 'logout' });
+        } catch (error) {
+            console.error('Logout failed:', error);
+            toast.error('Logout failed, clearing session', { id: 'logout' });
+            dispatch(logout());
+        } finally {
+            setIsLoggingOut(false);
+            setIsDropdownOpen(false);
+        }
+    };
+
+    const handleDropdownNav = useCallback((view) => {
+        setIsDropdownOpen(false);
+        if (onNavigate) onNavigate(view);
+    }, [onNavigate]);
+
+    const coinBalance = userStats?.coinBalance || 0;
+    const avatarUrl = userStats?.avatar || user?.avatar || '/assets/profile.png';
+    const displayUsername = userStats?.username || user?.username || 'user';
 
     return (
         <nav className="navbar navbar-expand-lg sticky-top py-2 bg-mainColor Header">
-            <div className="container-fluid flex-wrap px-4">
+            <div className="container-fluid px-4 d-flex align-items-center">
                 {/* Back Button or Logo */}
                 {showBackButton ? (
-                    <button
-                        className="navbar-back-btn d-flex align-items-center order-1 order-lg-1"
-                        onClick={onBack}
-                    >
+                    <button className="navbar-back-btn d-flex align-items-center" onClick={onBack}>
                         <i className="fa-solid fa-arrow-left"></i>
                         <span className="ms-2">Back to Home</span>
                     </button>
                 ) : (
-                    <a
-                        className="navbar-brand d-flex align-items-center order-1 order-lg-1"
-                        href="#"
-                    >
+                    <a className="navbar-brand d-flex align-items-center" href="#">
                         <img
                             src={isDarkMode ? '/assets/Logo-leela-black.jpg' : '/assets/Logo-leela-white.jpg'}
                             alt="LELAA Logo"
                             className="img-fluid"
-                            style={{ maxHeight: '60px' }} // Adjusted max-height so these big images don't overshadow header
+                            style={{ maxHeight: '60px' }}
                         />
                     </a>
                 )}
 
-                {/* Navigation - Show login/signup if not logged in, otherwise show tabs */}
-                <div className="justify-content-center order-3 order-lg-2" id="navbarMain">
-                    <ul
-                        className="nav nav-pills flex-row bg-dark-2 py-2 px-5 gap-3 rounded-pill flex-wrap justify-content-center mb-2 mb-lg-0"
-                        id="pills-tab"
-                        role="tablist"
-                    >
-                        {!isLoggedIn ? (
-                            <>
-                                <li className="nav-item" role="presentation">
-                                    <button
-                                        className="nav-link active"
-                                        onClick={onLogin}
-                                        type="button"
-                                        role="tab"
-                                    >
-                                        Login
-                                    </button>
-                                </li>
-                                <li className="nav-item" role="presentation">
-                                    <button
-                                        className="nav-link"
-                                        onClick={onSignup}
-                                        type="button"
-                                        role="tab"
-                                    >
-                                        Sign up
-                                    </button>
-                                </li>
-                            </>
-                        ) : (
-                            <>
-                                <li className="nav-item" role="presentation">
-                                    <button
-                                        className={`nav-link ${activeTab === 'featured' ? 'active' : ''}`}
-                                        onClick={() => setActiveTab('featured')}
-                                        type="button"
-                                        role="tab"
-                                    >
-                                        Featured
-                                    </button>
-                                </li>
-                                <li className="nav-item" role="presentation">
-                                    <button
-                                        className={`nav-link ${activeTab === 'trending' ? 'active' : ''}`}
-                                        onClick={() => setActiveTab('trending')}
-                                        type="button"
-                                        role="tab"
-                                    >
-                                        Trending
-                                    </button>
-                                </li>
-                                <li className="nav-item" role="presentation">
-                                    <button
-                                        className={`nav-link ${activeTab === 'following' ? 'active' : ''}`}
-                                        onClick={() => setActiveTab('following')}
-                                        type="button"
-                                        role="tab"
-                                    >
-                                        Following
-                                    </button>
-                                </li>
-                            </>
-                        )}
-                    </ul>
-                </div>
+                {/* Spacer */}
+                <div className="flex-grow-1" />
 
-                {/* Right Icons - Only show when logged in */}
+                {/* Right Icons */}
                 {isLoggedIn && (
-                    <div className="d-flex align-items-center justify-content-end bg-dark-2 px-md-5 py-md-3 px-lg-5 py-lg-3 px-sm-5 py-sm-2 px-3 py-2 rounded-pill navigationRight ms-2 gap-lg-4 gap-md-4 gap-sm-3 gap-3 order-2 order-lg-3">
+                    <div className="d-flex align-items-center bg-dark-2 px-4 py-2 rounded-pill navigationRight gap-3" style={{ flexShrink: 0 }}>
                         <button title="Messages" onClick={handleChatClick} className="position-relative">
                             <IoChatbubbleEllipsesOutline size={22} />
                             {unreadMessages > 0 && (
@@ -177,15 +155,120 @@ const Navbar = ({ activeTab, setActiveTab, isLoggedIn = false, onLogin, onSignup
                                 </span>
                             )}
                         </button>
+
+                        {/* Profile Avatar (replaces hamburger) */}
+                        <div className="relative">
+                            <button
+                                ref={avatarBtnRef}
+                                title="Profile"
+                                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                className="profile-avatar-btn"
+                            >
+                                <img
+                                    src={avatarUrl}
+                                    alt={displayUsername}
+                                    onError={(e) => e.target.src = '/assets/profile.png'}
+                                />
+                                <span className={`profile-avatar-ring ${isDropdownOpen ? 'active' : ''}`} />
+                            </button>
+
+                            {/* Profile Dropdown */}
+                            {isDropdownOpen && (
+                                <div
+                                    ref={dropdownRef}
+                                    className={`profile-dropdown ${isDarkMode ? 'dark' : 'light'}`}
+                                >
+                                    {/* User info card */}
+                                    <div className="pd-user-card">
+                                        <div className="pd-user-avatar">
+                                            <img src={avatarUrl} alt="" onError={(e) => e.target.src = '/assets/profile.png'} />
+                                        </div>
+                                        <div className="pd-user-details">
+                                            <p className="pd-user-name">
+                                                {userStats?.firstName || user?.firstName || 'User'} {userStats?.lastName || user?.lastName || ''}
+                                            </p>
+                                            <p className="pd-user-coins">
+                                                <PiCoinsBold size={13} className="pd-coin-icon" />
+                                                {coinBalance} coins
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="pd-divider" />
+
+                                    {/* Menu items */}
+                                    <div className="pd-menu">
+                                        <button className="pd-menu-item" onClick={() => handleDropdownNav('profile')}>
+                                            <FiUser size={15} />
+                                            <span>View profile</span>
+                                        </button>
+                                        <button className="pd-menu-item" onClick={() => handleDropdownNav('coinStore')}>
+                                            <PiCoinsBold size={15} />
+                                            <span>Coin store</span>
+                                        </button>
+                                        <button className="pd-menu-item" onClick={() => handleDropdownNav('aiStudio')}>
+                                            <HiOutlineSparkles size={15} />
+                                            <span>AI Studio</span>
+                                        </button>
+                                        <button className="pd-menu-item" onClick={() => handleDropdownNav('settings')}>
+                                            <FiSettings size={15} />
+                                            <span>Advanced settings</span>
+                                        </button>
+                                    </div>
+
+                                    <div className="pd-divider" />
+
+                                    {/* Sign out */}
+                                    <div className="pd-menu">
+                                        <button
+                                            className="pd-menu-item pd-signout"
+                                            onClick={handleLogout}
+                                            disabled={isLoggingOut}
+                                        >
+                                            <FiLogOut size={15} />
+                                            <span>{isLoggingOut ? 'Signing out...' : 'Sign out'}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Login / Signup for unauthenticated users */}
+                {!isLoggedIn && (
+                    <div className="d-flex align-items-center bg-dark-2 px-3 py-2 rounded-pill" style={{ flexShrink: 0, gap: 8 }}>
                         <button
-                            type="button"
-                            data-bs-toggle="offcanvas"
-                            data-bs-target="#offcanvasRight"
-                            aria-controls="offcanvasRight"
-                            data-bs-backdrop="false"
-                            title="Menu"
+                            onClick={onLogin}
+                            style={{
+                                background: '#4338ca',
+                                border: 'none',
+                                color: '#fff',
+                                borderRadius: 999,
+                                padding: '6px 20px',
+                                fontSize: 14,
+                                fontWeight: 500,
+                                cursor: 'pointer',
+                                transition: 'background 0.15s',
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = '#4f46e5'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = '#4338ca'}
                         >
-                            <IoMenuOutline size={24} />
+                            Login
+                        </button>
+                        <button
+                            onClick={onSignup}
+                            style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--color-text)',
+                                padding: '6px 16px',
+                                fontSize: 14,
+                                fontWeight: 500,
+                                cursor: 'pointer',
+                            }}
+                        >
+                            Sign up
                         </button>
                     </div>
                 )}
