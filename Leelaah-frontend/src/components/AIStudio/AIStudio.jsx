@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import {
-    FiArrowLeft, FiImage, FiVideo, FiUpload, FiChevronDown,
+    FiArrowLeft, FiImage, FiVideo, FiChevronDown,
     FiSend, FiRefreshCw, FiPaperclip, FiX, FiDownload,
-    FiMaximize, FiZap, FiSliders, FiCpu, FiCheck
+    FiZap, FiSliders, FiCpu, FiCheck,
+    FiTag, FiEye, FiType
 } from 'react-icons/fi';
 import { HiOutlineSparkles } from 'react-icons/hi';
 import { PiCoinsBold } from 'react-icons/pi';
@@ -25,7 +26,7 @@ const ASPECT_RATIOS = [
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 const AIStudio = ({ onBack, onNavigate }) => {
     const dispatch = useDispatch();
-    const { isLoggedIn } = useSelector(s => s.auth);
+    const { isLoggedIn, user } = useSelector(s => s.auth);
     const { imageModels, videoModels, status: modelsStatus } = useSelector(s => s.models);
     const { theme } = useSelector(s => s.theme);
 
@@ -63,6 +64,21 @@ const AIStudio = ({ onBack, onNavigate }) => {
     const [generations, setGenerations] = useState([]);
     const promptRef = useRef(null);
 
+    // Inline post form state — keyed by generation id
+    const [postingGenId, setPostingGenId] = useState(null);
+    const [postCaption, setPostCaption] = useState('');
+    const [postTitle, setPostTitle] = useState('');
+    const [postTags, setPostTags] = useState([]);
+    const [postTagInput, setPostTagInput] = useState('');
+    const [postVisibility, setPostVisibility] = useState('public');
+    const [isPosting, setIsPosting] = useState(false);
+
+    // Drafts
+    const [drafts, setDrafts] = useState([]);
+    const [draftsLoading, setDraftsLoading] = useState(false);
+    // Active tab: 'create' | 'drafts'
+    const [activeTab, setActiveTab] = useState('create');
+
     useEffect(() => { if (modelsStatus === 'idle') dispatch(fetchModels()); }, [modelsStatus, dispatch]);
 
     useEffect(() => {
@@ -78,6 +94,24 @@ const AIStudio = ({ onBack, onNavigate }) => {
         document.addEventListener('mousedown', handleClick);
         return () => document.removeEventListener('mousedown', handleClick);
     }, []);
+
+    // Fetch drafts on mount
+    const fetchDrafts = useCallback(async () => {
+        if (!isLoggedIn) return;
+        setDraftsLoading(true);
+        try {
+            const res = await apiService.posts.getMyGenerations();
+            if (res.data?.generations) {
+                setDrafts(res.data.generations);
+            }
+        } catch (err) {
+            // silently fail
+        } finally {
+            setDraftsLoading(false);
+        }
+    }, [isLoggedIn]);
+
+    useEffect(() => { fetchDrafts(); }, [fetchDrafts]);
 
     const availableModels = useMemo(() => mediaType === 'image' ? imageModels : videoModels, [mediaType, imageModels, videoModels]);
     const currentModel = useMemo(() => availableModels.find(m => m.id === selectedModel), [availableModels, selectedModel]);
@@ -129,8 +163,11 @@ const AIStudio = ({ onBack, onNavigate }) => {
                     const outputUrl = isVideoGen ? videoUrl : imageUrl;
                     if (status === 'completed' && outputUrl) {
                         setGenerationProgress(100); setGenerationStatus('Done!'); setIsGenerating(false);
-                        setGenerations(prev => [{ id: Date.now(), url: outputUrl, isVideo: isVideoGen, prompt: promptText, model: modelId, timestamp: new Date(), requestId, aiGenerationId: response.data.aiGenerationId }, ...prev]);
+                        const newGen = { id: Date.now(), url: outputUrl, isVideo: isVideoGen, prompt: promptText, model: modelId, timestamp: new Date(), requestId, aiGenerationId: response.data.aiGenerationId };
+                        setGenerations(prev => [newGen, ...prev]);
                         toast.success(isVideoGen ? 'Video generated!' : 'Image generated!');
+                        // Refresh drafts
+                        fetchDrafts();
                         return;
                     } else if (status === 'failed') throw new Error('Generation failed');
                     else {
@@ -145,13 +182,15 @@ const AIStudio = ({ onBack, onNavigate }) => {
             } catch (error) { setIsGenerating(false); toast.error(error.message || 'Generation failed.'); }
         };
         poll();
-    }, []);
+    }, [fetchDrafts]);
 
     const handleGenerate = useCallback(async () => {
         if (!prompt.trim()) { toast.error('Please enter a prompt'); return; }
         if (!isLoggedIn) { toast.error('Please log in to generate'); return; }
         try {
             setIsGenerating(true); setGenerationStatus('Initializing...'); setGenerationProgress(5);
+            // Switch to create tab to see progress
+            setActiveTab('create');
             const isVideoGen = mediaType === 'video';
             let finalPrompt = prompt.trim();
             if (enhancePrompt) finalPrompt = `(masterpiece, best quality, highly detailed) ${finalPrompt}, professional lighting, sharp focus, 8k resolution`;
@@ -174,14 +213,94 @@ const AIStudio = ({ onBack, onNavigate }) => {
         if (e.key === 'Enter' && !e.shiftKey && !isGenerating) { e.preventDefault(); handleGenerate(); }
     }, [handleGenerate, isGenerating]);
 
+    // ── Inline Post Form Helpers ──
+    const openPostForm = useCallback((gen) => {
+        setPostingGenId(gen.id || gen.aiGenerationId);
+        setPostCaption(gen.prompt || '');
+        setPostTitle(gen.prompt?.slice(0, 60) || 'AI Generated');
+        setPostTags([]);
+        setPostTagInput('');
+        setPostVisibility('public');
+    }, []);
+
+    const closePostForm = useCallback(() => {
+        setPostingGenId(null);
+        setPostCaption('');
+        setPostTitle('');
+        setPostTags([]);
+        setPostTagInput('');
+        setPostVisibility('public');
+    }, []);
+
+    const addPostTag = useCallback((val) => {
+        const t = val.trim();
+        if (t && postTags.length < 5 && !postTags.includes(t)) { setPostTags(p => [...p, t]); setPostTagInput(''); }
+        else if (postTags.length >= 5) toast.error('Maximum 5 tags');
+    }, [postTags]);
+
+    const removePostTag = useCallback((i) => { setPostTags(p => p.filter((_, idx) => idx !== i)); }, []);
+
+    const handlePostTagKeyDown = useCallback((e) => {
+        if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addPostTag(postTagInput.replace(',', '')); }
+        else if (e.key === 'Backspace' && !postTagInput && postTags.length > 0) setPostTags(p => p.slice(0, -1));
+    }, [postTagInput, postTags, addPostTag]);
+
+    // Post a generation (from session or from drafts)
     const handlePostGeneration = useCallback(async (gen) => {
+        const genId = gen.aiGenerationId || gen.id;
+        if (!genId) { toast.error('Missing generation ID'); return; }
+        setIsPosting(true);
         try {
-            const postData = { aiGenerationIds: [gen.aiGenerationId].filter(Boolean), caption: gen.prompt, title: gen.prompt?.slice(0, 60) || 'AI Generated', type: gen.isVideo ? 'video' : 'image', tags: ['ai-generated', gen.model], visibility: 'public' };
+            const allTags = ['ai-generated', gen.model, ...postTags].filter(Boolean);
+            const postData = {
+                aiGenerationIds: [genId],
+                caption: postCaption.trim() || gen.prompt || '',
+                title: postTitle.trim() || gen.prompt?.slice(0, 60) || 'AI Generated',
+                type: gen.isVideo || gen.type === 'video' ? 'video' : 'image',
+                tags: allTags,
+                visibility: postVisibility,
+            };
             const res = await apiService.posts.createPostFromGeneration(postData);
-            if (res.data.success) { toast.success('Posted to feed!'); dispatch(fetchFeedPosts({ category: 'featured', page: 1, limit: 12 })); }
-            else throw new Error('Failed');
-        } catch (err) { toast.error(err.response?.data?.message || 'Failed to post'); }
-    }, [dispatch]);
+            if (res.data.success) {
+                toast.success('Posted to feed!');
+                dispatch(fetchFeedPosts({ category: 'featured', page: 1, limit: 12 }));
+                closePostForm();
+                // Remove from session generations
+                setGenerations(prev => prev.filter(g => (g.id !== gen.id) && (g.aiGenerationId !== genId)));
+                // Remove from drafts
+                setDrafts(prev => prev.filter(d => d.id !== genId));
+            } else throw new Error('Failed');
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to post');
+        } finally { setIsPosting(false); }
+    }, [dispatch, postCaption, postTitle, postTags, postVisibility, closePostForm]);
+
+    // Post a draft directly
+    const handlePostDraft = useCallback(async (draft) => {
+        const genId = draft.id;
+        if (!genId) { toast.error('Missing generation ID'); return; }
+        setIsPosting(true);
+        try {
+            const allTags = ['ai-generated', draft.model, ...postTags].filter(Boolean);
+            const postData = {
+                aiGenerationIds: [genId],
+                caption: postCaption.trim() || draft.prompt || '',
+                title: postTitle.trim() || draft.prompt?.slice(0, 60) || 'AI Generated',
+                type: draft.type === 'video' ? 'video' : 'image',
+                tags: allTags,
+                visibility: postVisibility,
+            };
+            const res = await apiService.posts.createPostFromGeneration(postData);
+            if (res.data.success) {
+                toast.success('Posted to feed!');
+                dispatch(fetchFeedPosts({ category: 'featured', page: 1, limit: 12 }));
+                closePostForm();
+                setDrafts(prev => prev.filter(d => d.id !== genId));
+            } else throw new Error('Failed');
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to post');
+        } finally { setIsPosting(false); }
+    }, [dispatch, postCaption, postTitle, postTags, postVisibility, closePostForm]);
 
     /* ── Theme-aware colors ── */
     const t = useMemo(() => isDark ? {
@@ -190,13 +309,331 @@ const AIStudio = ({ onBack, onNavigate }) => {
         text1: '#fff', text2: 'rgba(255,255,255,0.5)', text3: 'rgba(255,255,255,0.2)',
         accent: '#9b6cf8', accentDim: 'rgba(155,108,248,0.16)', accentText: '#fff', shadow: 'rgba(0,0,0,0.4)',
         cardBg: 'rgba(255,255,255,0.02)', dropdownBg: '#141414',
+        inputBg: 'rgba(255,255,255,0.04)', inputBorder: 'rgba(255,255,255,0.06)',
+        tagBg: 'rgba(59,130,246,0.12)', tagColor: '#60a5fa',
+        successBg: 'rgba(34,197,94,0.1)', successColor: '#22c55e',
+        dangerBg: 'rgba(239,68,68,0.1)', dangerColor: '#ef4444',
     } : {
         bg: '#fafafa', surface: 'rgba(0,0,0,0.03)', surfaceHover: 'rgba(0,0,0,0.06)',
         surface2: 'rgba(0,0,0,0.04)', border: 'rgba(0,0,0,0.08)',
         text1: '#111', text2: 'rgba(0,0,0,0.5)', text3: 'rgba(0,0,0,0.25)',
         accent: '#5d5fef', accentDim: 'rgba(93,95,239,0.1)', accentText: '#fff', shadow: 'rgba(0,0,0,0.08)',
         cardBg: '#fff', dropdownBg: '#fff',
+        inputBg: 'rgba(0,0,0,0.03)', inputBorder: 'rgba(0,0,0,0.08)',
+        tagBg: 'rgba(59,130,246,0.08)', tagColor: '#3b82f6',
+        successBg: 'rgba(34,197,94,0.08)', successColor: '#16a34a',
+        dangerBg: 'rgba(239,68,68,0.08)', dangerColor: '#dc2626',
     }, [isDark]);
+
+    /* ── Inline Post Form Component ── */
+    const renderPostForm = (gen, isDraft = false) => {
+        const genIdentifier = isDraft ? gen.id : (gen.id || gen.aiGenerationId);
+        const isActive = postingGenId === genIdentifier;
+        if (!isActive) return null;
+
+        return (
+            <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                style={{ overflow: 'hidden' }}
+            >
+                <div style={{
+                    padding: 16, borderTop: `1px solid ${t.border}`,
+                    background: isDark ? 'rgba(155,108,248,0.03)' : 'rgba(93,95,239,0.02)',
+                }}>
+                    {/* User row */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                        <img
+                            src={user?.avatar || '/assets/profile.png'} alt=""
+                            style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }}
+                            onError={(e) => e.target.src = '/assets/profile.png'}
+                        />
+                        <span style={{ fontSize: 12, fontWeight: 500, color: t.text2 }}>@{user?.username || 'you'}</span>
+                        <div style={{ flex: 1 }} />
+                        <button onClick={closePostForm} style={{
+                            background: 'none', border: 'none', cursor: 'pointer', padding: 4,
+                        }}>
+                            <FiX size={14} color={t.text3} />
+                        </button>
+                    </div>
+
+                    {/* Caption */}
+                    <textarea
+                        value={postCaption}
+                        onChange={(e) => setPostCaption(e.target.value)}
+                        placeholder="Write a caption..."
+                        rows={2}
+                        maxLength={2000}
+                        style={{
+                            width: '100%', background: t.inputBg, border: `1px solid ${t.inputBorder}`,
+                            borderRadius: 12, padding: '10px 14px', color: t.text1, fontSize: 13,
+                            outline: 'none', resize: 'none', fontFamily: 'inherit', lineHeight: 1.5,
+                            transition: 'border-color 0.15s',
+                        }}
+                        onFocus={(e) => e.target.style.borderColor = t.accent}
+                        onBlur={(e) => e.target.style.borderColor = t.inputBorder}
+                    />
+                    <div style={{ textAlign: 'right', marginTop: 3, marginBottom: 10 }}>
+                        <span style={{ fontSize: 10, color: t.text3 }}>{postCaption.length}/2000</span>
+                    </div>
+
+                    {/* Title */}
+                    <div style={{ marginBottom: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 5 }}>
+                            <FiType size={10} color={t.text3} />
+                            <span style={{ fontSize: 10, fontWeight: 600, color: t.text3, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Title</span>
+                        </div>
+                        <input
+                            type="text" value={postTitle} onChange={(e) => setPostTitle(e.target.value)}
+                            placeholder="Give your post a title"
+                            style={{
+                                width: '100%', background: t.inputBg, border: `1px solid ${t.inputBorder}`,
+                                borderRadius: 10, padding: '8px 12px', color: t.text1, fontSize: 12,
+                                outline: 'none', fontFamily: 'inherit', transition: 'border-color 0.15s',
+                            }}
+                            onFocus={(e) => e.target.style.borderColor = t.accent}
+                            onBlur={(e) => e.target.style.borderColor = t.inputBorder}
+                        />
+                    </div>
+
+                    {/* Tags */}
+                    <div style={{ marginBottom: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 5 }}>
+                            <FiTag size={10} color={t.text3} />
+                            <span style={{ fontSize: 10, fontWeight: 600, color: t.text3, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Tags ({postTags.length}/5)</span>
+                        </div>
+                        <div style={{
+                            display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 5,
+                            background: t.inputBg, border: `1px solid ${t.inputBorder}`,
+                            borderRadius: 10, padding: '6px 10px', minHeight: 34,
+                        }}>
+                            {postTags.map((tag, i) => (
+                                <span key={i} style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: 3, padding: '2px 7px',
+                                    borderRadius: 6, background: t.tagBg, color: t.tagColor, fontSize: 10,
+                                }}>
+                                    {tag}
+                                    <button onClick={() => removePostTag(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', color: t.tagColor }}>
+                                        <FiX size={9} />
+                                    </button>
+                                </span>
+                            ))}
+                            <input
+                                type="text" value={postTagInput} onChange={(e) => setPostTagInput(e.target.value)}
+                                onKeyDown={handlePostTagKeyDown}
+                                placeholder={postTags.length === 0 ? 'Add tags...' : ''}
+                                disabled={postTags.length >= 5}
+                                style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: t.text1, fontSize: 11, minWidth: 60, padding: '2px 4px' }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Visibility + Post button row */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                            <FiEye size={10} color={t.text3} />
+                            <select value={postVisibility} onChange={(e) => setPostVisibility(e.target.value)} style={{
+                                background: t.inputBg, border: `1px solid ${t.inputBorder}`, borderRadius: 8,
+                                padding: '5px 8px', fontSize: 11, color: t.text2, cursor: 'pointer', outline: 'none',
+                                fontFamily: 'inherit',
+                            }}>
+                                <option value="public">Public</option>
+                                <option value="followers">Followers</option>
+                                <option value="private">Private</option>
+                            </select>
+                        </div>
+                        <div style={{ flex: 1 }} />
+                        <button
+                            onClick={() => isDraft ? handlePostDraft(gen) : handlePostGeneration(gen)}
+                            disabled={isPosting}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: 6, padding: '8px 20px', borderRadius: 999,
+                                border: 'none', fontSize: 12, fontWeight: 600, cursor: isPosting ? 'not-allowed' : 'pointer',
+                                background: isPosting ? t.surface : `linear-gradient(135deg, ${isDark ? '#9b6cf8' : '#5d5fef'} 0%, #7c3aed 100%)`,
+                                color: '#fff', transition: 'all 0.2s',
+                                boxShadow: isPosting ? 'none' : `0 4px 16px ${isDark ? 'rgba(155,108,248,0.3)' : 'rgba(93,95,239,0.25)'}`,
+                            }}
+                        >
+                            <FiSend size={12} />
+                            {isPosting ? 'Posting...' : 'Share to Feed'}
+                        </button>
+                    </div>
+                </div>
+            </motion.div>
+        );
+    };
+
+    /* ── Render a generation card (session result) ── */
+    const renderGenerationCard = (gen) => {
+        const genIdentifier = gen.id || gen.aiGenerationId;
+        const isFormOpen = postingGenId === genIdentifier;
+
+        return (
+            <motion.div
+                key={gen.id}
+                layout
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                style={{
+                    borderRadius: 18, overflow: 'hidden', background: t.cardBg,
+                    border: `1px solid ${isFormOpen ? t.accent : t.border}`,
+                    transition: 'border-color 0.3s, box-shadow 0.3s',
+                    boxShadow: isFormOpen ? `0 0 0 1px ${t.accent}, 0 8px 30px ${t.shadow}` : 'none',
+                }}
+                onMouseEnter={e => { if (!isFormOpen) { e.currentTarget.style.borderColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)'; e.currentTarget.style.boxShadow = `0 8px 30px ${t.shadow}`; } }}
+                onMouseLeave={e => { if (!isFormOpen) { e.currentTarget.style.borderColor = t.border; e.currentTarget.style.boxShadow = 'none'; } }}
+            >
+                {/* Media */}
+                <div style={{ background: isDark ? '#000' : '#f0f0f0', position: 'relative' }}>
+                    {gen.isVideo ? (
+                        <video src={gen.url} style={{ width: '100%', display: 'block', maxHeight: 400, objectFit: 'contain' }} controls muted />
+                    ) : (
+                        <img src={gen.url} alt="" style={{ width: '100%', display: 'block', maxHeight: 400, objectFit: 'contain' }} />
+                    )}
+                    {/* AI badge */}
+                    <div style={{
+                        position: 'absolute', top: 10, left: 10, display: 'flex', alignItems: 'center', gap: 4,
+                        padding: '4px 10px', borderRadius: 999,
+                        background: isDark ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.85)',
+                        backdropFilter: 'blur(8px)',
+                    }}>
+                        <HiOutlineSparkles size={10} color={t.accent} />
+                        <span style={{ fontSize: 9, fontWeight: 600, color: t.accent }}>AI</span>
+                    </div>
+                </div>
+
+                {/* Info + Actions */}
+                <div style={{ padding: '12px 14px' }}>
+                    <p style={{ margin: '0 0 8px', fontSize: 12, color: t.text2, lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                        {gen.prompt}
+                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: 10, color: t.text3 }}>
+                            {gen.model} · {new Date(gen.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        <div style={{ display: 'flex', gap: 4 }}>
+                            <a href={gen.url} download target="_blank" rel="noopener noreferrer" style={{
+                                width: 28, height: 28, borderRadius: 8, background: t.surface, border: 'none',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none',
+                            }}>
+                                <FiDownload size={12} color={t.text2} />
+                            </a>
+                            <button
+                                onClick={() => isFormOpen ? closePostForm() : openPostForm(gen)}
+                                style={{
+                                    padding: '5px 14px', borderRadius: 8,
+                                    background: isFormOpen ? t.surface : t.accentDim,
+                                    border: 'none', fontSize: 10, fontWeight: 600,
+                                    color: isFormOpen ? t.text2 : t.accent, cursor: 'pointer',
+                                    transition: 'all 0.15s',
+                                }}
+                            >
+                                {isFormOpen ? 'Cancel' : 'Post'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Inline post form */}
+                <AnimatePresence>
+                    {renderPostForm(gen, false)}
+                </AnimatePresence>
+            </motion.div>
+        );
+    };
+
+    /* ── Render a draft card ── */
+    const renderDraftCard = (draft) => {
+        const isFormOpen = postingGenId === draft.id;
+        const isVideoMedia = draft.type === 'video';
+        const mediaUrl = draft.resultUrl || draft.thumbnailUrl;
+
+        if (!mediaUrl) return null;
+
+        return (
+            <motion.div
+                key={draft.id}
+                layout
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                style={{
+                    borderRadius: 18, overflow: 'hidden', background: t.cardBg,
+                    border: `1px solid ${isFormOpen ? t.accent : t.border}`,
+                    transition: 'border-color 0.3s, box-shadow 0.3s',
+                    boxShadow: isFormOpen ? `0 0 0 1px ${t.accent}, 0 8px 30px ${t.shadow}` : 'none',
+                }}
+                onMouseEnter={e => { if (!isFormOpen) { e.currentTarget.style.borderColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)'; e.currentTarget.style.boxShadow = `0 8px 30px ${t.shadow}`; } }}
+                onMouseLeave={e => { if (!isFormOpen) { e.currentTarget.style.borderColor = t.border; e.currentTarget.style.boxShadow = 'none'; } }}
+            >
+                {/* Media */}
+                <div style={{ background: isDark ? '#000' : '#f0f0f0', position: 'relative' }}>
+                    {isVideoMedia ? (
+                        <video src={mediaUrl} style={{ width: '100%', display: 'block', maxHeight: 360, objectFit: 'contain' }} controls muted />
+                    ) : (
+                        <img src={mediaUrl} alt="" style={{ width: '100%', display: 'block', maxHeight: 360, objectFit: 'contain' }} />
+                    )}
+                    {/* Draft badge */}
+                    <div style={{
+                        position: 'absolute', top: 10, left: 10, display: 'flex', alignItems: 'center', gap: 4,
+                        padding: '4px 10px', borderRadius: 999,
+                        background: isDark ? 'rgba(0,0,0,0.75)' : 'rgba(255,255,255,0.9)',
+                        backdropFilter: 'blur(8px)',
+                    }}>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b' }} />
+                        <span style={{ fontSize: 9, fontWeight: 600, color: '#f59e0b' }}>DRAFT</span>
+                    </div>
+                </div>
+
+                {/* Info */}
+                <div style={{ padding: '12px 14px' }}>
+                    <p style={{ margin: '0 0 6px', fontSize: 12, color: t.text2, lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                        {draft.prompt}
+                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                        {draft.model && <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 999, background: t.accentDim, color: t.accent, fontWeight: 600 }}>{draft.model}</span>}
+                        {draft.aspectRatio && <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 999, background: t.surface, color: t.text3, fontWeight: 500 }}>{draft.aspectRatio}</span>}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: 10, color: t.text3 }}>
+                            {new Date(draft.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' })} · {new Date(draft.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        <div style={{ display: 'flex', gap: 4 }}>
+                            {mediaUrl && (
+                                <a href={mediaUrl} download target="_blank" rel="noopener noreferrer" style={{
+                                    width: 28, height: 28, borderRadius: 8, background: t.surface, border: 'none',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none',
+                                }}>
+                                    <FiDownload size={12} color={t.text2} />
+                                </a>
+                            )}
+                            <button
+                                onClick={() => isFormOpen ? closePostForm() : openPostForm({ ...draft, aiGenerationId: draft.id })}
+                                style={{
+                                    padding: '5px 14px', borderRadius: 8,
+                                    background: isFormOpen ? t.surface : `linear-gradient(135deg, ${isDark ? '#9b6cf8' : '#5d5fef'} 0%, #7c3aed 100%)`,
+                                    border: 'none', fontSize: 10, fontWeight: 600,
+                                    color: '#fff', cursor: 'pointer',
+                                    transition: 'all 0.15s',
+                                    boxShadow: isFormOpen ? 'none' : `0 2px 8px ${isDark ? 'rgba(155,108,248,0.25)' : 'rgba(93,95,239,0.2)'}`,
+                                }}
+                            >
+                                {isFormOpen ? 'Cancel' : 'Publish'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Inline post form */}
+                <AnimatePresence>
+                    {renderPostForm(draft, true)}
+                </AnimatePresence>
+            </motion.div>
+        );
+    };
 
     return (
         <div style={{ minHeight: '100vh', background: t.bg, color: t.text1, display: 'flex', flexDirection: 'column' }}>
@@ -233,7 +670,7 @@ const AIStudio = ({ onBack, onNavigate }) => {
             </header>
 
             {/* ── Centered Workspace ── */}
-            <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px 24px 120px' }}>
+            <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '24px 24px 120px' }}>
                 <div style={{ width: '100%', maxWidth: 720 }}>
 
                     {/* ── Prompt Card ── */}
@@ -443,11 +880,15 @@ const AIStudio = ({ onBack, onNavigate }) => {
 
                     {/* ── Generation Progress ── */}
                     {isGenerating && (
-                        <div style={{
-                            marginBottom: 20, padding: 24, borderRadius: 16,
-                            background: t.cardBg, border: `1px solid ${t.border}`,
-                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
-                        }}>
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            style={{
+                                marginBottom: 20, padding: 24, borderRadius: 16,
+                                background: t.cardBg, border: `1px solid ${t.border}`,
+                                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
+                            }}
+                        >
                             <div style={{
                                 width: 36, height: 36, borderRadius: 12,
                                 border: `2px solid ${t.border}`, borderTop: `2px solid ${t.accent}`,
@@ -458,80 +899,112 @@ const AIStudio = ({ onBack, onNavigate }) => {
                                 <div style={{ height: '100%', background: t.accent, width: `${generationProgress}%`, transition: 'width 0.3s', borderRadius: 2 }} />
                             </div>
                             <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
-                        </div>
+                        </motion.div>
                     )}
 
-                    {/* ── Results ── */}
-                    {generations.length === 0 && !isGenerating ? (
-                        <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                            <div style={{
-                                width: 64, height: 64, borderRadius: 20, background: t.surface,
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px',
-                            }}>
-                                <HiOutlineSparkles size={24} color={t.text3} />
-                            </div>
-                            <h2 style={{ margin: '0 0 6px', fontSize: 18, fontWeight: 600, color: t.text1 }}>Start creating</h2>
-                            <p style={{ margin: '0 0 20px', fontSize: 12, color: t.text3, lineHeight: 1.6 }}>
-                                Enter a prompt above and generate. Your creations appear here.
-                            </p>
-                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
-                                {['A cinematic sunset over mountains', 'Portrait of a futuristic robot', 'Abstract digital art, neon colors'].map((s, i) => (
-                                    <button key={i} onClick={() => setPrompt(s)} style={{
-                                        padding: '7px 14px', borderRadius: 999, border: 'none', background: t.surface,
-                                        color: t.text2, fontSize: 11, cursor: 'pointer', transition: 'all 0.15s',
-                                    }}
-                                        onMouseEnter={e => { e.currentTarget.style.background = t.surfaceHover; e.currentTarget.style.color = t.text1; }}
-                                        onMouseLeave={e => { e.currentTarget.style.background = t.surface; e.currentTarget.style.color = t.text2; }}
-                                    >
-                                        {s}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 14 }}>
-                            {generations.map(gen => (
-                                <div key={gen.id} style={{
-                                    borderRadius: 16, overflow: 'hidden', background: t.cardBg,
-                                    border: `1px solid ${t.border}`, transition: 'border-color 0.2s, box-shadow 0.2s',
+                    {/* ── Tabs: Creations / Drafts ── */}
+                    <div style={{
+                        display: 'flex', alignItems: 'center', gap: 2, marginBottom: 20,
+                        background: t.surface, borderRadius: 12, padding: 3, alignSelf: 'flex-start',
+                    }}>
+                        {[
+                            { key: 'create', label: 'Creations', count: generations.length },
+                            { key: 'drafts', label: 'Drafts', count: drafts.length },
+                        ].map(tab => (
+                            <button
+                                key={tab.key}
+                                onClick={() => setActiveTab(tab.key)}
+                                style={{
+                                    padding: '8px 18px', borderRadius: 10, border: 'none', fontSize: 12, fontWeight: 600,
+                                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+                                    background: activeTab === tab.key ? (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)') : 'transparent',
+                                    color: activeTab === tab.key ? t.text1 : t.text3,
+                                    transition: 'all 0.15s',
                                 }}
-                                    onMouseEnter={e => { e.currentTarget.style.borderColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)'; e.currentTarget.style.boxShadow = `0 8px 30px ${t.shadow}`; }}
-                                    onMouseLeave={e => { e.currentTarget.style.borderColor = t.border; e.currentTarget.style.boxShadow = 'none'; }}
-                                >
-                                    <div style={{ background: isDark ? '#000' : '#f0f0f0' }}>
-                                        {gen.isVideo ? (
-                                            <video src={gen.url} style={{ width: '100%', display: 'block', maxHeight: 400, objectFit: 'contain' }} controls muted />
-                                        ) : (
-                                            <img src={gen.url} alt="" style={{ width: '100%', display: 'block', maxHeight: 400, objectFit: 'contain' }} />
-                                        )}
+                            >
+                                {tab.label}
+                                {tab.count > 0 && (
+                                    <span style={{
+                                        fontSize: 9, fontWeight: 700, padding: '1px 6px', borderRadius: 999,
+                                        background: activeTab === tab.key ? t.accentDim : t.surface,
+                                        color: activeTab === tab.key ? t.accent : t.text3,
+                                    }}>
+                                        {tab.count}
+                                    </span>
+                                )}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* ── Creations Tab ── */}
+                    {activeTab === 'create' && (
+                        <>
+                            {generations.length === 0 && !isGenerating ? (
+                                <div style={{ textAlign: 'center', padding: '60px 0' }}>
+                                    <div style={{
+                                        width: 64, height: 64, borderRadius: 20, background: t.surface,
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px',
+                                    }}>
+                                        <HiOutlineSparkles size={24} color={t.text3} />
                                     </div>
-                                    <div style={{ padding: '12px 14px' }}>
-                                        <p style={{ margin: '0 0 8px', fontSize: 12, color: t.text2, lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                                            {gen.prompt}
-                                        </p>
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                            <span style={{ fontSize: 10, color: t.text3 }}>
-                                                {gen.model} · {new Date(gen.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </span>
-                                            <div style={{ display: 'flex', gap: 4 }}>
-                                                <a href={gen.url} download target="_blank" rel="noopener noreferrer" style={{
-                                                    width: 28, height: 28, borderRadius: 8, background: t.surface, border: 'none',
-                                                    display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none',
-                                                }}>
-                                                    <FiDownload size={12} color={t.text2} />
-                                                </a>
-                                                <button onClick={() => handlePostGeneration(gen)} style={{
-                                                    padding: '5px 12px', borderRadius: 8, background: t.accentDim, border: 'none',
-                                                    fontSize: 10, fontWeight: 600, color: t.accent, cursor: 'pointer',
-                                                }}>
-                                                    Post
-                                                </button>
-                                            </div>
-                                        </div>
+                                    <h2 style={{ margin: '0 0 6px', fontSize: 18, fontWeight: 600, color: t.text1 }}>Start creating</h2>
+                                    <p style={{ margin: '0 0 20px', fontSize: 12, color: t.text3, lineHeight: 1.6 }}>
+                                        Enter a prompt above and generate. Your creations appear here.
+                                    </p>
+                                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
+                                        {['A cinematic sunset over mountains', 'Portrait of a futuristic robot', 'Abstract digital art, neon colors'].map((s, i) => (
+                                            <button key={i} onClick={() => setPrompt(s)} style={{
+                                                padding: '7px 14px', borderRadius: 999, border: 'none', background: t.surface,
+                                                color: t.text2, fontSize: 11, cursor: 'pointer', transition: 'all 0.15s',
+                                            }}
+                                                onMouseEnter={e => { e.currentTarget.style.background = t.surfaceHover; e.currentTarget.style.color = t.text1; }}
+                                                onMouseLeave={e => { e.currentTarget.style.background = t.surface; e.currentTarget.style.color = t.text2; }}
+                                            >
+                                                {s}
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
-                            ))}
-                        </div>
+                            ) : (
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 14 }}>
+                                    {generations.map(gen => renderGenerationCard(gen))}
+                                </div>
+                            )}
+                        </>
+                    )}
+
+                    {/* ── Drafts Tab ── */}
+                    {activeTab === 'drafts' && (
+                        <>
+                            {draftsLoading ? (
+                                <div style={{ textAlign: 'center', padding: '60px 0' }}>
+                                    <div style={{
+                                        width: 36, height: 36, borderRadius: 12, margin: '0 auto 14px',
+                                        border: `2px solid ${t.border}`, borderTop: `2px solid ${t.accent}`,
+                                        animation: 'spin 1s linear infinite',
+                                    }} />
+                                    <p style={{ fontSize: 12, color: t.text3 }}>Loading drafts...</p>
+                                    <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+                                </div>
+                            ) : drafts.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '60px 0' }}>
+                                    <div style={{
+                                        width: 64, height: 64, borderRadius: 20, background: t.surface,
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px',
+                                    }}>
+                                        <FiImage size={24} color={t.text3} />
+                                    </div>
+                                    <h2 style={{ margin: '0 0 6px', fontSize: 18, fontWeight: 600, color: t.text1 }}>No drafts yet</h2>
+                                    <p style={{ margin: 0, fontSize: 12, color: t.text3, lineHeight: 1.6 }}>
+                                        Generations that haven't been posted will appear here.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 14 }}>
+                                    {drafts.map(draft => renderDraftCard(draft))}
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>
