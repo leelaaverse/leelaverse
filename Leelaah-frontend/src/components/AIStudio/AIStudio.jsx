@@ -188,13 +188,13 @@ const AIStudio = ({ onBack, onNavigate }) => {
         bg: '#0a0a0a', surface: 'rgba(255,255,255,0.03)', surfaceHover: 'rgba(255,255,255,0.06)',
         surface2: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.06)',
         text1: '#fff', text2: 'rgba(255,255,255,0.5)', text3: 'rgba(255,255,255,0.2)',
-        accent: '#c8ff00', accentDim: 'rgba(200,255,0,0.12)', shadow: 'rgba(0,0,0,0.4)',
+        accent: '#9b6cf8', accentDim: 'rgba(155,108,248,0.16)', accentText: '#fff', shadow: 'rgba(0,0,0,0.4)',
         cardBg: 'rgba(255,255,255,0.02)', dropdownBg: '#141414',
     } : {
         bg: '#fafafa', surface: 'rgba(0,0,0,0.03)', surfaceHover: 'rgba(0,0,0,0.06)',
         surface2: 'rgba(0,0,0,0.04)', border: 'rgba(0,0,0,0.08)',
         text1: '#111', text2: 'rgba(0,0,0,0.5)', text3: 'rgba(0,0,0,0.25)',
-        accent: '#4f46e5', accentDim: 'rgba(79,70,229,0.08)', shadow: 'rgba(0,0,0,0.08)',
+        accent: '#5d5fef', accentDim: 'rgba(93,95,239,0.1)', accentText: '#fff', shadow: 'rgba(0,0,0,0.08)',
         cardBg: '#fff', dropdownBg: '#fff',
     }, [isDark]);
 
@@ -268,7 +268,7 @@ const AIStudio = ({ onBack, onNavigate }) => {
                                 }}>
                                     <FiX size={10} color={t.text1} />
                                 </button>
-                                <div style={{ position: 'absolute', bottom: 4, left: 4, padding: '2px 6px', borderRadius: 4, background: 'rgba(0,0,0,0.6)', fontSize: 8, fontWeight: 600, color: '#c8ff00' }}>
+                                <div style={{ position: 'absolute', bottom: 4, left: 4, padding: '2px 6px', borderRadius: 4, background: 'rgba(0,0,0,0.6)', fontSize: 8, fontWeight: 600, color: t.accent }}>
                                     {generationMode}
                                 </div>
                             </div>
@@ -325,7 +325,7 @@ const AIStudio = ({ onBack, onNavigate }) => {
                                 display: 'flex', alignItems: 'center', gap: 6, padding: '8px 20px', borderRadius: 999, border: 'none',
                                 fontSize: 12, fontWeight: 600, cursor: prompt.trim() && !isGenerating ? 'pointer' : 'not-allowed',
                                 background: prompt.trim() && !isGenerating ? t.accent : t.surface,
-                                color: prompt.trim() && !isGenerating ? (isDark ? '#000' : '#fff') : t.text3,
+                                color: prompt.trim() && !isGenerating ? t.accentText : t.text3,
                                 transition: 'all 0.15s',
                             }}>
                                 {isGenerating ? <FiRefreshCw size={13} style={{ animation: 'spin 1s linear infinite' }} /> : <FiZap size={13} />}

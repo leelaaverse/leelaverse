@@ -1,14 +1,12 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
-
-const API_URL = 'http://localhost:3000/api';
+import { apiClient } from '../../services/api';
 
 // Fetch trending/explore data (cached in Redux)
 export const fetchExploreData = createAsyncThunk(
     'search/fetchExploreData',
     async (_, { rejectWithValue }) => {
         try {
-            const { data } = await axios.get(`${API_URL}/search/trending`);
+            const { data } = await apiClient.get('/api/search/trending');
             return data;
         } catch (error) {
             return rejectWithValue(error.response?.data?.message || 'Failed to fetch explore data');
@@ -22,7 +20,7 @@ export const fetchExplorePosts = createAsyncThunk(
     async ({ page = 1, limit = 18 }, { rejectWithValue }) => {
         try {
             // Use the feed endpoint with 'featured' to get a mix of posts+videos
-            const response = await axios.get(`${API_URL}/posts/feed`, {
+            const response = await apiClient.get('/api/posts/feed', {
                 params: { category: 'featured', page, limit }
             });
             return {
@@ -41,7 +39,9 @@ export const fetchSuggestions = createAsyncThunk(
     'search/fetchSuggestions',
     async (query, { rejectWithValue }) => {
         try {
-            const { data } = await axios.get(`${API_URL}/search/suggestions?q=${encodeURIComponent(query)}`);
+            const { data } = await apiClient.get('/api/search/suggestions', {
+                params: { q: query }
+            });
             return data;
         } catch (error) {
             return rejectWithValue('Failed to fetch suggestions');
@@ -54,8 +54,9 @@ export const fetchSearchResults = createAsyncThunk(
     'search/fetchSearchResults',
     async ({ query, cursor = null, limit = 15 }, { rejectWithValue }) => {
         try {
-            const url = `${API_URL}/search?q=${encodeURIComponent(query)}&limit=${limit}${cursor ? `&cursor=${cursor}` : ''}`;
-            const { data } = await axios.get(url);
+            const { data } = await apiClient.get('/api/search', {
+                params: { q: query, limit, ...(cursor ? { cursor } : {}) }
+            });
             return { ...data, cursor, query };
         } catch (error) {
             return rejectWithValue('Search failed');

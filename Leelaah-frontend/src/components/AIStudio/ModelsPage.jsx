@@ -12,7 +12,7 @@ import { fetchModels } from '../../store/slices/modelsSlice';
 import apiService from '../../services/api';
 
 const MODEL_SHOWCASES = [
-    { id: 'flux-schnell', name: 'FLUX Schnell', tagline: 'Lightning-fast image generation', description: 'Generate stunning images in seconds.', tag: 'flux-schnell', cost: 50, accent: { dark: '#c8ff00', light: '#4f46e5' } },
+    { id: 'flux-schnell', name: 'FLUX Schnell', tagline: 'Lightning-fast image generation', description: 'Generate stunning images in seconds.', tag: 'flux-schnell', cost: 50, accent: { dark: '#9b6cf8', light: '#5d5fef' } },
     { id: 'flux-1-srpo', name: 'FLUX.1 SRPO', tagline: 'High-fidelity photorealistic output', description: 'Superior quality with enhanced detail rendering.', tag: 'flux-1-srpo', cost: 100, badge: 'PRO', accent: { dark: '#a78bfa', light: '#7c3aed' } },
     { id: 'flux-1-dev', name: 'FLUX.1 Dev', tagline: 'Developer-grade creative engine', description: 'Fine-tuned for precision. Advanced control.', tag: 'flux-1-dev', cost: 80, accent: { dark: '#60a5fa', light: '#2563eb' } },
     { id: 'flux-1-pro', name: 'FLUX.1 Pro', tagline: 'Cinema-quality image synthesis', description: 'Our most powerful model for commercial projects.', tag: 'flux-1-pro', cost: 150, badge: 'PRO', accent: { dark: '#f472b6', light: '#db2777' } },
@@ -68,19 +68,19 @@ const ModelsPage = ({ onBack, onNavigate }) => {
     const t = useMemo(() => isDark ? {
         bg: '#0a0a0a', navBg: 'rgba(10,10,10,0.7)', text1: '#fff', text2: 'rgba(255,255,255,0.5)',
         text3: 'rgba(255,255,255,0.2)', surface: 'rgba(255,255,255,0.03)', surfaceHover: 'rgba(255,255,255,0.06)',
-        border: 'rgba(255,255,255,0.04)', accent: '#c8ff00', accentText: '#000', badgeBg: 'rgba(255,255,255,0.06)',
+        border: 'rgba(255,255,255,0.04)', accent: '#9b6cf8', accentText: '#fff', badgeBg: 'rgba(255,255,255,0.06)',
         badgeColor: 'rgba(255,255,255,0.4)', shadow: 'rgba(0,0,0,0.4)', capBg: 'rgba(255,255,255,0.015)',
         capHover: 'rgba(255,255,255,0.035)', capName: 'rgba(255,255,255,0.65)', capDesc: 'rgba(255,255,255,0.18)',
         overlayBg: 'rgba(10,10,10,0.95)', coinBg: 'rgba(245,166,35,0.06)', coinColor: 'rgba(245,166,35,0.7)',
-        orbA: 'rgba(200,255,0,0.04)', orbB: 'rgba(167,139,250,0.03)',
+        orbA: 'rgba(155,108,248,0.12)', orbB: 'rgba(93,95,239,0.08)',
     } : {
         bg: '#fafafa', navBg: 'rgba(255,255,255,0.8)', text1: '#111', text2: 'rgba(0,0,0,0.5)',
         text3: 'rgba(0,0,0,0.2)', surface: 'rgba(0,0,0,0.03)', surfaceHover: 'rgba(0,0,0,0.06)',
-        border: 'rgba(0,0,0,0.06)', accent: '#4f46e5', accentText: '#fff', badgeBg: 'rgba(0,0,0,0.06)',
+        border: 'rgba(0,0,0,0.06)', accent: '#5d5fef', accentText: '#fff', badgeBg: 'rgba(0,0,0,0.06)',
         badgeColor: 'rgba(0,0,0,0.4)', shadow: 'rgba(0,0,0,0.06)', capBg: 'rgba(0,0,0,0.02)',
         capHover: 'rgba(0,0,0,0.04)', capName: 'rgba(0,0,0,0.7)', capDesc: 'rgba(0,0,0,0.35)',
         overlayBg: 'rgba(255,255,255,0.97)', coinBg: 'rgba(245,166,35,0.06)', coinColor: 'rgba(180,120,20,0.8)',
-        orbA: 'rgba(79,70,229,0.04)', orbB: 'rgba(167,139,250,0.03)',
+        orbA: 'rgba(93,95,239,0.1)', orbB: 'rgba(155,108,248,0.08)',
     }, [isDark]);
 
     const getAccent = m => isDark ? m.accent.dark : m.accent.light;
@@ -142,7 +142,7 @@ const ModelsPage = ({ onBack, onNavigate }) => {
                     <button onClick={() => onNavigate?.('aiStudio')} style={{
                         display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 28px', borderRadius: 999,
                         fontSize: 12, fontWeight: 600, border: 'none', cursor: 'pointer', background: t.accent, color: t.accentText,
-                        transition: 'transform 0.15s', boxShadow: `0 0 30px ${isDark ? 'rgba(200,255,0,0.07)' : 'rgba(79,70,229,0.12)'}`,
+                        transition: 'transform 0.15s', boxShadow: `0 0 30px ${isDark ? 'rgba(155,108,248,0.16)' : 'rgba(93,95,239,0.16)'}`,
                     }}
                         onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.04)'}
                         onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
@@ -226,7 +226,7 @@ const ModelsPage = ({ onBack, onNavigate }) => {
                 <p style={{ margin: '0 0 16px', fontSize: 11, color: t.text3 }}>Everything you need for AI content creation</p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 6 }}>
                     {[
-                        { name: 'Text to Image', desc: 'Create from prompts', Icon: FiImage, color: isDark ? '#c8ff00' : '#4f46e5' },
+                        { name: 'Text to Image', desc: 'Create from prompts', Icon: FiImage, color: isDark ? '#9b6cf8' : '#5d5fef' },
                         { name: 'Text to Video', desc: 'Generate cinematic clips', Icon: FiVideo, color: '#60a5fa' },
                         { name: 'Image to Image', desc: 'Transform any photo', Icon: FiRefreshCw, color: '#a78bfa' },
                         { name: 'Image to Video', desc: 'Bring stills to life', Icon: FiPlay, color: '#f472b6' },

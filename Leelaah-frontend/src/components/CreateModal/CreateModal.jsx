@@ -286,7 +286,7 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate }) => {
         pill: (active) => ({ padding: '6px 14px', borderRadius: 999, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: 'none', transition: 'all 0.15s', background: active ? 'rgba(255,255,255,0.1)' : 'transparent', color: active ? '#fff' : 'rgba(255,255,255,0.35)' }),
         input: { width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: '10px 14px', color: 'rgba(255,255,255,0.85)', fontSize: 13, outline: 'none', fontFamily: 'inherit', transition: 'border-color 0.15s' },
         label: { display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.35)', fontSize: 11, fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: 6 },
-        btnPrimary: { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 24px', borderRadius: 999, fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer', background: '#c8ff00', color: '#000', transition: 'all 0.15s' },
+        btnPrimary: { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 24px', borderRadius: 999, fontSize: 13, fontWeight: 600, border: '1px solid rgba(93,95,239,0.32)', cursor: 'pointer', background: 'linear-gradient(135deg, #5d5fef 0%, #7c3aed 100%)', color: '#fff', boxShadow: '0 8px 22px rgba(93,95,239,0.28)', transition: 'all 0.15s' },
         btnGhost: { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 999, fontSize: 13, fontWeight: 500, border: 'none', cursor: 'pointer', background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.6)', transition: 'all 0.15s' },
         select: { appearance: 'none', WebkitAppearance: 'none', background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: 999, padding: '6px 28px 6px 12px', fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.65)', cursor: 'pointer', outline: 'none' },
     };
@@ -319,8 +319,8 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate }) => {
                                         onMouseEnter={(e) => e.currentTarget.style.background = S.cardHover.background}
                                         onMouseLeave={(e) => e.currentTarget.style.background = S.card.background}
                                     >
-                                        <div style={{ width: 48, height: 48, borderRadius: 14, background: 'rgba(200,255,0,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            <HiOutlineSparkles size={22} color="#c8ff00" />
+                                        <div style={{ width: 48, height: 48, borderRadius: 14, background: 'rgba(93,95,239,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <HiOutlineSparkles size={22} color="#9b6cf8" />
                                         </div>
                                         <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: 500 }}>Generate AI</span>
                                     </button>
@@ -353,7 +353,7 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate }) => {
                                 <button
                                     onClick={() => { handleClose(); onNavigate && onNavigate('aiStudio'); }}
                                     style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 18px', borderRadius: 999, fontSize: 11, fontWeight: 500, border: 'none', cursor: 'pointer', background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.45)', transition: 'all 0.15s', backdropFilter: 'blur(8px)' }}
-                                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(200,255,0,0.08)'; e.currentTarget.style.color = '#c8ff00'; }}
+                                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(93,95,239,0.12)'; e.currentTarget.style.color = '#9b6cf8'; }}
                                     onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'rgba(255,255,255,0.45)'; }}
                                 >
                                     <HiOutlineSparkles size={12} /> Explore AI Models
@@ -442,7 +442,7 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate }) => {
 
                                     {/* Mode label (when ref is uploaded) */}
                                     {referenceFile && (
-                                        <span style={{ fontSize: 10, fontWeight: 600, color: '#c8ff00', opacity: 0.6, letterSpacing: '0.3px' }}>{generationMode}</span>
+                                        <span style={{ fontSize: 10, fontWeight: 600, color: '#9b6cf8', opacity: 0.75, letterSpacing: '0.3px' }}>{generationMode}</span>
                                     )}
 
                                     <div style={{ flex: 1 }} />
@@ -473,7 +473,7 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate }) => {
                                 <div style={{ position: 'relative', width: 80, height: 80, margin: '0 auto 24px' }}>
                                     <svg width="80" height="80" viewBox="0 0 80 80" style={{ animation: 'cm-spin 2s linear infinite' }}>
                                         <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="3.5" />
-                                        <circle cx="40" cy="40" r="34" fill="none" stroke="#c8ff00" strokeWidth="3.5" strokeLinecap="round"
+                                        <circle cx="40" cy="40" r="34" fill="none" stroke="#9b6cf8" strokeWidth="3.5" strokeLinecap="round"
                                             strokeDasharray={`${generationProgress * 2.14} 214`} transform="rotate(-90 40 40)" />
                                     </svg>
                                     <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -596,9 +596,9 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate }) => {
                                         </div>
 
                                         {aiGenerationIds.length > 0 && (
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 10, background: 'rgba(200,255,0,0.05)' }}>
-                                                <HiOutlineSparkles size={13} color="#c8ff00" />
-                                                <span style={{ color: 'rgba(200,255,0,0.7)', fontSize: 11, fontWeight: 500 }}>AI Generated · {selectedModel}</span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 10, background: 'rgba(155,108,248,0.16)' }}>
+                                                <HiOutlineSparkles size={13} color="#9b6cf8" />
+                                                <span style={{ color: 'rgba(196,181,253,0.92)', fontSize: 11, fontWeight: 500 }}>AI Generated · {selectedModel}</span>
                                             </div>
                                         )}
 

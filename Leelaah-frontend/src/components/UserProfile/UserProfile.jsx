@@ -309,17 +309,8 @@ const UserProfile = ({ userId, onNavigate, onBack, onChatClick }) => {
 								{Array.from({ length: 4 }).map((_, colIndex) => {
 									const columnPosts = posts.filter((_, idx) => idx % 4 === colIndex);
 									return (
-										<div key={colIndex} className="flex flex-col">
+										<div key={colIndex} className="flex flex-col gap-1 md:gap-2">
 											{columnPosts.map((post) => {
-												// Determine aspect ratio from post data
-												const getAspectRatio = () => {
-													if (post.aiAspectRatio === '9:16') return 'portrait';
-													if (post.aiAspectRatio === '16:9') return 'landscape';
-													return 'square';
-												};
-												const aspectRatio = getAspectRatio();
-												const minHeight = aspectRatio === 'portrait' ? 'min-h-[400px]' : aspectRatio === 'landscape' ? 'min-h-[200px]' : 'min-h-[300px]';
-
 												// Detect if post is a video
 												const isVideo = post.mediaType?.startsWith('video/') ||
 													post.type === 'video' ||
@@ -331,14 +322,14 @@ const UserProfile = ({ userId, onNavigate, onBack, onChatClick }) => {
 												return (
 													<div
 														key={post.id}
-														className={`relative w-full overflow-hidden rounded-lg cursor-pointer mb-2 md:mb-3 group ${minHeight} bg-gray-900`}
+														className="relative w-full overflow-hidden rounded-lg cursor-pointer group"
 														onClick={() => handlePostClick(post.id)}
 													>
 														{post.mediaUrl || post.thumbnailUrl ? (
 															isVideo ? (
 																<video
 																	src={post.mediaUrl}
-																	className="w-full h-auto object-contain"
+																	className="w-full h-auto block"
 																	muted
 																	playsInline
 																	onMouseEnter={(e) => e.target.play()}
@@ -348,11 +339,12 @@ const UserProfile = ({ userId, onNavigate, onBack, onChatClick }) => {
 																<img
 																	src={post.thumbnailUrl || post.mediaUrl}
 																	alt={post.title || 'Post'}
-																	className="w-full h-auto object-contain"
+																	className="w-full h-auto block"
+																	loading="lazy"
 																/>
 															)
 														) : (
-															<div className="absolute inset-0 flex flex-col items-center justify-center text-white/60">
+															<div className="w-full flex flex-col items-center justify-center text-white/60 bg-gray-800/80 rounded-lg py-16">
 																<i className="fa-solid fa-image text-4xl mb-2"></i>
 																<p className="text-sm">{post.title || 'Untitled'}</p>
 															</div>
@@ -368,7 +360,7 @@ const UserProfile = ({ userId, onNavigate, onBack, onChatClick }) => {
 																<i className="fa-solid fa-wand-magic-sparkles mr-1"></i>
 															</div>
 														)}
-														<div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+														<div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
 															<div className="absolute bottom-4 left-4 right-4 flex items-center gap-4 text-white">
 																<span className="flex items-center gap-1">
 																	<i className="fa-solid fa-heart"></i>
