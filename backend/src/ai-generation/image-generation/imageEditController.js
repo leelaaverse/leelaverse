@@ -148,7 +148,7 @@ const editImage = async (req, res) => {
         });
 
         // 8. Log usage
-        const aiModel = await prisma.aIModel.findUnique({ where: { modelId: model.falEndpoint } });
+        const aiModel = await prisma.aIModel?.findUnique({ where: { modelId: model.falEndpoint } });
         if (aiModel) {
             await prisma.modelUsageLog.create({
                 data: {
