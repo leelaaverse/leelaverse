@@ -522,7 +522,8 @@ exports.createPostFromGeneration = async (req, res) => {
 			type = 'content',
 			category = 'image-post',
 			tags = [],
-			visibility = 'public'
+			visibility = 'public',
+			aiAspectRatio
 		} = req.body;
 
 		console.log('🔍 Request Body Debug:', {
@@ -579,7 +580,7 @@ exports.createPostFromGeneration = async (req, res) => {
 				model: aiGenerations[0].model,
 				prompt: aiGenerations[0].prompt,
 				style: aiGenerations[0].style,
-				aspectRatio: aiGenerations[0].aspectRatio,
+				aspectRatio: aiAspectRatio || aiGenerations[0].style || aiGenerations[0].aspectRatio,
 				steps: aiGenerations[0].steps,
 				seed: aiGenerations[0].seed
 			},
@@ -634,7 +635,8 @@ exports.uploadAndCreatePost = async (req, res) => {
 			title,
 			tags = [],
 			locationName,
-			visibility = 'public'
+			visibility = 'public',
+			aiAspectRatio
 		} = req.body;
 
 		// Validate media
@@ -700,6 +702,7 @@ exports.uploadAndCreatePost = async (req, res) => {
 			thumbnailUrl: uploadResult.secure_url,
 			mediaType: mediaType,
 			aiGenerated: false,
+			aiAspectRatio: aiAspectRatio || null,
 			tags: tags.map(tag => tag.toLowerCase().trim()),
 			locationName: locationName || null,
 			visibility: visibility,

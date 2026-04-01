@@ -158,6 +158,35 @@ const apiService = {
 		getHistory: (params) => apiClient.get('/api/payments/history', { params }),
 	},
 
+	// ═══════════════════════════════════════════════
+	// New AI Generation API (/api/ai/*)
+	// ═══════════════════════════════════════════════
+	ai: {
+		// Models
+		getModels: (category) => apiClient.get('/api/ai/models', { params: category ? { category } : {} }),
+		getModelDetails: (modelId) => apiClient.get(`/api/ai/models/${modelId}`),
+
+		// Text-to-Image
+		generateImage: (data) => apiClient.post('/api/ai/image/generate', data, { timeout: 120000 }),
+		getImageModels: () => apiClient.get('/api/ai/image/models'),
+
+		// Image-to-Image editing
+		editImage: (data) => apiClient.post('/api/ai/image/edit', data, { timeout: 120000 }),
+		getEditModels: () => apiClient.get('/api/ai/image/edit/models'),
+
+		// Background removal
+		removeBackground: (data) => apiClient.post('/api/ai/utils/remove-background', data, { timeout: 60000 }),
+		getBgRemovalModels: () => apiClient.get('/api/ai/utils/remove-background/models'),
+
+		// Image upscale
+		upscaleImage: (data) => apiClient.post('/api/ai/utils/upscale', data, { timeout: 120000 }),
+		getUpscaleModels: () => apiClient.get('/api/ai/utils/upscale/models'),
+
+		// Video upscale
+		upscaleVideo: (data) => apiClient.post('/api/ai/video/upscale', data, { timeout: 180000 }),
+		getVideoUpscaleModels: () => apiClient.get('/api/ai/video/upscale/models'),
+	},
+
 	// Health check
 	health: () => apiClient.get('/api/health'),
 };

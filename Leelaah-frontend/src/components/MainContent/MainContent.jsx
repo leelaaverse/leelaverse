@@ -88,34 +88,71 @@ const MainContent = ({ activeTab, onShowAuthModal, onPostClick, onUserClick }) =
         }
     }, [isLoggedIn]);
 
-    // Calculate aspect ratio for each post
-    const getAspectRatio = useCallback((post) => {
-        // First, check if aiAspectRatio is available from AI generation
-        if (post.aiAspectRatio) {
-            const ratio = post.aiAspectRatio;
-            if (ratio === '16:9') return 'landscape';
-            if (ratio === '9:16') return 'portrait';
-            if (ratio === '1:1' || ratio === 'square') return 'square';
+    // Parse any aspect ratio value into a numeric ratio (width/height).
+    // Handles: '9:16', '4:3', 'square', 'square_hd', 'landscape_16_9', 'portrait_4_3',
+    // 'auto_2K', 'auto', '1024x1536', and even stringified {width, height} objects.
+    const parseAspectRatio = useCallback((ratioStr) => {
+        if (!ratioStr) return null;
+
+        // Handle standard ratio strings: '9:16', '4:3', '1:1', etc.
+        if (ratioStr.includes(':')) {
+            const parts = ratioStr.split(':');
+            if (parts.length === 2) {
+                const w = parseFloat(parts[0]);
+                const h = parseFloat(parts[1]);
+                if (w > 0 && h > 0) return w / h;
+            }
         }
 
-        // Check if it's a video to provide better defaults
-        const isVideo = post.mediaType?.startsWith('video/') ||
-            post.type === 'video' ||
-            post.category === 'video-post' ||
-            post.mediaUrl?.includes('.mp4') ||
-            post.mediaUrl?.includes('.webm') ||
-            post.mediaUrl?.includes('.mov');
+        // Handle dimension strings: '1024x1536', '1536x1024'
+        if (ratioStr.includes('x')) {
+            const parts = ratioStr.split('x');
+            if (parts.length === 2) {
+                const w = parseFloat(parts[0]);
+                const h = parseFloat(parts[1]);
+                if (w > 0 && h > 0) return w / h;
+            }
+        }
 
-        // Fallback: calculate from width/height if available
-        const width = post.width || post.metadata?.width || (isVideo ? 9 : 1);
-        const height = post.height || post.metadata?.height || (isVideo ? 16 : 1);
-        const ratio = width / height;
+        // Handle FAL-style size enums: 'landscape_16_9', 'portrait_4_3', 'square_hd', etc.
+        if (ratioStr.startsWith('landscape')) return 16 / 9;
+        if (ratioStr.startsWith('portrait')) return 9 / 16;
+        if (ratioStr.startsWith('square')) return 1;
 
-        // Categorize aspect ratios
-        if (ratio > 1.5) return 'landscape'; // 16:9
-        if (ratio < 0.7) return 'portrait'; // 9:16
-        return 'square'; // 1:1
+        // Handle 'auto' variants
+        if (ratioStr.startsWith('auto')) return null;
+
+        return null; // couldn't parse
     }, []);
+
+    // Calculate aspect ratio category and numeric ratio for each post
+    const getAspectRatio = useCallback((post) => {
+        let numericRatio = null;
+
+        // First, try parsing aiAspectRatio string from any model
+        if (post.aiAspectRatio) {
+            numericRatio = parseAspectRatio(post.aiAspectRatio);
+        }
+
+        // Fallback: check width/height fields
+        if (numericRatio === null) {
+            const isVideo = post.mediaType?.startsWith('video/') ||
+                post.type === 'video' ||
+                post.category === 'video-post' ||
+                post.mediaUrl?.includes('.mp4') ||
+                post.mediaUrl?.includes('.webm') ||
+                post.mediaUrl?.includes('.mov');
+
+            const width = post.width || post.metadata?.width || (isVideo ? 9 : 1);
+            const height = post.height || post.metadata?.height || (isVideo ? 16 : 1);
+            numericRatio = width / height;
+        }
+
+        // Categorize into portrait / landscape / square for masonry weighting
+        if (numericRatio > 1.2) return 'landscape';
+        if (numericRatio < 0.8) return 'portrait';
+        return 'square';
+    }, [parseAspectRatio]);
 
     // For non-logged-in users, only show first 12 posts
     const visiblePosts = useMemo(() => {
@@ -131,12 +168,16 @@ const MainContent = ({ activeTab, onShowAuthModal, onPostClick, onUserClick }) =
         const colHeights = [0, 0, 0, 0];
 
         visiblePosts.forEach(post => {
-            const aspectRatio = getAspectRatio(post);
-
-            // Assign weight based on aspect ratio for better distribution
-            let weight = 1;
-            if (aspectRatio === 'portrait') weight = 1.5;
-            if (aspectRatio === 'landscape') weight = 0.7;
+            // Calculate weight from the actual aspect ratio for accurate column balancing
+            // Weight = height relative to width (1/ratio), so taller images get higher weight
+            let numericRatio = parseAspectRatio(post.aiAspectRatio);
+            if (!numericRatio) {
+                const aspectRatio = getAspectRatio(post);
+                if (aspectRatio === 'portrait') numericRatio = 3 / 4;
+                else if (aspectRatio === 'landscape') numericRatio = 16 / 9;
+                else numericRatio = 1;
+            }
+            const weight = 1 / numericRatio; // e.g. 9:16 → 1.78, 1:1 → 1, 16:9 → 0.56
 
             // Find column with minimum height
             const minIndex = colHeights.indexOf(Math.min(...colHeights));

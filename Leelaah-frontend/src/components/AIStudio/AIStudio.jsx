@@ -13,6 +13,8 @@ import { PiCoinsBold } from 'react-icons/pi';
 import { fetchModels } from '../../store/slices/modelsSlice';
 import { fetchFeedPosts } from '../../store/slices/postsSlice';
 import apiService from '../../services/api';
+import SearchableModelDropdown from '../shared/SearchableModelDropdown';
+import ProgressiveImageReveal from '../shared/ProgressiveImageReveal';
 
 const ASPECT_RATIOS = [
     { value: '1:1', label: '1:1' },
@@ -21,13 +23,49 @@ const ASPECT_RATIOS = [
     { value: '4:3', label: '4:3' },
 ];
 
+const MAX_REFERENCE_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+const DEFAULT_REFERENCE_IMAGE_LIMIT = 10;
+
+const getUniqueModels = (models = []) => Array.from(new Map(models.map(model => [model.id, model])).values());
+
+const revokeReferencePreviews = (references = []) => {
+    references.forEach(reference => {
+        if (reference?.preview) {
+            URL.revokeObjectURL(reference.preview);
+        }
+    });
+};
+
+const readFileAsDataUrl = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error(`Failed to read ${file.name}`));
+    reader.readAsDataURL(file);
+});
+
+const validateReferenceVideo = (file) => new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    const objectUrl = URL.createObjectURL(file);
+
+    video.preload = 'metadata';
+    video.onloadedmetadata = () => {
+        URL.revokeObjectURL(objectUrl);
+        resolve(video.duration <= 30);
+    };
+    video.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error(`Failed to read ${file.name}`));
+    };
+    video.src = objectUrl;
+});
+
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    AI Studio Playground — Centered Layout
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 const AIStudio = ({ onBack, onNavigate }) => {
     const dispatch = useDispatch();
     const { isLoggedIn, user } = useSelector(s => s.auth);
-    const { imageModels, videoModels, status: modelsStatus } = useSelector(s => s.models);
+    const { imageModels, imageEditModels, videoModels, allModels, status: modelsStatus } = useSelector(s => s.models);
     const { theme } = useSelector(s => s.theme);
 
     const [isDark, setIsDark] = useState(true);
@@ -49,11 +87,10 @@ const AIStudio = ({ onBack, onNavigate }) => {
     const [enhancePrompt, setEnhancePrompt] = useState(false);
 
     // Reference media
-    const [referenceFile, setReferenceFile] = useState(null);
-    const [referencePreview, setReferencePreview] = useState(null);
-    const [referenceIsVideo, setReferenceIsVideo] = useState(false);
+    const [referenceFiles, setReferenceFiles] = useState([]);
     const refFileInputRef = useRef(null);
     const modelDropdownRef = useRef(null);
+    const referenceFilesRef = useRef([]);
 
     // Generation progress
     const [isGenerating, setIsGenerating] = useState(false);
@@ -82,9 +119,11 @@ const AIStudio = ({ onBack, onNavigate }) => {
     useEffect(() => { if (modelsStatus === 'idle') dispatch(fetchModels()); }, [modelsStatus, dispatch]);
 
     useEffect(() => {
-        const models = mediaType === 'image' ? imageModels : videoModels;
+        const models = mediaType === 'video'
+            ? videoModels
+            : getUniqueModels([...(imageModels || []), ...(imageEditModels || [])]);
         if (models.length > 0 && !models.find(m => m.id === selectedModel)) setSelectedModel(models[0].id);
-    }, [mediaType, imageModels, videoModels, selectedModel]);
+    }, [mediaType, imageModels, imageEditModels, videoModels, selectedModel]);
 
     // Close model dropdown on outside click
     useEffect(() => {
@@ -113,101 +152,290 @@ const AIStudio = ({ onBack, onNavigate }) => {
 
     useEffect(() => { fetchDrafts(); }, [fetchDrafts]);
 
-    const availableModels = useMemo(() => mediaType === 'image' ? imageModels : videoModels, [mediaType, imageModels, videoModels]);
-    const currentModel = useMemo(() => availableModels.find(m => m.id === selectedModel), [availableModels, selectedModel]);
-    const currentCost = currentModel?.creditCost || 50;
+    useEffect(() => {
+        referenceFilesRef.current = referenceFiles;
+    }, [referenceFiles]);
 
-    const generationMode = useMemo(() => {
-        if (!referenceFile) return mediaType === 'image' ? 'Text → Image' : 'Text → Video';
-        if (referenceIsVideo) return mediaType === 'video' ? 'Video → Video' : 'Video → Image';
-        return mediaType === 'image' ? 'Image → Image' : 'Image → Video';
-    }, [referenceFile, referenceIsVideo, mediaType]);
-
-    const handleReferenceFile = useCallback((e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        if (file.type.startsWith('image/')) {
-            setReferenceFile(file); setReferenceIsVideo(false);
-            const reader = new FileReader();
-            reader.onloadend = () => setReferencePreview(reader.result);
-            reader.readAsDataURL(file);
-        } else if (file.type.startsWith('video/')) {
-            const video = document.createElement('video');
-            video.preload = 'metadata';
-            video.onloadedmetadata = () => {
-                window.URL.revokeObjectURL(video.src);
-                if (video.duration > 30) { toast.error('Reference video must be 30s or less'); return; }
-                setReferenceFile(file); setReferenceIsVideo(true);
-                const reader = new FileReader();
-                reader.onloadend = () => setReferencePreview(reader.result);
-                reader.readAsDataURL(file);
-            };
-            video.src = URL.createObjectURL(file);
-        } else { toast.error('Please select an image or video'); }
+    useEffect(() => () => {
+        revokeReferencePreviews(referenceFilesRef.current);
     }, []);
 
-    const removeReference = useCallback(() => {
-        setReferenceFile(null); setReferencePreview(null); setReferenceIsVideo(false);
+    const availableModels = useMemo(() => {
+        if (mediaType === 'video') return videoModels;
+        return getUniqueModels([...(imageModels || []), ...(imageEditModels || [])]);
+    }, [mediaType, imageModels, imageEditModels, videoModels]);
+    const currentModel = useMemo(() => availableModels.find(m => m.id === selectedModel) || allModels?.find(m => m.id === selectedModel), [availableModels, allModels, selectedModel]);
+    const currentCost = currentModel?.creditCost || 50;
+    const currentModelRequiresImage = mediaType === 'image' && Boolean(currentModel?.requiresImage);
+    const currentModelMinImages = currentModelRequiresImage ? Math.max(currentModel?.minImages || 1, 1) : 0;
+    const currentModelMaxImages = mediaType === 'image'
+        ? Math.max(currentModel?.maxImages || (currentModel?.supportsMultipleImages ? DEFAULT_REFERENCE_IMAGE_LIMIT : 1), 1)
+        : 1;
+    const canSelectMultipleReferences = mediaType === 'image' && currentModelMaxImages > 1;
+    const missingRequiredReferences = currentModelRequiresImage && referenceFiles.length < currentModelMinImages;
+
+    const generationMode = useMemo(() => {
+        if (referenceFiles.length === 0) return mediaType === 'image' ? 'Text → Image' : 'Text → Video';
+        if (referenceFiles.some(reference => reference.isVideo)) return mediaType === 'video' ? 'Video → Video' : 'Video → Image';
+        return mediaType === 'image' ? 'Image → Image' : 'Image → Video';
+    }, [referenceFiles, mediaType]);
+
+    useEffect(() => {
+        if (mediaType !== 'image' || referenceFiles.length === 0) return;
+
+        const hasVideoReference = referenceFiles.some(reference => reference.isVideo);
+        if (!hasVideoReference) return;
+
+        setReferenceFiles(prevReferences => {
+            const imageReferences = prevReferences.filter(reference => !reference.isVideo);
+            const videoReferences = prevReferences.filter(reference => reference.isVideo);
+            revokeReferencePreviews(videoReferences);
+            return imageReferences;
+        });
+    }, [mediaType, referenceFiles]);
+
+    useEffect(() => {
+        if (referenceFiles.length <= currentModelMaxImages) return;
+
+        setReferenceFiles(prevReferences => {
+            const nextReferences = prevReferences.slice(0, currentModelMaxImages);
+            const removedReferences = prevReferences.slice(currentModelMaxImages);
+            revokeReferencePreviews(removedReferences);
+            return nextReferences;
+        });
+    }, [referenceFiles.length, currentModelMaxImages]);
+
+    const handleReferenceFile = useCallback(async (e) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+
+        const nextReferences = [];
+        const maxReferenceCount = canSelectMultipleReferences ? currentModelMaxImages : 1;
+        const remainingSlots = canSelectMultipleReferences
+            ? Math.max(currentModelMaxImages - referenceFiles.length, 0)
+            : maxReferenceCount;
+
+        if (remainingSlots === 0) {
+            toast.error(`You can only add up to ${currentModelMaxImages} reference image${currentModelMaxImages > 1 ? 's' : ''}.`);
+            e.target.value = '';
+            return;
+        }
+
+        for (const file of files) {
+            const isImage = file.type.startsWith('image/');
+            const isVideo = file.type.startsWith('video/');
+
+            if (mediaType === 'image' && !isImage) {
+                toast.error('Please select image files only for this model.');
+                continue;
+            }
+
+            if (mediaType === 'video' && !isImage && !isVideo) {
+                toast.error('Please select an image or video.');
+                continue;
+            }
+
+            if (isImage && file.size > MAX_REFERENCE_FILE_SIZE_BYTES) {
+                toast.error(`${file.name} exceeds the 5MB limit.`);
+                continue;
+            }
+
+            if (isVideo) {
+                try {
+                    const isVideoDurationValid = await validateReferenceVideo(file);
+                    if (!isVideoDurationValid) {
+                        toast.error('Reference video must be 30s or less.');
+                        continue;
+                    }
+                } catch (error) {
+                    toast.error(error.message || 'Failed to read reference video.');
+                    continue;
+                }
+            }
+
+            if (nextReferences.length >= remainingSlots) {
+                toast.error(`You can only add up to ${currentModelMaxImages} reference image${currentModelMaxImages > 1 ? 's' : ''}.`);
+                break;
+            }
+
+            nextReferences.push({
+                file,
+                preview: URL.createObjectURL(file),
+                isVideo
+            });
+        }
+
+        if (nextReferences.length === 0) {
+            e.target.value = '';
+            return;
+        }
+
+        if (canSelectMultipleReferences) {
+            setReferenceFiles(prevReferences => [...prevReferences, ...nextReferences].slice(0, currentModelMaxImages));
+        } else {
+            revokeReferencePreviews(referenceFiles);
+            setReferenceFiles(nextReferences.slice(0, maxReferenceCount));
+        }
+
+        e.target.value = '';
+    }, [canSelectMultipleReferences, currentModelMaxImages, mediaType, referenceFiles]);
+
+    const removeReference = useCallback((indexToRemove) => {
+        setReferenceFiles(prevReferences => {
+            const referenceToRemove = prevReferences[indexToRemove];
+            if (referenceToRemove?.preview) {
+                URL.revokeObjectURL(referenceToRemove.preview);
+            }
+
+            return prevReferences.filter((_, index) => index !== indexToRemove);
+        });
+
         if (refFileInputRef.current) refFileInputRef.current.value = '';
     }, []);
 
-    // Poll generation
-    const pollGenerationStatus = useCallback(async (requestId, isVideoGen, promptText, modelId) => {
-        const maxAttempts = isVideoGen ? 120 : 60;
-        let attempts = 0;
-        const poll = async () => {
-            try {
-                const response = await apiService.posts.getGenerationResult(requestId);
-                if (response.data.success) {
-                    const { status, imageUrl, videoUrl } = response.data;
-                    const outputUrl = isVideoGen ? videoUrl : imageUrl;
-                    if (status === 'completed' && outputUrl) {
-                        setGenerationProgress(100); setGenerationStatus('Done!'); setIsGenerating(false);
-                        const newGen = { id: Date.now(), url: outputUrl, isVideo: isVideoGen, prompt: promptText, model: modelId, timestamp: new Date(), requestId, aiGenerationId: response.data.aiGenerationId };
-                        setGenerations(prev => [newGen, ...prev]);
-                        toast.success(isVideoGen ? 'Video generated!' : 'Image generated!');
-                        // Refresh drafts
-                        fetchDrafts();
-                        return;
-                    } else if (status === 'failed') throw new Error('Generation failed');
-                    else {
-                        setGenerationProgress(Math.min(10 + (attempts * (isVideoGen ? 0.75 : 1.5)), 95));
-                        const qp = response.data.queuePosition;
-                        setGenerationStatus(qp ? `Queue #${qp}` : (isVideoGen ? 'Generating video...' : 'Processing...'));
-                    }
-                }
-                attempts++;
-                if (attempts < maxAttempts) setTimeout(poll, isVideoGen ? 2000 : 1000);
-                else throw new Error('Generation is taking too long.');
-            } catch (error) { setIsGenerating(false); toast.error(error.message || 'Generation failed.'); }
-        };
-        poll();
-    }, [fetchDrafts]);
-
+    // Generation handler — uses new /api/ai/* endpoints
     const handleGenerate = useCallback(async () => {
         if (!prompt.trim()) { toast.error('Please enter a prompt'); return; }
         if (!isLoggedIn) { toast.error('Please log in to generate'); return; }
+        if (missingRequiredReferences) {
+            toast.error(currentModelMinImages > 1 ? `Please add ${currentModelMinImages} reference images.` : 'Please add a reference image.');
+            return;
+        }
+
+        let progressInterval;
         try {
             setIsGenerating(true); setGenerationStatus('Initializing...'); setGenerationProgress(5);
-            // Switch to create tab to see progress
             setActiveTab('create');
             const isVideoGen = mediaType === 'video';
             let finalPrompt = prompt.trim();
             if (enhancePrompt) finalPrompt = `(masterpiece, best quality, highly detailed) ${finalPrompt}, professional lighting, sharp focus, 8k resolution`;
-            const payload = { prompt: finalPrompt, selectedModel, aspectRatio };
+
+            // Build payload for new API
+            const payload = {
+                modelId: selectedModel,
+                prompt: finalPrompt,
+                aspect_ratio: aspectRatio,
+            };
+
             if (!isVideoGen) {
-                payload.numInferenceSteps = selectedModel === 'flux-schnell' ? Math.min(numInferenceSteps, 12) : numInferenceSteps;
-                payload.guidanceScale = guidanceScale; payload.numImages = 1;
-            } else { payload.duration = '5'; }
-            const response = isVideoGen ? await apiService.posts.generateVideo(payload) : await apiService.posts.generateImage(payload);
-            if (response.data.success && response.data.generations?.length > 0) {
+                payload.num_inference_steps = selectedModel.includes('schnell') ? Math.min(numInferenceSteps, 12) : numInferenceSteps;
+                payload.guidance_scale = guidanceScale;
+                payload.num_images = 1;
+            }
+
+            setGenerationStatus('Generating...');
+            setGenerationProgress(15);
+
+            // Simulate progressive progress while waiting
+            progressInterval = setInterval(() => {
+                setGenerationProgress(prev => {
+                    if (prev >= 90) { clearInterval(progressInterval); return prev; }
+                    return prev + (isVideoGen ? 0.3 : 0.8);
+                });
+                setGenerationStatus(prev => {
+                    const msgs = isVideoGen
+                        ? ['Generating video...', 'Processing frames...', 'Rendering...']
+                        : ['Generating...', 'Creating image...', 'Rendering details...', 'Finalizing...'];
+                    return msgs[Math.floor(Math.random() * msgs.length)];
+                });
+            }, 1500);
+
+            // Determine which endpoint: if reference file present & model is I2I, use edit
+            let response;
+            const model = currentModel;
+            const isEditModel = model?.category === 'image-to-image' || model?.category === 'image_to_image' || model?.category === 'image_editing';
+
+            if (isEditModel) {
+                const imageReferenceFiles = referenceFiles.filter(reference => !reference.isVideo);
+                const referenceDataUrls = await Promise.all(imageReferenceFiles.map(reference => readFileAsDataUrl(reference.file)));
+
+                if (model?.supportsMultipleImages) {
+                    payload.image_urls = referenceDataUrls;
+                } else if (referenceDataUrls[0]) {
+                    payload.image_url = referenceDataUrls[0];
+                }
+
+                response = await apiService.ai.editImage(payload);
+            } else if (isVideoGen) {
+                // For now video uses old endpoint or new upscale
+                response = await apiService.posts.generateVideo({ prompt: finalPrompt, selectedModel, aspectRatio, duration: '5' });
+            } else {
+                response = await apiService.ai.generateImage(payload);
+            }
+
+            clearInterval(progressInterval);
+
+            if (response.data.success) {
+                const data = response.data.data || response.data;
+                const images = data.images || [];
+                const resultUrl = images[0]?.url || data.image?.url || data.resultUrl;
+
+                if (resultUrl) {
+                    setGenerationProgress(98);
+                    setGenerationStatus('Downloading image...');
+                    await new Promise((resolve) => {
+                        if (isVideoGen) return resolve();
+                        const img = new Image();
+                        img.onload = resolve;
+                        img.onerror = resolve; // Continue on error
+                        img.src = resultUrl;
+                    });
+                    
+                    setGenerationProgress(100);
+                    setGenerationStatus('Done!');
+                    setIsGenerating(false);
+                    const newGen = {
+                        id: data.generationId || Date.now(),
+                        url: resultUrl,
+                        isVideo: isVideoGen,
+                        prompt: finalPrompt,
+                        model: data.model || selectedModel,
+                        timestamp: new Date(),
+                        aiGenerationId: data.generationId,
+                        creditsUsed: data.creditsUsed,
+                        seed: data.seed,
+                    };
+                    setGenerations(prev => [newGen, ...prev]);
+                    toast.success(isVideoGen ? 'Video generated!' : 'Image generated!');
+                    fetchDrafts();
+                } else {
+                    throw new Error('No result URL in response');
+                }
+            } else if (response.data.generations?.length > 0) {
+                // Fallback: old polling-based flow
                 const gen = response.data.generations[0];
                 setGenerationStatus(isVideoGen ? 'Generating video...' : 'Generating...');
-                setGenerationProgress(10);
-                pollGenerationStatus(gen.requestId, isVideoGen, prompt.trim(), selectedModel);
-            } else throw new Error('Failed to start generation');
-        } catch (error) { setIsGenerating(false); toast.error(error.response?.data?.message || 'Failed to start generation.'); }
-    }, [prompt, mediaType, selectedModel, aspectRatio, numInferenceSteps, guidanceScale, isLoggedIn, enhancePrompt, pollGenerationStatus]);
+                const maxAttempts = isVideoGen ? 120 : 60;
+                let attempts = 0;
+                const poll = async () => {
+                    try {
+                        const res = await apiService.posts.getGenerationResult(gen.requestId);
+                        if (res.data.success) {
+                            const outputUrl = isVideoGen ? res.data.videoUrl : res.data.imageUrl;
+                            if (res.data.status === 'completed' && outputUrl) {
+                                setGenerationProgress(100); setGenerationStatus('Done!'); setIsGenerating(false);
+                                setGenerations(prev => [{ id: Date.now(), url: outputUrl, isVideo: isVideoGen, prompt: finalPrompt, model: selectedModel, timestamp: new Date(), requestId: gen.requestId, aiGenerationId: res.data.aiGenerationId }, ...prev]);
+                                toast.success(isVideoGen ? 'Video generated!' : 'Image generated!');
+                                fetchDrafts();
+                                return;
+                            } else if (res.data.status === 'failed') throw new Error('Generation failed');
+                            setGenerationProgress(Math.min(10 + (attempts * (isVideoGen ? 0.75 : 1.5)), 95));
+                        }
+                        attempts++;
+                        if (attempts < maxAttempts) setTimeout(poll, isVideoGen ? 2000 : 1000);
+                        else throw new Error('Timeout');
+                    } catch (err) { setIsGenerating(false); toast.error(err.message || 'Failed'); }
+                };
+                poll();
+            } else {
+                throw new Error(response.data.message || 'Generation failed');
+            }
+        } catch (error) {
+            if (progressInterval) clearInterval(progressInterval);
+            setIsGenerating(false);
+            toast.error(error.response?.data?.message || error.message || 'Failed to start generation.');
+        }
+    }, [prompt, mediaType, selectedModel, aspectRatio, numInferenceSteps, guidanceScale, isLoggedIn, enhancePrompt, missingRequiredReferences, currentModelMinImages, referenceFiles, currentModel, fetchDrafts]);
 
     const handleKeyDown = useCallback((e) => {
         if (e.key === 'Enter' && !e.shiftKey && !isGenerating) { e.preventDefault(); handleGenerate(); }
@@ -637,6 +865,17 @@ const AIStudio = ({ onBack, onNavigate }) => {
 
     return (
         <div style={{ minHeight: '100vh', background: t.bg, color: t.text1, display: 'flex', flexDirection: 'column' }}>
+            <style>{`
+                @keyframes spin {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                }
+
+                @keyframes referencePulse {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(-1px); }
+                }
+            `}</style>
 
             {/* ── Top Bar ── */}
             <header style={{
@@ -650,21 +889,21 @@ const AIStudio = ({ onBack, onNavigate }) => {
                         width: 34, height: 34, borderRadius: 10, background: t.surface, border: 'none',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
                     }}>
-                        <FiArrowLeft size={15} color={t.text2} />
+                        <FiArrowLeft size={17} color={t.text2} />
                     </button>
-                    <span style={{ fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <HiOutlineSparkles size={14} color={t.accent} style={{ opacity: 0.7 }} /> AI Studio
+                    <span style={{ fontSize: 16, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <HiOutlineSparkles size={16} color={t.accent} style={{ opacity: 0.7 }} /> AI Studio
                     </span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <button onClick={() => onNavigate?.('modelsPage')} style={{
-                        padding: '6px 14px', borderRadius: 999, border: 'none', fontSize: 11, fontWeight: 500,
+                        padding: '6px 14px', borderRadius: 999, border: 'none', fontSize: 13, fontWeight: 500,
                         background: t.surface, color: t.text2, cursor: 'pointer', transition: 'all 0.15s',
                     }}>
                         Browse Models
                     </button>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', borderRadius: 999, fontSize: 11, background: t.accentDim, color: t.accent }}>
-                        <PiCoinsBold size={10} /> {currentCost} coins
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', borderRadius: 999, fontSize: 13, background: t.accentDim, color: t.accent }}>
+                        <PiCoinsBold size={12} /> Cost: {currentCost}
                     </div>
                 </div>
             </header>
@@ -686,27 +925,87 @@ const AIStudio = ({ onBack, onNavigate }) => {
                             rows={3}
                             style={{
                                 width: '100%', background: 'transparent', border: 'none', outline: 'none',
-                                color: t.text1, fontSize: 15, lineHeight: 1.6, resize: 'none',
+                                color: t.text1, fontSize: 17, lineHeight: 1.6, resize: 'none',
                                 minHeight: 60, fontFamily: 'inherit',
                             }}
                         />
 
-                        {/* Reference preview */}
-                        {referencePreview && (
-                            <div style={{ marginTop: 12, position: 'relative', display: 'inline-block' }}>
-                                {referenceIsVideo ? (
-                                    <video src={referencePreview} style={{ height: 72, borderRadius: 10 }} muted />
-                                ) : (
-                                    <img src={referencePreview} alt="" style={{ height: 72, borderRadius: 10, objectFit: 'cover' }} />
-                                )}
-                                <button onClick={removeReference} style={{
-                                    position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%',
-                                    background: isDark ? '#333' : '#ddd', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                                }}>
-                                    <FiX size={10} color={t.text1} />
-                                </button>
-                                <div style={{ position: 'absolute', bottom: 4, left: 4, padding: '2px 6px', borderRadius: 4, background: 'rgba(0,0,0,0.6)', fontSize: 8, fontWeight: 600, color: t.accent }}>
-                                    {generationMode}
+                        {currentModelRequiresImage && (
+                            <div style={{
+                                marginTop: 12,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 8,
+                                flexWrap: 'wrap',
+                                padding: '9px 12px',
+                                borderRadius: 12,
+                                background: missingRequiredReferences ? t.dangerBg : t.accentDim,
+                                color: missingRequiredReferences ? t.dangerColor : t.accent,
+                            }}>
+                                <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px' }}>Required</span>
+                                <span style={{ fontSize: 11, fontWeight: 600 }}>
+                                    This model requires {currentModelMinImages} reference image{currentModelMinImages > 1 ? 's' : ''}{currentModelMaxImages > currentModelMinImages ? ` (up to ${currentModelMaxImages})` : ''}.
+                                </span>
+                            </div>
+                        )}
+
+                        {/* Reference previews */}
+                        {referenceFiles.length > 0 && (
+                            <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+                                {referenceFiles.map((reference, index) => (
+                                    <div key={`${reference.file.name}-${index}`} style={{
+                                        position: 'relative',
+                                        width: 72,
+                                        height: 72,
+                                        borderRadius: 12,
+                                        overflow: 'hidden',
+                                        border: `1px solid ${missingRequiredReferences ? t.dangerColor : t.border}`,
+                                        background: isDark ? '#111' : '#f1f1f1',
+                                    }}>
+                                        {reference.isVideo ? (
+                                            <video src={reference.preview} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted />
+                                        ) : (
+                                            <img src={reference.preview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        )}
+                                        <button onClick={() => removeReference(index)} style={{
+                                            position: 'absolute',
+                                            top: 6,
+                                            right: 6,
+                                            width: 20,
+                                            height: 20,
+                                            borderRadius: '50%',
+                                            background: 'rgba(0,0,0,0.72)',
+                                            border: 'none',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            cursor: 'pointer',
+                                        }}>
+                                            <FiX size={10} color="#fff" />
+                                        </button>
+                                        <div style={{
+                                            position: 'absolute',
+                                            bottom: 5,
+                                            left: 5,
+                                            padding: '2px 6px',
+                                            borderRadius: 999,
+                                            background: 'rgba(0,0,0,0.65)',
+                                            fontSize: 8,
+                                            fontWeight: 700,
+                                            color: '#fff',
+                                            letterSpacing: '0.3px',
+                                        }}>
+                                            {reference.isVideo ? 'VIDEO' : `REF ${index + 1}`}
+                                        </div>
+                                    </div>
+                                ))}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                    <span style={{ fontSize: 10, color: t.text3, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                                        {generationMode}
+                                    </span>
+                                    <span style={{ fontSize: 11, color: t.text2 }}>
+                                        {referenceFiles.length} attached{mediaType === 'image' ? ` • ${referenceFiles.length}/${currentModelMaxImages}` : ''}
+                                    </span>
                                 </div>
                             </div>
                         )}
@@ -731,10 +1030,24 @@ const AIStudio = ({ onBack, onNavigate }) => {
 
                                 {/* Upload reference */}
                                 <button onClick={() => refFileInputRef.current?.click()} title="Upload reference" style={{
-                                    width: 30, height: 30, borderRadius: 8, border: 'none', background: t.surface,
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: t.text3,
+                                    height: 30,
+                                    padding: '0 12px',
+                                    borderRadius: 999,
+                                    border: 'none',
+                                    background: missingRequiredReferences ? t.accentDim : t.surface,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: 6,
+                                    cursor: 'pointer',
+                                    color: missingRequiredReferences ? t.accent : t.text3,
+                                    boxShadow: missingRequiredReferences ? `0 0 0 1px ${t.accent}, 0 0 18px ${isDark ? 'rgba(155,108,248,0.28)' : 'rgba(93,95,239,0.18)'}` : 'none',
+                                    animation: missingRequiredReferences ? 'referencePulse 1.4s ease-in-out infinite' : 'none',
                                 }}>
                                     <FiPaperclip size={13} />
+                                    <span style={{ fontSize: 11, fontWeight: 600 }}>
+                                        {referenceFiles.length > 0 ? `Add Reference (${referenceFiles.length}/${currentModelMaxImages})` : 'Add Reference'}
+                                    </span>
                                 </button>
 
                                 {/* Prompt enhancer toggle */}
@@ -775,56 +1088,20 @@ const AIStudio = ({ onBack, onNavigate }) => {
                     <div style={{
                         display: 'flex', alignItems: 'stretch', gap: 8, marginBottom: 20, flexWrap: 'wrap',
                     }}>
-                        {/* Model selector (custom dropdown) */}
-                        <div ref={modelDropdownRef} style={{ position: 'relative', flex: '1 1 220px' }}>
-                            <button onClick={() => setShowModelDropdown(!showModelDropdown)} style={{
-                                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                padding: '10px 14px', borderRadius: 12, border: `1px solid ${t.border}`,
-                                background: t.cardBg, cursor: 'pointer', color: t.text1, fontSize: 12,
-                            }}>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    <FiCpu size={13} color={t.text3} />
-                                    <span>
-                                        <span style={{ fontWeight: 600 }}>{currentModel?.name || 'Select model'}</span>
-                                        {currentModel && <span style={{ color: t.text3, marginLeft: 6, fontSize: 10 }}>{currentModel.creditCost} coins</span>}
-                                    </span>
-                                </span>
-                                <FiChevronDown size={12} color={t.text3} style={{ transform: showModelDropdown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-                            </button>
-                            <AnimatePresence>
-                                {showModelDropdown && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-                                        transition={{ duration: 0.15 }}
-                                        style={{
-                                            position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, zIndex: 50,
-                                            background: t.dropdownBg, border: `1px solid ${t.border}`, borderRadius: 14,
-                                            boxShadow: `0 12px 40px ${t.shadow}`, overflow: 'hidden', maxHeight: 260, overflowY: 'auto',
-                                        }}
-                                    >
-                                        {availableModels.map(m => (
-                                            <button key={m.id} onClick={() => { setSelectedModel(m.id); setShowModelDropdown(false); setNumInferenceSteps(m.defaultSteps || 4); setGuidanceScale(m.defaultGuidance || 3.5); }}
-                                                style={{
-                                                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                                    padding: '10px 14px', border: 'none', background: 'transparent',
-                                                    cursor: 'pointer', color: t.text1, fontSize: 12, textAlign: 'left',
-                                                    transition: 'background 0.1s',
-                                                }}
-                                                onMouseEnter={e => e.currentTarget.style.background = t.surfaceHover}
-                                                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                                            >
-                                                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                    {selectedModel === m.id && <FiCheck size={12} color={t.accent} />}
-                                                    <span style={{ fontWeight: selectedModel === m.id ? 600 : 400 }}>{m.name}</span>
-                                                </span>
-                                                <span style={{ fontSize: 10, color: t.text3, display: 'flex', alignItems: 'center', gap: 3 }}>
-                                                    <PiCoinsBold size={9} /> {m.creditCost}
-                                                </span>
-                                            </button>
-                                        ))}
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
+                        {/* Model selector (searchable dropdown) */}
+                        <div style={{ flex: '1 1 220px' }}>
+                            <SearchableModelDropdown
+                                models={availableModels}
+                                selectedModelId={selectedModel}
+                                onSelect={(id) => {
+                                    setSelectedModel(id);
+                                    const m = availableModels.find(m => m.id === id);
+                                    setNumInferenceSteps(m?.defaultSteps || 4);
+                                    setGuidanceScale(m?.defaultGuidance || 3.5);
+                                }}
+                                isDark={isDark}
+                                placeholder="Select model"
+                            />
                         </div>
 
                         {/* Aspect ratio */}
@@ -878,27 +1155,21 @@ const AIStudio = ({ onBack, onNavigate }) => {
                         )}
                     </AnimatePresence>
 
-                    {/* ── Generation Progress ── */}
+                    {/* ── Generation Progress — Progressive Reveal ── */}
                     {isGenerating && (
                         <motion.div
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            style={{
-                                marginBottom: 20, padding: 24, borderRadius: 16,
-                                background: t.cardBg, border: `1px solid ${t.border}`,
-                                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
-                            }}
+                            style={{ marginBottom: 20 }}
                         >
-                            <div style={{
-                                width: 36, height: 36, borderRadius: 12,
-                                border: `2px solid ${t.border}`, borderTop: `2px solid ${t.accent}`,
-                                animation: 'spin 1s linear infinite',
-                            }} />
-                            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: t.text1 }}>{generationStatus}</p>
-                            <div style={{ width: '100%', maxWidth: 240, height: 4, borderRadius: 2, background: t.surface, overflow: 'hidden' }}>
-                                <div style={{ height: '100%', background: t.accent, width: `${generationProgress}%`, transition: 'width 0.3s', borderRadius: 2 }} />
-                            </div>
-                            <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+                            <ProgressiveImageReveal
+                                src={generations.length > 0 ? generations[0]?.url : null}
+                                isGenerating={isGenerating}
+                                progress={generationProgress}
+                                generationStatus={generationStatus}
+                                aspectRatio={aspectRatio}
+                                isDark={isDark}
+                            />
                         </motion.div>
                     )}
 
@@ -1009,7 +1280,14 @@ const AIStudio = ({ onBack, onNavigate }) => {
                 </div>
             </div>
 
-            <input ref={refFileInputRef} type="file" accept="image/*,video/*" onChange={handleReferenceFile} style={{ display: 'none' }} />
+            <input
+                ref={refFileInputRef}
+                type="file"
+                accept={mediaType === 'video' ? 'image/*,video/*' : 'image/*'}
+                multiple={canSelectMultipleReferences}
+                onChange={handleReferenceFile}
+                style={{ display: 'none' }}
+            />
         </div>
     );
 };

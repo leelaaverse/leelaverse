@@ -22,6 +22,7 @@ const ModelsPage = ({ onBack, onNavigate }) => {
     const dispatch = useDispatch();
     const { status } = useSelector(s => s.models);
     const { theme } = useSelector(s => s.theme);
+    const { isLoggedIn } = useSelector(s => s.auth);
 
     const [isDark, setIsDark] = useState(true);
     useEffect(() => {
@@ -90,7 +91,7 @@ const ModelsPage = ({ onBack, onNavigate }) => {
 
             {/* ── Sticky Nav ── */}
             <nav style={{
-                position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
+                position: 'relative', top: 0, zIndex: 100,
                 background: t.navBg, backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)',
                 borderBottom: `1px solid ${t.border}`,
             }}>
@@ -128,9 +129,9 @@ const ModelsPage = ({ onBack, onNavigate }) => {
             </nav>
 
             {/* ── Hero ── */}
-            <section style={{ paddingTop: 80, position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: -120, left: '30%', width: 500, height: 500, background: `radial-gradient(circle, ${t.orbA} 0%, transparent 70%)`, pointerEvents: 'none' }} />
-                <div style={{ position: 'absolute', top: -80, right: '15%', width: 400, height: 400, background: `radial-gradient(circle, ${t.orbB} 0%, transparent 70%)`, pointerEvents: 'none' }} />
+            <section style={{ padding: '60px 0', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: -40, left: '30%', width: 500, height: 500, background: `radial-gradient(circle, ${t.orbA} 0%, transparent 70%)`, pointerEvents: 'none' }} />
+                <div style={{ position: 'absolute', top: 0, right: '15%', width: 400, height: 400, background: `radial-gradient(circle, ${t.orbB} 0%, transparent 70%)`, pointerEvents: 'none' }} />
                 <div style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 24px 40px', textAlign: 'center' }}>
                     <p style={{ margin: '0 0 10px', fontSize: 10, fontWeight: 600, letterSpacing: '2px', textTransform: 'uppercase', color: t.accent, opacity: 0.5 }}>AI Creative Suite</p>
                     <h1 style={{ margin: '0 0 14px', fontSize: 44, fontWeight: 700, lineHeight: 1.1, letterSpacing: '-1.5px' }}>

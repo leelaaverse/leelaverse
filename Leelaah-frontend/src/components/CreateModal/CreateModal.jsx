@@ -8,6 +8,8 @@ import { PiCoinsBold } from 'react-icons/pi';
 import apiService from '../../services/api';
 import { fetchFeedPosts } from '../../store/slices/postsSlice';
 import { fetchModels } from '../../store/slices/modelsSlice';
+import SearchableModelDropdown from '../shared/SearchableModelDropdown';
+import ProgressiveImageReveal from '../shared/ProgressiveImageReveal';
 
 const ASPECT_RATIOS = [
     { value: '1:1', label: '1:1' },
@@ -226,21 +228,77 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate }) => {
             setGenerationStatus(mediaType === 'video' ? 'Initializing Video AI...' : 'Initializing Image AI...');
             setGenerationProgress(5); setStep('generating');
             const isVideoGen = mediaType === 'video'; setIsVideo(isVideoGen);
-            const payload = { prompt: prompt.trim(), selectedModel, aspectRatio };
+
+            // Build payload for new API
+            const payload = {
+                modelId: selectedModel,
+                prompt: prompt.trim(),
+                aspect_ratio: aspectRatio,
+            };
             if (!isVideoGen) {
-                payload.numInferenceSteps = selectedModel === 'flux-schnell' ? Math.min(numInferenceSteps, 12) : numInferenceSteps;
-                payload.guidanceScale = guidanceScale; payload.numImages = 1;
-            } else { payload.duration = '5'; }
-            const response = isVideoGen ? await apiService.posts.generateVideo(payload) : await apiService.posts.generateImage(payload);
+                payload.num_inference_steps = selectedModel.includes('schnell') ? Math.min(numInferenceSteps, 12) : numInferenceSteps;
+                payload.guidance_scale = guidanceScale;
+                payload.num_images = 1;
+            }
+
+            // Progressive progress animation
+            const progressInterval = setInterval(() => {
+                setGenerationProgress(prev => {
+                    if (prev >= 90) { clearInterval(progressInterval); return prev; }
+                    return prev + (isVideoGen ? 0.3 : 0.8);
+                });
+                setGenerationStatus(() => {
+                    const msgs = isVideoGen
+                        ? ['Generating video...', 'Processing frames...', 'Rendering...']
+                        : ['Generating...', 'Creating image...', 'Rendering details...', 'Finalizing...'];
+                    return msgs[Math.floor(Math.random() * msgs.length)];
+                });
+            }, 1500);
+
+            let response;
+            if (isVideoGen) {
+                response = await apiService.posts.generateVideo({ prompt: prompt.trim(), selectedModel, aspectRatio, duration: '5' });
+            } else {
+                response = await apiService.ai.generateImage(payload);
+            }
+
+            clearInterval(progressInterval);
+
+            // New API returns result directly
+            if (response.data.success && response.data.data) {
+                const data = response.data.data;
+                const images = data.images || [];
+                const resultUrl = images[0]?.url || data.image?.url || data.resultUrl;
+                if (resultUrl) {
+                    setGenerationProgress(98); 
+                    setGenerationStatus('Downloading image...');
+                    // Preload the image so it doesn't blink black
+                    await new Promise((resolve) => {
+                        if (isVideoGen) return resolve();
+                        const img = new Image();
+                        img.onload = resolve;
+                        img.onerror = resolve; // Continue anyway if it fails
+                        img.src = resultUrl;
+                    });
+                    
+                    setGenerationProgress(100); setGenerationStatus('Done!');
+                    setImagePreview(resultUrl); setStep('result'); setIsGenerating(false);
+                    setAiGenerationIds([data.generationId]);
+                    toast.success(isVideoGen ? 'Video generated!' : 'Image generated!');
+                    return;
+                }
+            }
+
+            // Fallback: old polling flow
             if (response.data.success && response.data.generations?.length > 0) {
                 const gen = response.data.generations[0];
                 setGenerationRequestId(gen.requestId); setAiGenerationIds([gen.aiGenerationId]);
-                setGenerationStatus(isVideoGen ? 'Video generating (1-2 mins)...' : 'Generation started...');
+                setGenerationStatus(isVideoGen ? 'Video generating...' : 'Generation started...');
                 setGenerationProgress(10); pollGenerationStatus(gen.requestId, isVideoGen);
             } else throw new Error('Failed to start generation');
         } catch (error) {
             setIsGenerating(false); setStep('generate');
-            toast.error(error.response?.data?.message || 'Failed to start generation.');
+            toast.error(error.response?.data?.message || error.message || 'Failed to start generation.');
         }
     }, [prompt, mediaType, selectedModel, aspectRatio, numInferenceSteps, guidanceScale, pollGenerationStatus]);
 
@@ -254,15 +312,15 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate }) => {
                 const validIds = aiGenerationIds.filter((id) => id != null);
                 if (validIds.length === 0) throw new Error('No valid generation IDs.');
                 const allTags = ['ai-generated', selectedModel, ...tags];
-                const postData = { aiGenerationIds: validIds, caption: caption.trim() || `AI generated: ${prompt}`, title: title.trim() || caption.trim() || 'AI Generated Image', type: isVideo ? 'video' : 'image', tags: allTags, visibility, locationName: locationName.trim() || undefined };
+                const postData = { aiGenerationIds: validIds, caption: caption.trim() || `AI generated: ${prompt}`, title: title.trim() || caption.trim() || 'AI Generated Image', type: isVideo ? 'video' : 'image', tags: allTags, visibility, locationName: locationName.trim() || undefined, aiAspectRatio: aspectRatio };
                 const res = await apiService.posts.createPostFromGeneration(postData);
-                if (res.data.success) { toast.success('Post created successfully!'); dispatch(fetchFeedPosts({ category: 'featured', page: 1, limit: 12 })); handleClose(); }
+                if (res.data.success) { toast.success('Post created successfully!'); dispatch(fetchFeedPosts({ category: 'featured', page: 1, limit: 12, forceRefresh: true })); handleClose(); }
                 else throw new Error(res.data.message || 'Failed');
             } else if (imagePreview) {
                 toast.loading('Uploading post...', { id: 'upload' });
-                const uploadData = { image: imagePreview, caption: caption || '', title: title || 'Uploaded Image', tags, locationName: locationName || '', visibility };
+                const uploadData = { image: imagePreview, caption: caption || '', title: title || 'Uploaded Image', tags, locationName: locationName || '', visibility, aiAspectRatio: aspectRatio };
                 const res = await apiService.posts.uploadAndCreatePost(uploadData);
-                if (res.data.success) { toast.success('Post uploaded!', { id: 'upload' }); dispatch(fetchFeedPosts({ category: 'featured', page: 1, limit: 12 })); handleClose(); }
+                if (res.data.success) { toast.success('Post uploaded!', { id: 'upload' }); dispatch(fetchFeedPosts({ category: 'featured', page: 1, limit: 12, forceRefresh: true })); handleClose(); }
                 else throw new Error(res.data.message || 'Failed');
             } else toast.error('No content to share');
         } catch (error) {
@@ -421,15 +479,16 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate }) => {
                                         </button>
                                     </div>
 
-                                    {/* Model */}
-                                    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
-                                        <select value={selectedModel} onChange={(e) => handleModelChange(e.target.value)} disabled={modelsLoading} style={S.select}>
-                                            {modelsLoading ? <option>Loading...</option> : availableModels.map((m) => (
-                                                <option key={m.id} value={m.id} style={{ background: '#111113' }}>{m.name}</option>
-                                            ))}
-                                        </select>
-                                        <FiChevronDown size={11} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.25)', pointerEvents: 'none' }} />
-                                    </div>
+                                    {/* Model (searchable dropdown) */}
+                                    <SearchableModelDropdown
+                                        models={availableModels}
+                                        selectedModelId={selectedModel}
+                                        onSelect={handleModelChange}
+                                        disabled={modelsLoading}
+                                        isDark={true}
+                                        compact={true}
+                                        placeholder="Model"
+                                    />
 
                                     {/* Aspect ratio */}
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -463,30 +522,23 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate }) => {
                         </motion.div>
                     )}
 
-                    {/* ── GENERATING ── */}
+                    {/* ── GENERATING (Progressive Reveal) ── */}
                     {step === 'generating' && (
                         <motion.div
-                            style={{ position: 'relative', zIndex: 10, margin: 'auto', width: '100%', maxWidth: 380, padding: '0 20px' }}
+                            style={{ position: 'relative', zIndex: 10, margin: 'auto', width: '100%', maxWidth: 420, padding: '0 20px' }}
                             initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.25 }}
                         >
-                            <div style={{ ...S.panel, padding: 40, textAlign: 'center' }}>
-                                <div style={{ position: 'relative', width: 80, height: 80, margin: '0 auto 24px' }}>
-                                    <svg width="80" height="80" viewBox="0 0 80 80" style={{ animation: 'cm-spin 2s linear infinite' }}>
-                                        <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="3.5" />
-                                        <circle cx="40" cy="40" r="34" fill="none" stroke="#9b6cf8" strokeWidth="3.5" strokeLinecap="round"
-                                            strokeDasharray={`${generationProgress * 2.14} 214`} transform="rotate(-90 40 40)" />
-                                    </svg>
-                                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        <span style={{ color: '#fff', fontSize: 14, fontWeight: 700 }}>{Math.round(generationProgress)}%</span>
-                                    </div>
-                                </div>
-                                <p style={{ margin: '0 0 6px', color: '#fff', fontSize: 14, fontWeight: 600 }}>{generationStatus}</p>
-                                <p style={{ margin: 0, color: 'rgba(255,255,255,0.25)', fontSize: 12 }}>
-                                    {mediaType === 'video' ? 'ETA: 1-2 minutes' : selectedModel === 'flux-schnell' ? 'ETA: 15-20 seconds' : 'ETA: 25-35 seconds'}
-                                </p>
-                                <p style={{ margin: '16px auto 0', color: 'rgba(255,255,255,0.15)', fontSize: 11, maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{prompt}</p>
+                            <div style={{ ...S.panel, padding: 20, overflow: 'hidden' }}>
+                                <ProgressiveImageReveal
+                                    src={imagePreview}
+                                    isGenerating={isGenerating}
+                                    progress={generationProgress}
+                                    generationStatus={generationStatus}
+                                    aspectRatio={aspectRatio}
+                                    isDark={true}
+                                />
+                                <p style={{ margin: '12px auto 0', color: 'rgba(255,255,255,0.2)', fontSize: 11, textAlign: 'center', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{prompt}</p>
                             </div>
-                            <style>{`@keyframes cm-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
                         </motion.div>
                     )}
 

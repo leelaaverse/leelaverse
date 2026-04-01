@@ -74,22 +74,34 @@ function App() {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, [theme]);
 
-  // Sync currentView from hash on page load
+  // Sync currentView from pathname on page load
   useEffect(() => {
-    const hash = window.location.hash.replace('#', '');
-    if (hash && ['aiStudio', 'modelsPage', 'search', 'community', 'coinStore', 'settings', 'bloops'].includes(hash)) {
-      setCurrentView(hash);
-    }
-    const onHashChange = () => {
-      const h = window.location.hash.replace('#', '');
-      if (h && ['aiStudio', 'modelsPage', 'search', 'community', 'coinStore', 'settings', 'bloops'].includes(h)) {
-        setCurrentView(h);
-      } else if (!h) {
+    const handlePopState = () => {
+      const path = window.location.pathname.substring(1);
+      const validPaths = {
+        'ai-studio': 'aiStudio',
+        'aiStudio': 'aiStudio',
+        'models': 'modelsPage',
+        'modelsPage': 'modelsPage',
+        'payment': 'coinStore',
+        'coinStore': 'coinStore',
+        'search': 'search',
+        'community': 'community',
+        'settings': 'settings',
+        'bloops': 'bloops',
+        'profile': 'profile'
+      };
+      
+      if (validPaths[path]) {
+        setCurrentView(validPaths[path]);
+      } else {
         setCurrentView('home');
       }
     };
-    window.addEventListener('hashchange', onHashChange);
-    return () => window.removeEventListener('hashchange', onHashChange);
+
+    handlePopState();
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   const handleNavigate = (view, data = null) => {
@@ -100,17 +112,28 @@ function App() {
       // If navigating to own profile, go to ViewProfile instead
       if (user && data === user.id) {
         setCurrentView('profile');
-        window.location.hash = '';
+        window.history.pushState({}, '', '/profile');
         return;
       }
       setSelectedUserId(data);
     }
     setCurrentView(view);
-    // Update URL hash for bookmarkable views
-    if (['aiStudio', 'modelsPage', 'search', 'community', 'coinStore', 'settings', 'bloops'].includes(view)) {
-      window.location.hash = view;
-    } else {
-      window.location.hash = '';
+    
+    // Update URL pathname for bookmarkable views
+    const pathMap = {
+      aiStudio: '/ai-studio',
+      modelsPage: '/models',
+      coinStore: '/payment',
+      search: '/search',
+      community: '/community',
+      settings: '/settings',
+      bloops: '/bloops',
+      home: '/',
+      profile: '/profile'
+    };
+
+    if (pathMap[view] !== undefined) {
+      window.history.pushState({}, '', pathMap[view]);
     }
   };
 
@@ -238,7 +261,7 @@ function App() {
         <ChatPage onBack={() => setCurrentView('home')} onNavigate={handleNavigate} />
       )}
       {currentView === 'coinStore' && (
-        <CoinStore onBack={handleBackFromCoinStore} />
+        <CoinStore onBack={handleBackFromCoinStore} onNavigate={handleNavigate} />
       )}
       {currentView === 'search' && (
         <SearchPage

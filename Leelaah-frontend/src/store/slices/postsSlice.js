@@ -26,7 +26,8 @@ export const fetchFeedPosts = createAsyncThunk(
 	},
 	{
 		// Prevent duplicate fetches: skip if page-1 data already exists for this category
-		condition: ({ category, page }, { getState }) => {
+		condition: ({ category, page, forceRefresh }, { getState }) => {
+			if (forceRefresh) return true;
 			const { posts } = getState();
 			// If loading, never dispatch again
 			if (posts.loading || posts.loadingMore) return false;

@@ -41,7 +41,7 @@ const PLAN_ICONS = { starter: PiStarBold, popular: PiFireBold, pro: PiLightningB
 const TX_ICONS = { purchase: PiShoppingCartBold, signup_bonus: PiGiftBold, spend: PiMagicWandBold, earn: PiTrendUpBold, refund: PiArrowCounterClockwiseBold, daily_bonus: PiCalendarCheckBold, reward: PiTrophyBold, gift: PiGiftBold, achievement: PiMedalBold };
 const TX_LABELS = { purchase: 'Purchase', signup_bonus: 'Signup Bonus', spend: 'AI Generation', earn: 'Earned', refund: 'Refund', daily_bonus: 'Daily Bonus', reward: 'Reward', gift: 'Gift', achievement: 'Achievement' };
 
-const CoinStore = ({ onBack }) => {
+const CoinStore = ({ onBack, onNavigate }) => {
     const dispatch = useDispatch();
     const { user } = useSelector((state) => state.auth);
 
