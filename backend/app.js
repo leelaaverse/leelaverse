@@ -29,6 +29,7 @@ const paymentRoutes = require('./src/routes/paymentRoutes');
 const adminRoutes = require('./src/routes/adminRoutes');
 const searchRoutes = require('./src/routes/searchRoutes');
 const aiGenerationRoutes = require('./src/ai-generation');
+const communityRoutes = require('./src/routes/communityRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -214,6 +215,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/ai', aiGenerationRoutes);
+app.use('/api/community', communityRoutes);
 
 // Handle 404 errors
 app.use('*', (req, res) => {

@@ -1,15 +1,32 @@
-import React, { useState } from 'react';
-import { useSelector } from 'react-redux';
+import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import {
+  fetchLeaderboard,
+  fetchCompetitions,
+  fetchTemplates,
+  fetchMyRank
+} from '../../store/slices/communitySlice';
 import Navbar from '../Navbar/Navbar';
 import './Community.css';
 
 const Community = ({ onBack, onShowAuthModal }) => {
+    const dispatch = useDispatch();
     const [showLeaderModal, setShowLeaderModal] = useState(false);
     const [showCompetitionModal, setShowCompetitionModal] = useState(false);
     const [showTemplateModal, setShowTemplateModal] = useState(false);
     const [showOffcanvas, setShowOffcanvas] = useState(false);
 
     const { isLoggedIn } = useSelector((state) => state.auth);
+    const { leaderboard, competitions, templates, myRank } = useSelector((state) => state.community);
+
+    useEffect(() => {
+        dispatch(fetchLeaderboard({ limit: 10 }));
+        dispatch(fetchCompetitions({ limit: 5 }));
+        dispatch(fetchTemplates({ limit: 6 }));
+        if (isLoggedIn) {
+            dispatch(fetchMyRank());
+        }
+    }, [dispatch, isLoggedIn]);
 
     return (
         <div className="community-page">
@@ -59,93 +76,47 @@ const Community = ({ onBack, onShowAuthModal }) => {
                                         </div>
                                     </div>
 
-                                    {/* Leader Card */}
-                                    <div role="button" onClick={() => setShowLeaderModal(true)}>
-                                        <div className="leader-card">
-                                            <div className="leader-info">
-                                                <img src="https://i.pravatar.cc/100?img=1" className="leader-img" alt="leader" />
-                                                <div>
-                                                    <div className="leader-name">Arjun Verma</div>
-                                                    <div className="leader-tag">AI Art <i className="fa-solid fa-angle-right"></i></div>
-                                                    <div className="members"><i className="fa-solid fa-users"></i> 2.5k members</div>
+                                    {/* Dynamic Lead List */}
+                                    {leaderboard.users.map((u, i) => (
+                                        <div key={u.id} role="button" onClick={() => setShowLeaderModal(true)}>
+                                            <div className="leader-card">
+                                                <div className="leader-info">
+                                                    <img src={u.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.username}`} className="leader-img" alt={u.username} />
+                                                    <div>
+                                                        <div className="leader-name">{u.username}</div>
+                                                        <div className="leader-tag capitalize">{u.creatorTier} <i className="fa-solid fa-angle-right"></i></div>
+                                                        <div className="members"><i className="fa-solid fa-star"></i> {u.creatorScore} XP</div>
+                                                    </div>
+                                                </div>
+                                                <div className="d-flex flex-column flex-wrap justify-content-center align-items-center">
+                                                    <p className="m-0 text-light">#{i + 1}</p>
+                                                    <div className="score-badge">{u.coins}</div>
                                                 </div>
                                             </div>
-                                            <div className="d-flex flex-column flex-wrap justify-content-center align-items-center">
-                                                <p className="m-0 text-light">#1</p>
-                                                <div className="score-badge">12,677</div>
-                                            </div>
                                         </div>
-                                    </div>
-
-                                    <div role="button" onClick={() => setShowLeaderModal(true)}>
-                                        <div className="leader-card">
-                                            <div className="leader-info">
-                                                <img src="https://i.pravatar.cc/100?img=2" className="leader-img" alt="leader" />
-                                                <div>
-                                                    <div className="leader-name">Maya Kapoor</div>
-                                                    <div className="leader-tag">Storytelling <i className="fa-solid fa-angle-right"></i></div>
-                                                    <div className="members"><i className="fa-solid fa-users"></i> 1.5k members</div>
-                                                </div>
-                                            </div>
-                                            <div className="d-flex flex-column flex-wrap justify-content-center align-items-center">
-                                                <p className="m-0 text-light">#2</p>
-                                                <div className="score-badge">10,707</div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div role="button" onClick={() => setShowLeaderModal(true)}>
-                                        <div className="leader-card">
-                                            <div className="leader-info">
-                                                <img src="https://i.pravatar.cc/100?img=3" className="leader-img" alt="leader" />
-                                                <div>
-                                                    <div className="leader-name">Raman Sharma</div>
-                                                    <div className="leader-tag">AI Art <i className="fa-solid fa-angle-right"></i></div>
-                                                    <div className="members"><i className="fa-solid fa-users"></i> 1k members</div>
-                                                </div>
-                                            </div>
-                                            <div className="d-flex flex-column flex-wrap justify-content-center align-items-center">
-                                                <p className="m-0 text-light">#3</p>
-                                                <div className="score-badge">10,707</div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    ))}
 
                                     <hr style={{ color: '#fff' }} />
 
-                                    <div role="button">
-                                        <div className="my-card">
-                                            <div className="leader-info">
-                                                <img src="https://i.pravatar.cc/100?img=4" className="leader-img" alt="my profile" />
-                                                <div>
-                                                    <div className="leader-name">My Profile</div>
-                                                    <div className="leader-tag">AI Art <i className="fa-solid fa-angle-right"></i></div>
-                                                    <div className="members"><i className="fa-solid fa-users"></i> 1k members</div>
+                                    {/* My Rank (If available) */}
+                                    {isLoggedIn && myRank.data && (
+                                        <div role="button">
+                                            <div className="my-card">
+                                                <div className="leader-info">
+                                                    <img src={myRank.data.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${myRank.data.username}`} className="leader-img" alt="my profile" />
+                                                    <div>
+                                                        <div className="leader-name">My Profile</div>
+                                                        <div className="leader-tag capitalize">{myRank.data.creatorTier} <i className="fa-solid fa-angle-right"></i></div>
+                                                        <div className="members"><i className="fa-solid fa-star"></i> {myRank.data.creatorScore} XP</div>
+                                                    </div>
+                                                </div>
+                                                <div className="d-flex flex-column flex-wrap justify-content-center align-items-center">
+                                                    <p className="m-0 text-light">#{myRank.data.rank}</p>
+                                                    <div className="score-badge">{myRank.data.coins}</div>
                                                 </div>
                                             </div>
-                                            <div className="d-flex flex-column flex-wrap justify-content-center align-items-center">
-                                                <p className="m-0 text-light">#100</p>
-                                                <div className="score-badge">10,707</div>
-                                            </div>
                                         </div>
-                                    </div>
-
-                                    <div role="button">
-                                        <div className="leader-card">
-                                            <div className="leader-info">
-                                                <img src="https://i.pravatar.cc/100?img=5" className="leader-img" alt="leader" />
-                                                <div>
-                                                    <div className="leader-name">Raman Sharma</div>
-                                                    <div className="leader-tag">AI Art <i className="fa-solid fa-angle-right"></i></div>
-                                                    <div className="members"><i className="fa-solid fa-users"></i> 1k members</div>
-                                                </div>
-                                            </div>
-                                            <div className="d-flex flex-column flex-wrap justify-content-center align-items-center">
-                                                <p className="m-0 text-light">#221</p>
-                                                <div className="score-badge">10,707</div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -172,33 +143,21 @@ const Community = ({ onBack, onShowAuthModal }) => {
                                         </div>
                                     </div>
 
-                                    <div role="button" onClick={() => setShowCompetitionModal(true)}>
-                                        <div className="competition-card" style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b")' }}>
-                                            <div className="competition-overlay"></div>
-                                            <div className="competition-content">
-                                                <div className="competition-title">Cyberpunk Legends</div>
-                                                <div className="timer text-light">15H:20m:2s</div>
-                                                <div className="d-flex flex-wrap align-items-center justify-content-between">
-                                                    <div className="members text-light"><i className="fa-solid fa-users"></i> 1.5k members</div>
-                                                    <button className="participate-btn">Participate</button>
+                                    {competitions.list.map((comp) => (
+                                        <div key={comp.id} role="button" onClick={() => setShowCompetitionModal(true)}>
+                                            <div className="competition-card" style={{ backgroundImage: `url("${comp.coverImage || 'https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b'}")` }}>
+                                                <div className="competition-overlay"></div>
+                                                <div className="competition-content">
+                                                    <div className="competition-title">{comp.title}</div>
+                                                    <div className="timer text-light">{new Date(comp.endsAt).toLocaleDateString()}</div>
+                                                    <div className="d-flex flex-wrap align-items-center justify-content-between mt-2">
+                                                        <div className="members text-light"><i className="fa-solid fa-users"></i> {comp._count?.participants || 0} members</div>
+                                                        <button className="participate-btn">Participate</button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-
-                                    <div role="button" onClick={() => setShowCompetitionModal(true)}>
-                                        <div className="competition-card" style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1446776811953-b23d57bd21aa")' }}>
-                                            <div className="competition-overlay"></div>
-                                            <div className="competition-content">
-                                                <div className="competition-title">Celestial Voyages</div>
-                                                <div className="timer text-light">15H:20m:2s</div>
-                                                <div className="d-flex flex-wrap align-items-center justify-content-between">
-                                                    <div className="members text-light"><i className="fa-solid fa-users"></i> 1.5k members</div>
-                                                    <button className="participate-btn">Participate</button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    ))}
                                 </div>
                             </div>
                         </div>
@@ -225,33 +184,21 @@ const Community = ({ onBack, onShowAuthModal }) => {
                                     </div>
 
                                     <div className="row g-3">
-                                        <div className="col-6">
-                                            <div role="button" onClick={() => setShowTemplateModal(true)}>
-                                                <div className="template-card" style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1534447677768-be436bb09401")' }}>
-                                                    <div className="competition-content">
-                                                        <div><span className="user-badge">1K User</span></div>
-                                                        <div className="template-body mt-3">
-                                                            <div className="mb-2 text-light">Cinematic Close-up</div>
-                                                            <button className="use-btn text-light">Use</button>
+                                        {templates.list.map((tpl) => (
+                                            <div key={tpl.id} className="col-6">
+                                                <div role="button" onClick={() => setShowTemplateModal(true)}>
+                                                    <div className="template-card" style={{ backgroundImage: `url("${tpl.thumbnailUrl || 'https://images.unsplash.com/photo-1534447677768-be436bb09401'}")` }}>
+                                                        <div className="competition-content w-100">
+                                                            <div><span className="user-badge">{tpl.usageCount} Uses</span></div>
+                                                            <div className="template-body mt-3">
+                                                                <div className="mb-2 text-light">{tpl.name}</div>
+                                                                <button className="use-btn text-light">Use</button>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
-
-                                        <div className="col-6">
-                                            <div role="button" onClick={() => setShowTemplateModal(true)}>
-                                                <div className="template-card" style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1534447677768-be436bb09401")' }}>
-                                                    <div className="competition-content">
-                                                        <div><span className="user-badge">1K User</span></div>
-                                                        <div className="template-body mt-3">
-                                                            <div className="mb-2 text-light">Cinematic Close-up</div>
-                                                            <button className="use-btn text-light">Use</button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        ))}
                                     </div>
                                 </div>
                             </div>

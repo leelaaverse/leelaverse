@@ -4,6 +4,7 @@ const cloudinary = require('cloudinary').v2;
 const axios = require('axios');
 const { getAllModels, getModelsByType, getFeaturedModels, getModelById, getModelConfig } = require('../config/aiModels');
 const { createNotification } = require('../utils/notificationService');
+const rewardEngine = require('../services/rewardEngine');
 
 // Configure Cloudinary
 cloudinary.config({
@@ -745,6 +746,9 @@ exports.uploadAndCreatePost = async (req, res) => {
 			}
 		});
 
+		// Reward Engine Hook
+		await rewardEngine.onPostCreated(userId, post.id);
+
 		res.status(201).json({
 			success: true,
 			message: `${isVideo ? 'Video' : 'Image'} uploaded and post created successfully`,
@@ -986,6 +990,11 @@ exports.createPost = async (req, res) => {
 				}
 			}
 		});
+
+		// Reward Engine Hook
+		if (userId) { // Only reward logged-in users
+			await rewardEngine.onPostCreated(finalUserId, post.id);
+		}
 
 		console.log('✅ Post creation complete! Should appear in feed immediately.');
 
@@ -1756,6 +1765,9 @@ exports.likePost = async (req, res) => {
 			link: `/post/${postId}`
 		});
 
+		// Reward Engine Hook
+		await rewardEngine.onLikeReceived(post.authorId, postId);
+
 		res.json({
 			success: true,
 			message: 'Post liked successfully',
@@ -2014,6 +2026,12 @@ exports.addComment = async (req, res) => {
 			commentId: comment.id,
 			link: `/post/${postId}`
 		});
+
+		// Reward Engine Hook
+		// Only reward if it's someone else commenting on your post
+		if (post.authorId !== userId) {
+			await rewardEngine.onCommentReceived(post.authorId, postId);
+		}
 
 		res.status(201).json({
 			success: true,

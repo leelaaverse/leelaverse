@@ -9,6 +9,7 @@ import SinglePost from './components/SinglePost/SinglePost';
 import ChatPage from './components/ChatPage/ChatPage';
 import Bloops from './components/Bloops/Bloops';
 import Community from './components/Community/Community';
+import AdminCommunity from './components/Community/AdminCommunity';
 import CoinStore from './components/CoinStore/CoinStore';
 import SearchPage from './components/Search/SearchPage';
 import Settings from './components/Settings/Settings';
@@ -85,8 +86,8 @@ function App() {
         'modelsPage': 'modelsPage',
         'payment': 'coinStore',
         'coinStore': 'coinStore',
-        'search': 'search',
         'community': 'community',
+        'admin-community': 'adminCommunity',
         'settings': 'settings',
         'bloops': 'bloops',
         'profile': 'profile'
@@ -126,6 +127,7 @@ function App() {
       coinStore: '/payment',
       search: '/search',
       community: '/community',
+      adminCommunity: '/admin-community',
       settings: '/settings',
       bloops: '/bloops',
       home: '/',
@@ -254,6 +256,11 @@ function App() {
       {currentView === 'community' && (
         <Community
           onBack={handleBackFromCommunity}
+          onShowAuthModal={() => handleOpenAuth('login')}
+        />
+      )}
+      {currentView === 'adminCommunity' && (
+        <AdminCommunity
           onShowAuthModal={() => handleOpenAuth('login')}
         />
       )}

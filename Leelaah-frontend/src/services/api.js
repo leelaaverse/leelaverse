@@ -187,6 +187,17 @@ const apiService = {
 		getVideoUpscaleModels: () => apiClient.get('/api/ai/video/upscale/models'),
 	},
 
+	// Community API
+	community: {
+		getLeaderboard: (params) => apiClient.get('/api/community/leaderboard', { params }),
+		getMyRank: () => apiClient.get('/api/community/leaderboard/me'),
+		getCompetitions: (params) => apiClient.get('/api/community/competitions', { params }),
+		getCompetitionDetails: (id) => apiClient.get(`/api/community/competitions/${id}`),
+		joinCompetition: (id) => apiClient.post(`/api/community/competitions/${id}/join`),
+		getTemplates: (params) => apiClient.get('/api/community/templates', { params }),
+		getBadges: () => apiClient.get('/api/community/badges'),
+	},
+
 	// Health check
 	health: () => apiClient.get('/api/health'),
 };
