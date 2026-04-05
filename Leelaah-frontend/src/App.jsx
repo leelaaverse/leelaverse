@@ -93,6 +93,15 @@ function App() {
         'profile': 'profile'
       };
       
+      if (path.startsWith('post/')) {
+        const id = path.split('/')[1];
+        if (id) {
+          setSelectedPostId(id);
+          setCurrentView('post');
+          return;
+        }
+      }
+      
       if (validPaths[path]) {
         setCurrentView(validPaths[path]);
       } else {
@@ -134,7 +143,9 @@ function App() {
       profile: '/profile'
     };
 
-    if (pathMap[view] !== undefined) {
+    if (view === 'post' && data) {
+      window.history.pushState({}, '', `/post/${data}`);
+    } else if (pathMap[view] !== undefined) {
       window.history.pushState({}, '', pathMap[view]);
     }
   };
@@ -142,6 +153,7 @@ function App() {
   const handlePostClick = (postId) => {
     setSelectedPostId(postId);
     setCurrentView('post');
+    window.history.pushState({}, '', `/post/${postId}`);
   };
 
   const handleUserClick = (userId) => {
@@ -157,6 +169,7 @@ function App() {
   const handleBackFromPost = () => {
     setSelectedPostId(null);
     setCurrentView('home');
+    window.history.pushState({}, '', '/');
   };
 
   const handleBackFromUser = () => {

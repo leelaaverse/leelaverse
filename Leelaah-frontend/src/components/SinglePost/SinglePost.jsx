@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { FaHeart, FaRegHeart, FaRegComment, FaArrowLeft, FaTrash, FaPaperPlane } from 'react-icons/fa';
 import { HiOutlinePencilSquare } from 'react-icons/hi2';
 import { PiShareFatDuotone } from 'react-icons/pi';
-import { IoSparklesSharp } from 'react-icons/io5';
+import { RiMagicLine, RiFileCopyLine, RiCameraLensLine } from 'react-icons/ri';
 import apiService from '../../services/api';
 import ShareModal from '../ShareModal/ShareModal';
 import toast from 'react-hot-toast';
@@ -18,6 +18,7 @@ const SinglePost = ({ postId, onBack, onShowAuthModal, onNavigate }) => {
 	const [editCaption, setEditCaption] = useState('');
 	const [editTitle, setEditTitle] = useState('');
 	const [isSaving, setIsSaving] = useState(false);
+	const { theme } = useSelector((s) => s.theme || { theme: 'Dark' });
 
 	// Like state
 	const [isLiked, setIsLiked] = useState(false);
@@ -32,6 +33,12 @@ const SinglePost = ({ postId, onBack, onShowAuthModal, onNavigate }) => {
 	const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 	const [commentsPagination, setCommentsPagination] = useState({ page: 1, pages: 1 });
 	const [showShareModal, setShowShareModal] = useState(false);
+	const isLightTheme = theme === 'Light' || (
+		theme === 'Auto' &&
+		typeof window !== 'undefined' &&
+		window.matchMedia &&
+		!window.matchMedia('(prefers-color-scheme: dark)').matches
+	);
 
 	// Fetch post details
 	useEffect(() => {
@@ -279,13 +286,18 @@ const SinglePost = ({ postId, onBack, onShowAuthModal, onNavigate }) => {
 			'/assets/placeholder.png';
 	};
 
+	const currentUserId = user?.id ? String(user.id) : null;
+	const postAuthorId = post?.author?.id || post?.authorId
+		? String(post.author?.id || post.authorId)
+		: null;
+
 	// Handle share
 	const handleShare = () => {
 		setShowShareModal(true);
 	};
 
-	// Handle remix
-	const handleRemix = () => {
+	// Handle recreate
+	const handleRecreate = () => {
 		if (!isLoggedIn) {
 			onShowAuthModal?.();
 			return;
@@ -329,7 +341,7 @@ const SinglePost = ({ postId, onBack, onShowAuthModal, onNavigate }) => {
 				</button>
 
 				<div className="header-actions">
-					{user?.id === post.authorId && (
+					{currentUserId && postAuthorId && currentUserId === postAuthorId && (
 						<>
 							{!isEditing ? (
 								<>
@@ -352,10 +364,6 @@ const SinglePost = ({ postId, onBack, onShowAuthModal, onNavigate }) => {
 							)}
 						</>
 					)}
-					<button onClick={handleRemix} className="pill-btn remix-btn" title="Remix">
-						<IoSparklesSharp />
-						<span>Remix</span>
-					</button>
 				</div>
 			</div>
 
@@ -410,22 +418,28 @@ const SinglePost = ({ postId, onBack, onShowAuthModal, onNavigate }) => {
 
 				{/* Details Section */}
 				<div className="post-details-section">
-					{/* Author Info */}
-					<div className="post-author-info">
-						<div className="author-avatar">
-							{post.author?.avatar ? (
-								<img src={post.author.avatar} alt={getAuthorName(post.author)} />
-							) : (
-								<div className="avatar-placeholder">
-									{getAuthorName(post.author).charAt(0).toUpperCase()}
-								</div>
+					<div className="details-content-wrapper">
+						{/* Author Info */}
+						<div className="post-author-info">
+							<div className="author-avatar">
+								{post.author?.avatar ? (
+									<img src={post.author.avatar} alt={getAuthorName(post.author)} />
+								) : (
+									<div className="avatar-placeholder" style={{width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#5a5aff', color: '#fff', fontWeight: 'bold'}}>
+										{getAuthorName(post.author).charAt(0).toUpperCase()}
+									</div>
+								)}
+							</div>
+							<div className="author-details">
+								<span className="author-name">{getAuthorName(post.author)}</span>
+								<span className="post-date">{formatDate(post.createdAt)}</span>
+							</div>
+							{(!currentUserId || !postAuthorId || currentUserId !== postAuthorId) && (
+								<button className="author-follow-btn">Follow</button>
 							)}
 						</div>
-						<div className="author-details">
-							<span className="author-name">{getAuthorName(post.author)}</span>
-							<span className="post-date">{formatDate(post.createdAt)}</span>
-						</div>
-					</div>
+
+						<div className="divider" />
 
 					{/* Title & Caption */}
 					{isEditing ? (
@@ -441,11 +455,11 @@ const SinglePost = ({ postId, onBack, onShowAuthModal, onNavigate }) => {
 								/>
 							</div>
 							<div className="edit-field">
-								<label>Caption</label>
+								<label>Caption (Prompt)</label>
 								<textarea
 									value={editCaption}
 									onChange={(e) => setEditCaption(e.target.value)}
-									placeholder="Post caption"
+									placeholder="Post caption or Prompt"
 									rows={4}
 									className="edit-textarea"
 								/>
@@ -458,11 +472,51 @@ const SinglePost = ({ postId, onBack, onShowAuthModal, onNavigate }) => {
 									<h3>{post.title}</h3>
 								</div>
 							)}
-							{post.caption && (
-								<div className="post-caption">
-									<p>{post.caption}</p>
+							{/* Prompt Box */}
+							{(post.prompt || post.caption) && (
+								<div style={{ marginBottom: 20 }}>
+									<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+										<div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#888898', letterSpacing: '0.05em' }}>
+											<RiMagicLine size={14} color="#888898" /> PROMPT
+										</div>
+										<button
+											onClick={() => {
+												navigator.clipboard.writeText(post.prompt || post.caption).catch(() => {});
+												toast.success('Prompt copied to clipboard');
+											}}
+											style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#e0e0f8', background: '#1e1e32', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}
+										>
+											<RiFileCopyLine size={12} /> Copy
+										</button>
+									</div>
+									<div style={{ padding: '12px', borderRadius: 10, background: '#0e0e1a', border: '1px solid #14142a', fontSize: 12, fontFamily: 'monospace', lineHeight: 1.7, color: '#c0c0d8' }}>
+										{(post.prompt || post.caption || '').split(/(\[[^\]]+\])/g).map((part, i) =>
+											part.startsWith('[') ? <span key={i} style={{ color: '#5a5aff', fontWeight: 700 }}>{part}</span> : part
+										)}
+									</div>
 								</div>
 							)}
+
+							{/* Information Table */}
+							<div style={{ marginBottom: 20 }}>
+								<div style={{ fontSize: 12, fontWeight: 700, color: '#888898', letterSpacing: '0.05em', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+									 <RiCameraLensLine size={14} /> INFORMATION
+								</div>
+								<div style={{ background: '#0e0e1a', borderRadius: 12, padding: '12px 16px', border: '1px solid #1a1a2e' }}>
+									<div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #1a1a2e' }}>
+										<span style={{ color: '#888898', fontSize: 13 }}>Model</span>
+										<span style={{ color: '#e0e0f8', fontSize: 13, fontWeight: 600 }}>{post.aiModel || 'Leelaah AI V1'}</span>
+									</div>
+									<div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #1a1a2e' }}>
+										<span style={{ color: '#888898', fontSize: 13 }}>Style</span>
+										<span style={{ color: '#e0e0f8', fontSize: 13, fontWeight: 600 }}>{post.style || 'Cinematic'}</span>
+									</div>
+									<div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}>
+										<span style={{ color: '#888898', fontSize: 13 }}>Type</span>
+										<span style={{ color: '#e0e0f8', fontSize: 13, fontWeight: 600 }}>{isVideo ? 'Video' : 'Image'}</span>
+									</div>
+								</div>
+							</div>
 						</>
 					)}
 
@@ -524,7 +578,7 @@ const SinglePost = ({ postId, onBack, onShowAuthModal, onNavigate }) => {
 												<div className="comment-header">
 													<span className="comment-author">{getAuthorName(comment.author)}</span>
 													<span className="comment-date">{formatDate(comment.createdAt)}</span>
-													{user?.id === comment.authorId && (
+													{currentUserId && String(comment.authorId) === currentUserId && (
 														<button
 															className="delete-comment-btn"
 															onClick={() => handleDeleteComment(comment.id)}
@@ -551,6 +605,18 @@ const SinglePost = ({ postId, onBack, onShowAuthModal, onNavigate }) => {
 								</>
 							)}
 						</div>
+					</div>
+					</div>
+					
+					{/* Fixed Recreate Button at Bottom Container mimicking Sidebar */}
+					<div className="recreate-pattern-footer">
+						<button
+							onClick={handleRecreate}
+							className={`recreate-pattern-btn ${isLightTheme ? 'light' : 'dark'}`}
+						>
+							<RiMagicLine size={18} />
+							Recreate Pattern
+						</button>
 					</div>
 				</div>
 			</div>

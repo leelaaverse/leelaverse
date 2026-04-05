@@ -189,13 +189,45 @@ const apiService = {
 
 	// Community API
 	community: {
+		// Leaderboard
 		getLeaderboard: (params) => apiClient.get('/api/community/leaderboard', { params }),
 		getMyRank: () => apiClient.get('/api/community/leaderboard/me'),
+
+		// Competitions
 		getCompetitions: (params) => apiClient.get('/api/community/competitions', { params }),
 		getCompetitionDetails: (id) => apiClient.get(`/api/community/competitions/${id}`),
+		createCompetition: (data) => apiClient.post('/api/community/competitions', data),
 		joinCompetition: (id) => apiClient.post(`/api/community/competitions/${id}/join`),
+		submitEntry: (id, data) => apiClient.post(`/api/community/competitions/${id}/submit`, data),
+		voteSubmission: (id, submissionId) => apiClient.post(`/api/community/competitions/${id}/vote/${submissionId}`),
+		getSubmissions: (id, params) => apiClient.get(`/api/community/competitions/${id}/submissions`, { params }),
+
+		// Templates
 		getTemplates: (params) => apiClient.get('/api/community/templates', { params }),
+		getTemplateDetails: (id) => apiClient.get(`/api/community/templates/${id}`),
+		createTemplate: (data) => apiClient.post('/api/community/templates', data),
+		useTemplate: (id) => apiClient.post(`/api/community/templates/${id}/use`),
+		rateTemplate: (id, rating) => apiClient.post(`/api/community/templates/${id}/rate`, { rating }),
+
+		// Badges
 		getBadges: () => apiClient.get('/api/community/badges'),
+		getMyBadges: () => apiClient.get('/api/community/badges/my'),
+	},
+
+	// Admin Community API
+	adminCommunity: {
+		getStats: () => apiClient.get('/api/admin/community/stats'),
+		getCompetitions: (params) => apiClient.get('/api/admin/community/competitions', { params }),
+		createCompetition: (data) => apiClient.post('/api/admin/community/competitions', data),
+		updateCompetition: (id, data) => apiClient.patch(`/api/admin/community/competitions/${id}`, data),
+		finalizeCompetition: (id) => apiClient.post(`/api/admin/community/competitions/${id}/finalize`),
+		deleteCompetition: (id) => apiClient.delete(`/api/admin/community/competitions/${id}`),
+		getBadges: () => apiClient.get('/api/admin/community/badges'),
+		createBadge: (data) => apiClient.post('/api/admin/community/badges', data),
+		updateBadge: (id, data) => apiClient.put(`/api/admin/community/badges/${id}`, data),
+		getRewards: () => apiClient.get('/api/admin/community/rewards'),
+		updateReward: (key, data) => apiClient.put(`/api/admin/community/rewards/${key}`, data),
+		getLeaderboard: (params) => apiClient.get('/api/admin/community/leaderboard', { params }),
 	},
 
 	// Health check
