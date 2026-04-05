@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Skeleton } from 'antd';
 import { RiLockLine, RiCheckLine, RiMedalLine, RiAwardFill, RiVipCrownFill, RiStarSmileFill, RiTrophyFill, RiShieldStarFill } from 'react-icons/ri';
 import { fetchBadges, fetchMyBadges } from '../../store/slices/communitySlice';
+import apiService from '../../services/api';
 
 // ── Dummy badges ──────────────────────────────────────────────────────────────
 const DUMMY_BADGES = [
@@ -134,11 +135,18 @@ const BadgesPage = ({ isLoggedIn, myRank }) => {
 
   useEffect(() => {
     dispatch(fetchBadges());
-    if (isLoggedIn) dispatch(fetchMyBadges());
+    if (isLoggedIn) {
+      // Sync first (awards any newly qualified badges), then fetch
+      apiService.community.syncBadges()
+        .catch(() => {})
+        .finally(() => dispatch(fetchMyBadges()));
+    }
   }, [dispatch, isLoggedIn]);
 
   const allBadges = badges.list.length > 0 ? badges.list : DUMMY_BADGES;
-  const earnedIds = myBadges.list.length > 0
+  // When logged in, show only real earned badges (empty = 0 earned, not dummy)
+  // When not logged in, use DUMMY_EARNED to show a demo preview
+  const earnedIds = isLoggedIn
     ? new Set(myBadges.list.map(b => b.badge?.name || b.badgeName))
     : DUMMY_EARNED;
 

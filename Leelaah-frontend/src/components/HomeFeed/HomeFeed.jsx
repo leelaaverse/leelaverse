@@ -7,7 +7,7 @@ import FloatingBar from '../FloatingBar/FloatingBar';
 import AuthModal from '../AuthModal/AuthModal';
 import './HomeFeed.css';
 
-const HomeFeed = ({ onNavigate, onPostClick, onUserClick }) => {
+const HomeFeed = ({ onNavigate, onPostClick, onUserClick, onOpenCreateModal }) => {
     const dispatch = useDispatch();
     const { isLoggedIn } = useSelector((state) => state.auth);
 
@@ -123,6 +123,7 @@ const HomeFeed = ({ onNavigate, onPostClick, onUserClick }) => {
             <FloatingBar
                 onOpenAuth={handleOpenAuth}
                 onNavigate={onNavigate}
+                onOpenCreateModal={onOpenCreateModal}
             />
 
             {/* Auth Modal */}

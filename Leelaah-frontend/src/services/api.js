@@ -137,6 +137,7 @@ const apiService = {
 		unfollowUser: (userId) => apiClient.delete(`/api/users/${userId}/follow`),
 		checkFollowStatus: (userId) => apiClient.get(`/api/users/${userId}/follow-status`),
 		getFollowing: () => apiClient.get('/api/users/following'),
+		getUserBadges: (userId) => apiClient.get(`/api/users/${userId}/badges`),
 	},
 
 	// Messages API
@@ -212,6 +213,7 @@ const apiService = {
 		// Badges
 		getBadges: () => apiClient.get('/api/community/badges'),
 		getMyBadges: () => apiClient.get('/api/community/badges/my'),
+		syncBadges: () => apiClient.post('/api/community/badges/sync'),
 	},
 
 	// Admin Community API

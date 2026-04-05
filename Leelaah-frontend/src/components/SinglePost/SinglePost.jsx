@@ -6,10 +6,11 @@ import { PiShareFatDuotone } from 'react-icons/pi';
 import { RiMagicLine, RiFileCopyLine, RiCameraLensLine } from 'react-icons/ri';
 import apiService from '../../services/api';
 import ShareModal from '../ShareModal/ShareModal';
+import SidebarActionFooter from '../shared/SidebarActionFooter';
 import toast from 'react-hot-toast';
 import './SinglePost.css';
 
-const SinglePost = ({ postId, onBack, onShowAuthModal, onNavigate }) => {
+const SinglePost = ({ postId, onBack, onShowAuthModal, onNavigate, onOpenCreateModal }) => {
 	const { isLoggedIn, user } = useSelector((state) => state.auth);
 	const [post, setPost] = useState(null);
 	const [loading, setLoading] = useState(true);
@@ -18,7 +19,6 @@ const SinglePost = ({ postId, onBack, onShowAuthModal, onNavigate }) => {
 	const [editCaption, setEditCaption] = useState('');
 	const [editTitle, setEditTitle] = useState('');
 	const [isSaving, setIsSaving] = useState(false);
-	const { theme } = useSelector((s) => s.theme || { theme: 'Dark' });
 
 	// Like state
 	const [isLiked, setIsLiked] = useState(false);
@@ -33,12 +33,6 @@ const SinglePost = ({ postId, onBack, onShowAuthModal, onNavigate }) => {
 	const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 	const [commentsPagination, setCommentsPagination] = useState({ page: 1, pages: 1 });
 	const [showShareModal, setShowShareModal] = useState(false);
-	const isLightTheme = theme === 'Light' || (
-		theme === 'Auto' &&
-		typeof window !== 'undefined' &&
-		window.matchMedia &&
-		!window.matchMedia('(prefers-color-scheme: dark)').matches
-	);
 
 	// Fetch post details
 	useEffect(() => {
@@ -302,7 +296,8 @@ const SinglePost = ({ postId, onBack, onShowAuthModal, onNavigate }) => {
 			onShowAuthModal?.();
 			return;
 		}
-		toast.success('Remix started! Create your version.');
+		const recreatePrompt = (isEditing ? editCaption : '') || post?.prompt || post?.caption || '';
+		onOpenCreateModal?.(recreatePrompt);
 	};
 
 	// Prevent right-click download on media
@@ -609,15 +604,11 @@ const SinglePost = ({ postId, onBack, onShowAuthModal, onNavigate }) => {
 					</div>
 					
 					{/* Fixed Recreate Button at Bottom Container mimicking Sidebar */}
-					<div className="recreate-pattern-footer">
-						<button
-							onClick={handleRecreate}
-							className={`recreate-pattern-btn ${isLightTheme ? 'light' : 'dark'}`}
-						>
-							<RiMagicLine size={18} />
-							Recreate Pattern
-						</button>
-					</div>
+					<SidebarActionFooter
+						onClick={handleRecreate}
+						icon={RiMagicLine}
+						label="Recreate Pattern"
+					/>
 				</div>
 			</div>
 

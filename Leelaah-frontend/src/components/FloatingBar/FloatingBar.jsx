@@ -1,9 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useSelector } from 'react-redux';
-import CreateModal from '../CreateModal/CreateModal';
 
-const FloatingBar = ({ onOpenAuth, onNavigate }) => {
-    const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
+const FloatingBar = ({ onOpenAuth, onNavigate, onOpenCreateModal }) => {
     const { isLoggedIn } = useSelector((state) => state.auth);
 
     const handleGenerateClick = () => {
@@ -13,11 +11,7 @@ const FloatingBar = ({ onOpenAuth, onNavigate }) => {
             }
             return;
         }
-        setIsGenerateModalOpen(true);
-    };
-
-    const handleCloseModal = () => {
-        setIsGenerateModalOpen(false);
+        onOpenCreateModal?.('');
     };
 
     return (
@@ -69,13 +63,6 @@ const FloatingBar = ({ onOpenAuth, onNavigate }) => {
                     </button>
                 </div>
             </section>
-
-            <CreateModal
-                isOpen={isGenerateModalOpen}
-                onClose={handleCloseModal}
-                onOpenAuth={onOpenAuth}
-                onNavigate={onNavigate}
-            />
         </>
     );
 };

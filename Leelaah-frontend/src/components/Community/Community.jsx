@@ -18,7 +18,7 @@ const TABS = [
   { key: 'badges',       label: 'Badges',       icon: RiMedalLine },
 ];
 
-const Community = ({ onBack, onShowAuthModal }) => {
+const Community = ({ onBack, onNavigate, onShowAuthModal, onOpenCreateModal }) => {
   const dispatch = useDispatch();
   const [activeTab, setActiveTab] = useState('leaderboard');
   const { isLoggedIn } = useSelector((s) => s.auth);
@@ -48,6 +48,7 @@ const Community = ({ onBack, onShowAuthModal }) => {
         isLoggedIn={isLoggedIn}
         showBackButton={!!onBack}
         onBack={onBack}
+        onNavigate={onNavigate}
         onLogin={() => onShowAuthModal?.('login')}
         onSignup={() => onShowAuthModal?.('signup')}
       />
@@ -137,7 +138,7 @@ const Community = ({ onBack, onShowAuthModal }) => {
           >
             {activeTab === 'leaderboard'  && <LeaderboardPage  isLoggedIn={isLoggedIn} onShowAuthModal={onShowAuthModal} />}
             {activeTab === 'competitions' && <CompetitionsPage isLoggedIn={isLoggedIn} onShowAuthModal={onShowAuthModal} />}
-            {activeTab === 'templates'    && <TemplatesPage    isLoggedIn={isLoggedIn} onShowAuthModal={onShowAuthModal} />}
+            {activeTab === 'templates'    && <TemplatesPage    isLoggedIn={isLoggedIn} onShowAuthModal={onShowAuthModal} onOpenCreateModal={onOpenCreateModal} />}
             {activeTab === 'badges'       && <BadgesPage       isLoggedIn={isLoggedIn} myRank={myRank.data} />}
           </motion.div>
         </AnimatePresence>

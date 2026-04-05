@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import apiService from '../../services/api';
 import Navbar from '../Navbar/Navbar';
 import EditProfileModal from '../EditProfileModal/EditProfileModal';
 import SinglePost from '../SinglePost/SinglePost';
 import PostCard from '../PostCard/PostCard';
+import ProfileBadge from '../shared/ProfileBadge';
 import './ViewProfile.css';
 
-const ViewProfile = ({ onNavigate }) => {
+const ViewProfile = ({ onNavigate, onOpenCreateModal }) => {
     const { user } = useSelector((state) => state.auth);
     const [userProfile, setUserProfile] = useState(null);
     const [userPosts, setUserPosts] = useState([]);
@@ -25,9 +26,7 @@ const ViewProfile = ({ onNavigate }) => {
 
     const fetchUserProfile = async () => {
         try {
-            console.log('🔄 Fetching user profile...');
             const response = await apiService.auth.getProfile();
-            console.log('✅ Profile fetched:', response.data.data.user);
             setUserProfile(response.data.data.user);
         } catch (error) {
             console.error('❌ Failed to fetch profile:', error);
@@ -240,7 +239,7 @@ const ViewProfile = ({ onNavigate }) => {
                 onBack={() => onNavigate && onNavigate('home')}
                 showBackButton={true}
                 onNavigate={onNavigate}
-                setActiveTab={(tab) => onNavigate && onNavigate('home')}
+                setActiveTab={() => onNavigate && onNavigate('home')}
                 onChatClick={() => onNavigate && onNavigate('chat')}
             />
 
@@ -280,6 +279,18 @@ const ViewProfile = ({ onNavigate }) => {
                             </div>
                             <h3 className="profile-display-name">{displayName}</h3>
                             <p className="profile-bio">{bio}</p>
+
+                            {/* Earned Badges */}
+                            {userProfile?.earnedBadges?.length > 0 && (
+                                <div className="profile-badges">
+                                    <span className="profile-badges-label">Badges</span>
+                                    <div className="profile-badges-list">
+                                        {userProfile.earnedBadges.map(({ badge }) => (
+                                            <ProfileBadge key={badge.id} badge={badge} />
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Location and Website */}
                             <div className="profile-meta">
@@ -451,6 +462,7 @@ const ViewProfile = ({ onNavigate }) => {
                         postId={selectedPostId}
                         onBack={handleClosePost}
                         onShowAuthModal={() => {}}
+                        onOpenCreateModal={onOpenCreateModal}
                     />
                 </div>
             )}

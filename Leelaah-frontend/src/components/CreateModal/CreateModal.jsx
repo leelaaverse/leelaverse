@@ -21,7 +21,7 @@ const ASPECT_RATIOS = [
 // ──────────────────────────────────────────────
 // CreateModal
 // ──────────────────────────────────────────────
-const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate }) => {
+const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate, initialPrompt = '' }) => {
     const dispatch = useDispatch();
     const { isLoggedIn, user } = useSelector((s) => s.auth);
     const { imageModels, videoModels, status: modelsStatus } = useSelector((s) => s.models);
@@ -65,6 +65,13 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate }) => {
     useEffect(() => {
         if (isOpen && modelsStatus === 'idle') dispatch(fetchModels());
     }, [isOpen, modelsStatus, dispatch]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const hasInitialPrompt = Boolean(initialPrompt?.trim());
+        setStep(hasInitialPrompt ? 'generate' : 'create');
+        setPrompt(initialPrompt || '');
+    }, [initialPrompt, isOpen]);
 
     useEffect(() => {
         const models = mediaType === 'image' ? imageModels : videoModels;

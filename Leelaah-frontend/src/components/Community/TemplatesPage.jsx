@@ -1,13 +1,25 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Drawer, Rate, Skeleton, message } from 'antd';
+import { motion } from 'framer-motion';
+import { Drawer, Rate, message } from 'antd';
 import {
-  RiSearchLine, RiCloseLine, RiMagicLine, RiEditLine, RiCheckLine, RiFlashlightLine, RiStarFill, RiFileCopyLine, RiCameraLensLine
+  RiSearchLine,
+  RiCloseLine,
+  RiMagicLine,
+  RiCheckLine,
+  RiStarFill,
+  RiFileCopyLine,
+  RiCameraLensLine,
 } from 'react-icons/ri';
-import { fetchTemplates, fetchTemplateDetails, useTemplate, rateTemplate, clearSelectedTemplate } from '../../store/slices/communitySlice';
+import {
+  fetchTemplates,
+  fetchTemplateDetails,
+  useTemplate,
+  rateTemplate,
+  clearSelectedTemplate,
+} from '../../store/slices/communitySlice';
+import SidebarActionFooter from '../shared/SidebarActionFooter';
 
-// ── Dummy templates ───────────────────────────────────────────────────────────
 const DUMMY_TEMPLATES = [
   { id: 't1', name: 'Cinematic Portrait', category: 'portrait', description: 'Ultra-cinematic close-up with dramatic lighting and shallow depth of field.', prompt: 'Ultra-cinematic close-up portrait of [subject], dramatic side lighting, shallow depth of field, film grain, 35mm, high contrast, cinematic sharp focus, [mood]', rating: 4.9, ratingCount: 1204, usageCount: 8740, isFeatured: true, coinCost: 0, aiModel: 'FLUX Pro', aspectRatio: '4:5', style: 'Cinematic', thumbnailUrl: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=400&auto=format', creator: { username: 'nova_create', avatar: null }, tags: ['portrait', 'cinematic', 'film'] },
   { id: 't2', name: 'Neon City Night', category: 'landscape', description: 'Rain-slicked streets, neon reflections, cyberpunk mood.', prompt: 'Neon-lit city street at night, rain reflections on pavement, [subject] walking, cyberpunk atmosphere, bokeh lights, ultra-detailed, 8K', rating: 4.7, ratingCount: 876, usageCount: 6120, isFeatured: true, coinCost: 0, aiModel: 'FLUX Dev', aspectRatio: '16:9', style: 'Cyberpunk', thumbnailUrl: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=400&auto=format', creator: { username: 'aether_vis', avatar: null }, tags: ['city', 'neon', 'night'] },
@@ -21,10 +33,10 @@ const DUMMY_TEMPLATES = [
 ];
 
 const SORT_OPTS = [
-  { value: 'trending',  label: 'Trending' },
-  { value: 'rated',     label: 'Top Rated' },
+  { value: 'trending', label: 'Trending' },
+  { value: 'rated', label: 'Top Rated' },
   { value: 'most-used', label: 'Most Used' },
-  { value: 'newest',    label: 'Newest' },
+  { value: 'newest', label: 'Newest' },
 ];
 
 const CAT_OPTS = [
@@ -37,55 +49,61 @@ const CAT_OPTS = [
   { value: 'photography', label: 'Photo' },
 ];
 
-// ── Template card ─────────────────────────────────────────────────────────────
 const TplCard = ({ tpl, index, onClick }) => {
   const aspectRatios = ['3/4', '4/5', '1/1', '16/9'];
-  const ar = tpl.aspectRatio === '16:9' ? '16/9' : tpl.aspectRatio === '1:1' ? '1/1' : tpl.aspectRatio === '4:5' ? '4/5' : aspectRatios[index % 4];
+  const ar =
+    tpl.aspectRatio === '16:9'
+      ? '16/9'
+      : tpl.aspectRatio === '1:1'
+        ? '1/1'
+        : tpl.aspectRatio === '4:5'
+          ? '4/5'
+          : aspectRatios[index % 4];
 
   return (
-  <motion.div
-    initial={{ opacity: 0, y: 12 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay: index * 0.04 }}
-    onClick={() => onClick(tpl)}
-    whileHover={{ y: -4, transition: { duration: 0.18 } }}
-    style={{ borderRadius: 14, overflow: 'hidden', cursor: 'pointer', background: '#0c0c18', border: '1px solid #14142a', position: 'relative', breakInside: 'avoid', marginBottom: 12 }}
-  >
-    <div style={{ position: 'relative', aspectRatio: ar, overflow: 'hidden' }}>
-      <img
-        src={tpl.thumbnailUrl}
-        alt={tpl.name}
-        style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s ease', display: 'block' }}
-      />
-      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(12,12,24,0.9) 0%, transparent 50%)' }} />
-      {tpl.isFeatured && (
-        <div style={{ position: 'absolute', top: 8, left: 8, padding: '2px 7px', borderRadius: 99, fontSize: 10, fontWeight: 700, background: 'rgba(212,160,23,0.18)', color: '#d4a017' }}>
-          ★
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.04 }}
+      onClick={() => onClick(tpl)}
+      whileHover={{ y: -4, transition: { duration: 0.18 } }}
+      style={{ borderRadius: 14, overflow: 'hidden', cursor: 'pointer', background: '#0c0c18', border: '1px solid #14142a', position: 'relative', breakInside: 'avoid', marginBottom: 12 }}
+    >
+      <div style={{ position: 'relative', aspectRatio: ar, overflow: 'hidden' }}>
+        <img
+          src={tpl.thumbnailUrl}
+          alt={tpl.name}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s ease', display: 'block' }}
+        />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(12,12,24,0.9) 0%, transparent 50%)' }} />
+        {tpl.isFeatured && (
+          <div style={{ position: 'absolute', top: 8, left: 8, padding: '2px 7px', borderRadius: 99, fontSize: 10, fontWeight: 700, background: 'rgba(212,160,23,0.18)', color: '#d4a017' }}>
+            ★
+          </div>
+        )}
+        <div className="flex gap-2" style={{ position: 'absolute', top: 8, right: 8 }}>
+          <div style={{ padding: '4px', borderRadius: 6, background: 'rgba(0,0,0,0.5)', color: '#fff', backdropFilter: 'blur(4px)' }}>
+            <RiFileCopyLine size={12} />
+          </div>
         </div>
-      )}
-      <div className="flex gap-2" style={{ position: 'absolute', top: 8, right: 8 }}>
-        <div style={{ padding: '4px', borderRadius: 6, background: 'rgba(0,0,0,0.5)', color: '#fff', backdropFilter: 'blur(4px)' }}>
-          <RiFileCopyLine size={12} />
+        <div style={{ position: 'absolute', bottom: 8, left: 10, right: 10 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#d8d8ee', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {tpl.name}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 10, color: '#4a4a68' }}>{tpl.usageCount?.toLocaleString()} uses</span>
+            <span style={{ fontSize: 10, color: '#d4a017', display: 'flex', alignItems: 'center', gap: 2 }}>
+              <RiStarFill size={9} />{(tpl.rating || 0).toFixed(1)}
+            </span>
+          </div>
         </div>
       </div>
-      <div style={{ position: 'absolute', bottom: 8, left: 10, right: 10 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: '#d8d8ee', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tpl.name}</div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 10, color: '#4a4a68' }}>{tpl.usageCount?.toLocaleString()} uses</span>
-          <span style={{ fontSize: 10, color: '#d4a017', display: 'flex', alignItems: 'center', gap: 2 }}>
-            <RiStarFill size={9} />{(tpl.rating || 0).toFixed(1)}
-          </span>
-        </div>
-      </div>
-    </div>
-  </motion.div>
+    </motion.div>
   );
 };
 
-// ── Detail drawer ─────────────────────────────────────────────────────────────
-const TplDrawer = ({ tpl, open, onClose, isLoggedIn, onShowAuthModal }) => {
+const TplDrawer = ({ tpl, open, onClose, isLoggedIn, onShowAuthModal, onOpenCreateModal }) => {
   const dispatch = useDispatch();
-  const { theme } = useSelector((s) => s.theme || { theme: 'Dark' });
   const { selectedTemplate } = useSelector((s) => s.community);
   const [editMode, setEditMode] = useState(false);
   const [prompt, setPrompt] = useState('');
@@ -94,41 +112,62 @@ const TplDrawer = ({ tpl, open, onClose, isLoggedIn, onShowAuthModal }) => {
   const [using, setUsing] = useState(false);
 
   const data = tpl || selectedTemplate.data;
-  useEffect(() => { if (data?.prompt) setPrompt(data.prompt); setEditMode(false); setRated(false); setUserRating(0); }, [data?.id]);
+
+  useEffect(() => {
+    if (data?.prompt) setPrompt(data.prompt);
+    setEditMode(false);
+    setRated(false);
+    setUserRating(0);
+  }, [data?.id]);
 
   const handleUse = async () => {
-    if (!isLoggedIn) { onShowAuthModal?.('login'); return; }
+    if (!isLoggedIn) {
+      onShowAuthModal?.('login');
+      return;
+    }
+
     setUsing(true);
     try {
-      if (data.id && !data.id.startsWith('t')) await dispatch(useTemplate(data.id)).unwrap();
-      await navigator.clipboard.writeText(prompt || data.prompt).catch(() => {});
-      message.success('Prompt copied to clipboard 📋');
-    } catch { message.error('Failed'); }
-    finally { setUsing(false); }
+      if (data.id && !data.id.startsWith('t')) {
+        await dispatch(useTemplate(data.id)).unwrap();
+      }
+      onOpenCreateModal?.(prompt || data.prompt || '');
+    } catch {
+      message.error('Failed');
+    } finally {
+      setUsing(false);
+    }
   };
 
   const handleRate = async (val) => {
-    if (!isLoggedIn) { onShowAuthModal?.('login'); return; }
+    if (!isLoggedIn) {
+      onShowAuthModal?.('login');
+      return;
+    }
+
     setUserRating(val);
     try {
-      if (data.id && !data.id.startsWith('t')) await dispatch(rateTemplate({ id: data.id, rating: val })).unwrap();
+      if (data.id && !data.id.startsWith('t')) {
+        await dispatch(rateTemplate({ id: data.id, rating: val })).unwrap();
+      }
       setRated(true);
-      message.success(`Rated ${val} ★`);
-    } catch { message.error('Failed to rate'); }
+      message.success(`Rated ${val} stars`);
+    } catch {
+      message.error('Failed to rate');
+    }
   };
 
   if (!data) return null;
 
   const promptParts = (prompt || data.prompt || '').split(/(\[[^\]]+\])/g);
 
-  const isLight = theme === 'Light' || (theme === 'Auto' && window.matchMedia && !window.matchMedia('(prefers-color-scheme: dark)').matches);
-  const btnBg = isLight ? '#000000' : '#d0ff14';
-  const btnColor = isLight ? '#ffffff' : '#000000';
-
   return (
     <Drawer
       open={open}
-      onClose={() => { onClose(); if (!tpl?.id?.startsWith('t')) dispatch(clearSelectedTemplate()); }}
+      onClose={() => {
+        onClose();
+        if (!tpl?.id?.startsWith('t')) dispatch(clearSelectedTemplate());
+      }}
       placement="right"
       width={420}
       styles={{
@@ -139,7 +178,6 @@ const TplDrawer = ({ tpl, open, onClose, isLoggedIn, onShowAuthModal }) => {
       title={<span style={{ color: '#b0b0c8', fontSize: 13, fontWeight: 600 }}>Template</span>}
       closeIcon={<RiCloseLine color="#28284e" size={18} />}
     >
-      {/* Preview */}
       <div style={{ position: 'relative', height: 200, overflow: 'hidden' }}>
         <img src={data.thumbnailUrl} alt={data.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, #0a0a14 0%, transparent 55%)' }} />
@@ -153,7 +191,6 @@ const TplDrawer = ({ tpl, open, onClose, isLoggedIn, onShowAuthModal }) => {
       </div>
 
       <div style={{ padding: '20px 22px' }}>
-        {/* Creator Header (Higgsfield Style) */}
         {data.creator && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
             <img
@@ -172,7 +209,7 @@ const TplDrawer = ({ tpl, open, onClose, isLoggedIn, onShowAuthModal }) => {
         )}
 
         <div style={{ height: '1px', background: '#1a1a2e', marginBottom: 20 }} />
-        {/* Title + rating */}
+
         <div style={{ fontSize: 20, fontWeight: 800, color: '#e0e0f8', letterSpacing: '-0.02em', marginBottom: 4 }}>{data.name}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
           <Rate disabled value={data.rating || 0} allowHalf style={{ fontSize: 12, color: '#d4a017' }} />
@@ -184,7 +221,6 @@ const TplDrawer = ({ tpl, open, onClose, isLoggedIn, onShowAuthModal }) => {
           <div style={{ fontSize: 13, color: '#2e2e4e', lineHeight: 1.6, marginBottom: 16 }}>{data.description}</div>
         )}
 
-        {/* Prompt */}
         <div style={{ marginBottom: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#888898', letterSpacing: '0.05em' }}>
@@ -193,17 +229,18 @@ const TplDrawer = ({ tpl, open, onClose, isLoggedIn, onShowAuthModal }) => {
             <button
               onClick={() => {
                 navigator.clipboard.writeText(prompt || data.prompt).catch(() => {});
-                message.success('Prompt copied to clipboard 📋');
+                message.success('Prompt copied to clipboard');
               }}
               style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#e0e0f8', background: '#1e1e32', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}
             >
               <RiFileCopyLine size={12} /> Copy
             </button>
           </div>
+
           {editMode ? (
             <textarea
               value={prompt}
-              onChange={e => setPrompt(e.target.value)}
+              onChange={(e) => setPrompt(e.target.value)}
               rows={5}
               style={{ width: '100%', padding: '12px', borderRadius: 10, background: '#0e0e1a', border: '1px solid rgba(90,90,255,0.2)', color: '#c0c0d8', fontSize: 12, fontFamily: 'monospace', lineHeight: 1.6, resize: 'none', outline: 'none', boxSizing: 'border-box' }}
             />
@@ -213,18 +250,19 @@ const TplDrawer = ({ tpl, open, onClose, isLoggedIn, onShowAuthModal }) => {
               style={{ padding: '12px', borderRadius: 10, background: '#0e0e1a', border: '1px solid #14142a', fontSize: 12, fontFamily: 'monospace', lineHeight: 1.7, cursor: 'text', color: '#888898' }}
             >
               {promptParts.map((part, i) =>
-                part.startsWith('[')
-                  ? <span key={i} style={{ color: '#5a5aff', fontWeight: 700 }}>{part}</span>
-                  : part
+                part.startsWith('[') ? (
+                  <span key={i} style={{ color: '#5a5aff', fontWeight: 700 }}>{part}</span>
+                ) : (
+                  part
+                )
               )}
             </div>
           )}
         </div>
 
-        {/* Information Table */}
         <div style={{ marginBottom: 24 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: '#888898', letterSpacing: '0.05em', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-             <RiCameraLensLine size={14} /> INFORMATION
+            <RiCameraLensLine size={14} /> INFORMATION
           </div>
           <div style={{ background: '#0e0e1a', borderRadius: 12, padding: '12px 16px', border: '1px solid #1a1a2e' }}>
             {data.aiModel && (
@@ -248,7 +286,6 @@ const TplDrawer = ({ tpl, open, onClose, isLoggedIn, onShowAuthModal }) => {
           </div>
         </div>
 
-        {/* Rate */}
         {isLoggedIn && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, background: '#0e0e1a', border: '1px solid #14142a', marginBottom: 16 }}>
             <span style={{ fontSize: 11, color: '#28284e' }}>Rate this:</span>
@@ -257,30 +294,21 @@ const TplDrawer = ({ tpl, open, onClose, isLoggedIn, onShowAuthModal }) => {
           </div>
         )}
 
-        {/* Use button fixed at bottom */}
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '20px 22px', background: '#0a0a14', borderTop: '1px solid #16162a' }}>
-          <button
-            onClick={handleUse}
-            disabled={using}
-            style={{
-              width: '100%', padding: '14px 0', borderRadius: 12, border: 'none', cursor: using ? 'not-allowed' : 'pointer',
-              background: using ? `${btnBg}ab` : btnBg,
-              color: btnColor, fontSize: 15, fontWeight: 800, opacity: using ? 0.6 : 1,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              letterSpacing: '-0.01em',
-            }}
-          >
-            <RiMagicLine size={18} />
-            {using ? 'Recreating…' : `Recreate Pattern`}
-          </button>
-        </div>
+        <SidebarActionFooter
+          onClick={handleUse}
+          icon={RiMagicLine}
+          label="Recreate Pattern"
+          loadingLabel="Recreating..."
+          isLoading={using}
+          disabled={using}
+          footerStyle={{ position: 'absolute', padding: '20px 22px' }}
+        />
       </div>
     </Drawer>
   );
 };
 
-// ── Main page ─────────────────────────────────────────────────────────────────
-const TemplatesPage = ({ isLoggedIn, onShowAuthModal }) => {
+const TemplatesPage = ({ isLoggedIn, onShowAuthModal, onOpenCreateModal }) => {
   const dispatch = useDispatch();
   const { templates } = useSelector((s) => s.community);
   const [sort, setSort] = useState('trending');
@@ -295,12 +323,14 @@ const TemplatesPage = ({ isLoggedIn, onShowAuthModal }) => {
 
   const handleSearch = useCallback((val) => {
     setSearch(val);
-    if (val.length !== 1) dispatch(fetchTemplates({ sort, category: category || undefined, search: val || undefined, limit: 24 }));
+    if (val.length !== 1) {
+      dispatch(fetchTemplates({ sort, category: category || undefined, search: val || undefined, limit: 24 }));
+    }
   }, [dispatch, sort, category]);
 
   const list = (templates.list.length > 0 ? templates.list : DUMMY_TEMPLATES)
-    .filter(t => !category || t.category === category)
-    .filter(t => !search || t.name.toLowerCase().includes(search.toLowerCase()));
+    .filter((t) => !category || t.category === category)
+    .filter((t) => !search || t.name.toLowerCase().includes(search.toLowerCase()));
 
   const handleClick = (tpl) => {
     setSelectedTpl(tpl);
@@ -310,35 +340,59 @@ const TemplatesPage = ({ isLoggedIn, onShowAuthModal }) => {
 
   return (
     <div>
-      {/* Filters */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
         <div style={{ flex: '1 1 220px', position: 'relative' }}>
           <RiSearchLine size={14} color="#28284e" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
           <input
             value={search}
-            onChange={e => handleSearch(e.target.value)}
-            placeholder="Search templates…"
+            onChange={(e) => handleSearch(e.target.value)}
+            placeholder="Search templates..."
             style={{ width: '100%', padding: '9px 12px 9px 34px', borderRadius: 10, background: '#0e0e1c', border: '1px solid #16162a', color: '#c0c0d8', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
           />
         </div>
-        {/* Sort */}
+
         <div style={{ display: 'flex', gap: 2, padding: 4, borderRadius: 10, background: '#0e0e1c', border: '1px solid #16162a' }}>
-          {SORT_OPTS.map(o => (
-            <button key={o.value} onClick={() => setSort(o.value)} style={{
-              padding: '5px 12px', borderRadius: 7, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 500, transition: 'all 0.15s',
-              background: sort === o.value ? '#18182e' : 'transparent',
-              color: sort === o.value ? '#c0c0d8' : '#28284e',
-            }}>{o.label}</button>
+          {SORT_OPTS.map((o) => (
+            <button
+              key={o.value}
+              onClick={() => setSort(o.value)}
+              style={{
+                padding: '5px 12px',
+                borderRadius: 7,
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 12,
+                fontWeight: 500,
+                transition: 'all 0.15s',
+                background: sort === o.value ? '#18182e' : 'transparent',
+                color: sort === o.value ? '#c0c0d8' : '#28284e',
+              }}
+            >
+              {o.label}
+            </button>
           ))}
         </div>
-        {/* Category */}
+
         <div style={{ display: 'flex', gap: 2, padding: 4, borderRadius: 10, background: '#0e0e1c', border: '1px solid #16162a', overflowX: 'auto' }}>
-          {CAT_OPTS.map(o => (
-            <button key={o.value} onClick={() => setCategory(o.value)} style={{
-              padding: '5px 10px', borderRadius: 7, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 500, whiteSpace: 'nowrap', transition: 'all 0.15s',
-              background: category === o.value ? '#18182e' : 'transparent',
-              color: category === o.value ? '#c0c0d8' : '#28284e',
-            }}>{o.label}</button>
+          {CAT_OPTS.map((o) => (
+            <button
+              key={o.value}
+              onClick={() => setCategory(o.value)}
+              style={{
+                padding: '5px 10px',
+                borderRadius: 7,
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 12,
+                fontWeight: 500,
+                whiteSpace: 'nowrap',
+                transition: 'all 0.15s',
+                background: category === o.value ? '#18182e' : 'transparent',
+                color: category === o.value ? '#c0c0d8' : '#28284e',
+              }}
+            >
+              {o.label}
+            </button>
           ))}
         </div>
       </div>
@@ -347,7 +401,6 @@ const TemplatesPage = ({ isLoggedIn, onShowAuthModal }) => {
         <div style={{ fontSize: 11, color: '#1e1e3a', marginBottom: 16 }}>{list.length} templates</div>
       )}
 
-      {/* Grid */}
       {templates.loading && templates.list.length === 0 ? (
         <div style={{ columnCount: 3, columnGap: 16 }}>
           {Array.from({ length: 12 }).map((_, i) => (
@@ -359,10 +412,7 @@ const TemplatesPage = ({ isLoggedIn, onShowAuthModal }) => {
       ) : list.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '80px 0', color: '#1e1e3a', fontSize: 13 }}>No templates found</div>
       ) : (
-        <div style={{
-          columnCount: window.innerWidth < 640 ? 1 : window.innerWidth < 1024 ? 3 : 4,
-          columnGap: 16
-        }}>
+        <div style={{ columnCount: window.innerWidth < 640 ? 1 : window.innerWidth < 1024 ? 3 : 4, columnGap: 16 }}>
           {list.map((tpl, i) => <TplCard key={tpl.id} tpl={tpl} index={i} onClick={handleClick} />)}
         </div>
       )}
@@ -379,9 +429,13 @@ const TemplatesPage = ({ isLoggedIn, onShowAuthModal }) => {
       <TplDrawer
         tpl={selectedTpl}
         open={drawerOpen}
-        onClose={() => { setDrawerOpen(false); setSelectedTpl(null); }}
+        onClose={() => {
+          setDrawerOpen(false);
+          setSelectedTpl(null);
+        }}
         isLoggedIn={isLoggedIn}
         onShowAuthModal={onShowAuthModal}
+        onOpenCreateModal={onOpenCreateModal}
       />
     </div>
   );

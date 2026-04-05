@@ -23,6 +23,7 @@ router.get('/templates/:id', communityController.getTemplateDetails);
 // Badges
 router.get('/badges', communityController.getAllBadges);
 router.get('/badges/my', auth, communityController.getMyBadges);
+router.post('/badges/sync', auth, communityController.syncMyBadges);
 
 // ============================================
 // AUTHENTICATED ROUTES

@@ -251,37 +251,70 @@ class UserService {
 	 * Get user profile with stats
 	 */
 	static async getUserProfile(userId) {
-		const user = await prisma.user.findUnique({
-			where: { id: userId },
-			select: {
-				id: true,
-				firstName: true,
-				lastName: true,
-				username: true,
-				email: true,
-				avatar: true,
-				bio: true,
-				location: true,
-				website: true,
-				coverImage: true,
-				role: true,
-				isEmailVerified: true,
-				coinBalance: true,
-				totalCreations: true,
-				totalEarnings: true,
-				subscriptionTier: true,
-				createdAt: true,
-				_count: {
-					select: {
-						posts: true,
-						followers: true,
-						following: true,
+		// Fetch user fields and earned badges in parallel
+		const [user, earnedBadges] = await Promise.all([
+			prisma.user.findUnique({
+				where: { id: userId },
+				select: {
+					id: true,
+					firstName: true,
+					lastName: true,
+					username: true,
+					email: true,
+					avatar: true,
+					bio: true,
+					location: true,
+					website: true,
+					coverImage: true,
+					role: true,
+					isEmailVerified: true,
+					coinBalance: true,
+					totalCreations: true,
+					totalEarnings: true,
+					creatorXP: true,
+					creatorTier: true,
+					currentStreak: true,
+					subscriptionTier: true,
+					createdAt: true,
+					twitterLink: true,
+					instagramLink: true,
+					linkedinLink: true,
+					githubLink: true,
+					discordLink: true,
+					_count: {
+						select: {
+							posts: true,
+							followers: true,
+							following: true,
+						},
 					},
 				},
-			},
-		});
+			}),
+			prisma.userBadge.findMany({
+				where: { userId },
+				select: {
+					id: true,
+					createdAt: true,
+					badge: {
+						select: {
+							id: true,
+							name: true,
+							displayName: true,
+							description: true,
+							iconUrl: true,
+							category: true,
+							rarity: true,
+							coinReward: true,
+							xpReward: true,
+						},
+					},
+				},
+				orderBy: { createdAt: 'asc' },
+			}),
+		]);
 
-		return user;
+		if (!user) return null;
+		return { ...user, earnedBadges };
 	}
 
 	/**

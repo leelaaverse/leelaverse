@@ -123,14 +123,18 @@ const Navbar = ({ activeTab, setActiveTab, isLoggedIn = false, onLogin, onSignup
                         <span className="ms-2">Back to Home</span>
                     </button>
                 ) : (
-                    <a className="navbar-brand d-flex align-items-center" href="#">
+                    <button
+                        className="navbar-brand d-flex align-items-center"
+                        style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+                        onClick={() => onNavigate?.('home')}
+                    >
                         <img
                             src={isDarkMode ? '/assets/Logo-leela-black.jpg' : '/assets/Logo-leela-white.jpg'}
                             alt="LELAA Logo"
                             className="img-fluid"
                             style={{ maxHeight: '60px' }}
                         />
-                    </a>
+                    </button>
                 )}
 
                 {/* Spacer */}

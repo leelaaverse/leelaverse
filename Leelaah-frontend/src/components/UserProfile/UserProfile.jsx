@@ -6,9 +6,10 @@ import Navbar from '../Navbar/Navbar';
 import Sidebar from '../Sidebar/Sidebar';
 import SinglePost from '../SinglePost/SinglePost';
 import PostCard from '../PostCard/PostCard';
+import ProfileBadge from '../shared/ProfileBadge';
 import './UserProfile.css';
 
-const UserProfile = ({ userId, onNavigate, onBack, onChatClick }) => {
+const UserProfile = ({ userId, onNavigate, onBack, onChatClick, onOpenCreateModal }) => {
 	const { user: currentUser } = useSelector((state) => state.auth);
 	const [profile, setProfile] = useState(null);
 	const [posts, setPosts] = useState([]);
@@ -300,6 +301,18 @@ const UserProfile = ({ userId, onNavigate, onBack, onChatClick }) => {
 							<h3 className="profile-display-name">{displayName}</h3>
 							<p className="profile-bio">{bio}</p>
 
+							{/* Earned Badges */}
+							{profile?.earnedBadges?.length > 0 && (
+								<div className="profile-badges">
+									<span className="profile-badges-label">Badges</span>
+									<div className="profile-badges-list">
+										{profile.earnedBadges.map(({ badge }) => (
+											<ProfileBadge key={badge.id} badge={badge} />
+										))}
+									</div>
+								</div>
+							)}
+
 							{/* Location and Website */}
 							<div className="profile-meta">
 								{profile?.location && (
@@ -424,6 +437,7 @@ const UserProfile = ({ userId, onNavigate, onBack, onChatClick }) => {
 						postId={selectedPostId}
 						onBack={handleClosePost}
 						onShowAuthModal={() => toast.error('Please login to interact with posts')}
+						onOpenCreateModal={onOpenCreateModal}
 					/>
 				</div>
 			)}

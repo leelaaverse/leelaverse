@@ -15,6 +15,7 @@ import SearchPage from './components/Search/SearchPage';
 import Settings from './components/Settings/Settings';
 import AIStudio from './components/AIStudio/AIStudio';
 import ModelsPage from './components/AIStudio/ModelsPage';
+import CreateModal from './components/CreateModal/CreateModal';
 
 // ... (existing imports)
 
@@ -32,6 +33,8 @@ function App() {
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [createModalPrompt, setCreateModalPrompt] = useState('');
 
   // Initialize socket connection when user is logged in
   useEffect(() => {
@@ -198,6 +201,16 @@ function App() {
     setIsAuthModalOpen(false);
   }, []);
 
+  const handleOpenCreateModal = useCallback((prompt = '') => {
+    setCreateModalPrompt(prompt || '');
+    setIsCreateModalOpen(true);
+  }, []);
+
+  const handleCloseCreateModal = useCallback(() => {
+    setIsCreateModalOpen(false);
+    setCreateModalPrompt('');
+  }, []);
+
   const handleAuthSuccess = useCallback((data) => {
     console.log('Authentication successful:', data);
     dispatch(setAuth({
@@ -235,10 +248,14 @@ function App() {
           onNavigate={handleNavigate}
           onPostClick={handlePostClick}
           onUserClick={handleUserClick}
+          onOpenCreateModal={handleOpenCreateModal}
         />
       )}
       {currentView === 'profile' && (
-        <ViewProfile onNavigate={handleNavigate} />
+        <ViewProfile
+          onNavigate={handleNavigate}
+          onOpenCreateModal={handleOpenCreateModal}
+        />
       )}
       {currentView === 'user' && selectedUserId && (
         <UserProfile
@@ -246,6 +263,7 @@ function App() {
           onNavigate={handleNavigate}
           onBack={handleBackFromUser}
           onChatClick={() => setCurrentView('chat')}
+          onOpenCreateModal={handleOpenCreateModal}
         />
       )}
       {currentView === 'post' && selectedPostId && (
@@ -255,6 +273,7 @@ function App() {
           onShowAuthModal={() => handleOpenAuth('login')}
           onUserClick={handleUserClick}
           onNavigate={handleNavigate}
+          onOpenCreateModal={handleOpenCreateModal}
         />
       )}
       {currentView === 'bloops' && (
@@ -269,7 +288,9 @@ function App() {
       {currentView === 'community' && (
         <Community
           onBack={handleBackFromCommunity}
+          onNavigate={handleNavigate}
           onShowAuthModal={() => handleOpenAuth('login')}
+          onOpenCreateModal={handleOpenCreateModal}
         />
       )}
       {currentView === 'adminCommunity' && (
@@ -311,6 +332,14 @@ function App() {
       )}
 
       {/* Global Auth Modal for SinglePost */}
+      <CreateModal
+        isOpen={isCreateModalOpen}
+        onClose={handleCloseCreateModal}
+        onOpenAuth={handleOpenAuth}
+        onNavigate={handleNavigate}
+        initialPrompt={createModalPrompt}
+      />
+
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={handleCloseModal}

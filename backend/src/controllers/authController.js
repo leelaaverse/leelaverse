@@ -2,6 +2,7 @@ const UserService = require('../services/UserService');
 const prisma = require('../config/prisma');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const rewardEngine = require('../services/rewardEngine');
 
 class AuthController {
     constructor() {
@@ -305,7 +306,34 @@ class AuthController {
         try {
             const userId = req.user.id;
 
-            const user = await UserService.getUserProfile(userId);
+            // Award any newly earned badges before returning profile data
+            await rewardEngine.checkBadges(userId);
+
+            // Fetch user + badges in parallel directly via prisma
+            const [user, earnedBadges] = await Promise.all([
+                UserService.getUserProfile(userId),
+                prisma.userBadge.findMany({
+                    where: { userId },
+                    select: {
+                        id: true,
+                        createdAt: true,
+                        badge: {
+                            select: {
+                                id: true,
+                                name: true,
+                                displayName: true,
+                                description: true,
+                                iconUrl: true,
+                                category: true,
+                                rarity: true,
+                                coinReward: true,
+                                xpReward: true,
+                            },
+                        },
+                    },
+                    orderBy: { createdAt: 'asc' },
+                }),
+            ]);
 
             if (!user) {
                 return res.status(404).json({
@@ -316,7 +344,7 @@ class AuthController {
 
             res.json({
                 success: true,
-                data: { user }
+                data: { user: { ...user, earnedBadges } }
             });
 
         } catch (error) {

@@ -202,38 +202,51 @@ class RewardEngine {
 
 	/**
 	 * Check and award applicable badges for a user.
+	 * Uses real DB counts instead of cached counter fields so that users
+	 * who posted/competed before the reward engine was deployed get correct results.
 	 */
 	async checkBadges(userId) {
 		try {
-			const user = await prisma.user.findUnique({
-				where: { id: userId },
-				select: {
-					id: true,
-					totalCreations: true,
-					currentStreak: true,
-					longestStreak: true,
-					creatorXP: true,
-					competitionsWon: true,
-					competitionsEntered: true,
-					coinBalance: true,
-					_count: {
-						select: {
-							followers: true,
-							templatesCreated: true,
+			// Fetch user fields AND real counts from actual DB rows in parallel
+			const [user, realPostCount, realCompEntered, realCompWon] = await Promise.all([
+				prisma.user.findUnique({
+					where: { id: userId },
+					select: {
+						id: true,
+						currentStreak: true,
+						longestStreak: true,
+						creatorXP: true,
+						coinBalance: true,
+						_count: {
+							select: {
+								followers: true,
+								templatesCreated: true,
+							},
 						},
 					},
-				},
-			});
+				}),
+				prisma.post.count({ where: { authorId: userId } }),
+				prisma.competitionParticipant.count({ where: { userId } }),
+				prisma.competitionSubmission.count({ where: { userId, rank: 1 } }),
+			]);
 
 			if (!user) return;
+
+			// Keep cached counters in sync with real values
+			await prisma.user.update({
+				where: { id: userId },
+				data: {
+					totalCreations: realPostCount,
+					competitionsEntered: realCompEntered,
+					competitionsWon: realCompWon,
+				},
+			});
 
 			// Get all active badges the user hasn't earned yet
 			const unearnedBadges = await prisma.badge.findMany({
 				where: {
 					isActive: true,
-					earnedBy: {
-						none: { userId: userId },
-					},
+					earnedBy: { none: { userId } },
 				},
 			});
 
@@ -243,7 +256,7 @@ class RewardEngine {
 
 				switch (req.type) {
 					case 'post_count':
-						earned = user.totalCreations >= req.value;
+						earned = realPostCount >= req.value;
 						break;
 					case 'streak':
 						earned = user.longestStreak >= req.value;
@@ -252,10 +265,10 @@ class RewardEngine {
 						earned = user.creatorXP >= req.value;
 						break;
 					case 'competitions_entered':
-						earned = user.competitionsEntered >= req.value;
+						earned = realCompEntered >= req.value;
 						break;
 					case 'competitions_won':
-						earned = user.competitionsWon >= req.value;
+						earned = realCompWon >= req.value;
 						break;
 					case 'followers':
 						earned = user._count.followers >= req.value;

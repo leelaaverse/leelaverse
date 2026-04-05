@@ -695,13 +695,74 @@ exports.getMyBadges = async (req, res) => {
 			include: {
 				badge: true,
 			},
-			orderBy: { createdAt: 'desc' },
+			orderBy: { createdAt: 'asc' },
 		});
 
 		res.json({ success: true, data: userBadges });
 	} catch (error) {
 		console.error('getMyBadges error:', error);
 		res.status(500).json({ success: false, message: 'Failed to get badges' });
+	}
+};
+
+/**
+ * POST /api/community/badges/sync
+ * Recalculates a user's real stats from the DB (post count, competitions, etc.)
+ * then retroactively awards all badges they qualify for, and returns the full list.
+ * This is needed because cached counters (totalCreations, competitionsEntered, etc.)
+ * start at 0 and are only incremented going forward — older activity isn't counted
+ * until this sync is run.
+ */
+exports.syncMyBadges = async (req, res) => {
+	try {
+		const userId = req.user.id;
+
+		// ── Step 1: Recalculate real stats from actual DB rows ──────────────────
+		const [actualPostCount, actualCompEntered, actualCompWon] = await Promise.all([
+			prisma.post.count({ where: { authorId: userId } }),
+			prisma.competitionParticipant.count({ where: { userId } }),
+			prisma.competitionSubmission.count({ where: { userId, rank: 1 } }),
+		]);
+
+		await prisma.user.update({
+			where: { id: userId },
+			data: {
+				totalCreations: actualPostCount,
+				competitionsEntered: actualCompEntered,
+				competitionsWon: actualCompWon,
+			},
+		});
+
+		// ── Step 2: Run badge eligibility check with fresh stats ────────────────
+		await rewardEngine.checkBadges(userId);
+
+		// ── Step 3: Return updated earned badges list ───────────────────────────
+		const userBadges = await prisma.userBadge.findMany({
+			where: { userId },
+			select: {
+				id: true,
+				createdAt: true,
+				badge: {
+					select: {
+						id: true,
+						name: true,
+						displayName: true,
+						description: true,
+						iconUrl: true,
+						category: true,
+						rarity: true,
+						coinReward: true,
+						xpReward: true,
+					},
+				},
+			},
+			orderBy: { createdAt: 'asc' },
+		});
+
+		res.json({ success: true, data: userBadges });
+	} catch (error) {
+		console.error('syncMyBadges error:', error);
+		res.status(500).json({ success: false, message: 'Failed to sync badges' });
 	}
 };
 
@@ -865,6 +926,58 @@ exports.adminUpdateBadge = async (req, res) => {
 	} catch (error) {
 		console.error('adminUpdateBadge error:', error);
 		res.status(500).json({ success: false, message: 'Failed to update badge' });
+	}
+};
+
+/**
+ * POST /api/admin/community/badges/award
+ * Manually award one or all earned badges to a user.
+ *
+ * Body:
+ *   { userId, badgeName }           → award one specific badge
+ *   { userId, syncAll: true }       → run full badge eligibility check for user
+ *   { syncAll: true }               → run eligibility check for the calling admin
+ */
+exports.adminAwardBadge = async (req, res) => {
+	try {
+		const { userId, badgeName, syncAll } = req.body;
+		const targetUserId = userId || req.user.id;
+
+		if (syncAll) {
+			await rewardEngine.checkBadges(targetUserId);
+			const earned = await prisma.userBadge.findMany({
+				where: { userId: targetUserId },
+				include: { badge: true },
+				orderBy: { createdAt: 'asc' },
+			});
+			return res.json({ success: true, message: 'Badge sync complete', data: earned });
+		}
+
+		if (!badgeName) {
+			return res.status(400).json({ success: false, message: 'Provide badgeName or syncAll: true' });
+		}
+
+		const badge = await prisma.badge.findUnique({ where: { name: badgeName } });
+		if (!badge) {
+			const allBadges = await prisma.badge.findMany({ select: { name: true, displayName: true } });
+			return res.status(404).json({
+				success: false,
+				message: `Badge "${badgeName}" not found`,
+				availableBadges: allBadges,
+			});
+		}
+
+		// Upsert — safe to call even if already earned
+		await prisma.userBadge.upsert({
+			where: { userId_badgeId: { userId: targetUserId, badgeId: badge.id } },
+			create: { userId: targetUserId, badgeId: badge.id },
+			update: {},
+		});
+
+		res.json({ success: true, message: `"${badge.displayName}" awarded`, badge });
+	} catch (error) {
+		console.error('adminAwardBadge error:', error);
+		res.status(500).json({ success: false, message: 'Failed to award badge' });
 	}
 };
 
