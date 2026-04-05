@@ -76,16 +76,53 @@ const ViewProfile = ({ onNavigate }) => {
         return num.toString();
     };
 
-    const getFilteredPosts = () => {
+    const getPostMediaKind = useCallback((post) => {
+        const mediaType = post.mediaType?.toLowerCase() || '';
+        const type = post.type?.toLowerCase() || '';
+        const category = post.category?.toLowerCase() || '';
+        const mediaUrl = (
+            post.mediaUrl ||
+            post.thumbnailUrl ||
+            post.imageUrl ||
+            post.image ||
+            (post.mediaUrls && post.mediaUrls[0]) ||
+            ''
+        ).toLowerCase();
+
+        if (
+            mediaType.startsWith('image/') ||
+            type === 'image' ||
+            category === 'image-post' ||
+            /\.(png|jpe?g|gif|webp|bmp|svg|avif)(\?|$)/.test(mediaUrl)
+        ) {
+            return 'image';
+        }
+
+        if (
+            mediaType.startsWith('video/') ||
+            type === 'video' ||
+            category === 'video-post' ||
+            /\.(mp4|webm|mov|m4v|avi|mkv)(\?|$)/.test(mediaUrl)
+        ) {
+            return 'video';
+        }
+
+        if (
+            mediaType.startsWith('audio/') ||
+            type === 'audio' ||
+            /\.(mp3|wav|ogg|m4a|aac|flac)(\?|$)/.test(mediaUrl)
+        ) {
+            return 'audio';
+        }
+
+        return mediaUrl ? 'image' : 'text';
+    }, []);
+
+    const getFilteredPosts = useCallback(() => {
         if (filterType === 'all') return userPosts;
-        return userPosts.filter(post => {
-            if (filterType === 'image') return post.mediaType === 'image';
-            if (filterType === 'video') return post.mediaType === 'video';
-            if (filterType === 'audio') return post.mediaType === 'audio';
-            if (filterType === 'text') return !post.mediaUrl;
-            return true;
-        });
-    };
+
+        return userPosts.filter((post) => getPostMediaKind(post) === filterType);
+    }, [filterType, getPostMediaKind, userPosts]);
 
     const parseAspectRatio = useCallback((ratioStr) => {
         if (!ratioStr) return null;
@@ -153,7 +190,7 @@ const ViewProfile = ({ onNavigate }) => {
         }
 
         return basePosts;
-    }, [activeTab, filterType, userPosts]);
+    }, [activeTab, getFilteredPosts]);
 
     const columns = useMemo(() => {
         const cols = [[], [], [], []];
