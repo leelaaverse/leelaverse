@@ -36,8 +36,12 @@ mindmap
 ### The Remix Culture
 - **Every AI creation tells a story** — users see the prompt journey
 - **Remix chains** — build on each other's creativity like music sampling
-- **Style DNA** — your unique AI aesthetic becomes recognizable
-- **Creative lineage** — trace inspirations back to their origins
+
+### Ranking of creator ( something like pubg ranking )
+--  reach , eangagement , or like share , remixes
+
+ ### Ranking decides ( reward + badges)
+
 
 ### AI as Your Creative Partner
 - **Vibe translator** — describe how you *feel*, AI creates what you *mean*
@@ -72,7 +76,7 @@ mindmap
 
 ### Beyond Likes — Meaningful Interactions
 
-**Soul Resonance**
+**Soul Resonance** ( -- stand by -- )
 - Not just "like" — express *how* something made you feel
 - Emotional reactions: inspired, moved, curious, amused, peaceful
 - Build connections based on emotional compatibility
@@ -86,6 +90,9 @@ mindmap
 - Create together in real-time, not just consume
 - Collaborative canvases that become shared memories
 - Duet content where two perspectives blend
+
+**Stand by**
+-
 
 ```mermaid
 mindmap
@@ -217,7 +224,7 @@ mindmap
 ## 🌟 Guiding Principles
 
 1. **Creation over consumption** — everyone is a creator
-2. **Depth over breadth** — fewer real connections beat many shallow ones  
+2. **Depth over breadth** — fewer real connections beat many shallow ones
 3. **Process over product** — the journey matters as much as the result
 4. **Emotion over engagement** — how people *feel* beats metrics
 5. **Joy over addiction** — sustainable delight, not dopamine traps
@@ -228,7 +235,7 @@ mindmap
 
 ## 🚀 The Vision
 
-Leelaverse is where **AI unlocks creative potential** and **human connection gives it meaning**. 
+Leelaverse is where **AI unlocks creative potential** and **human connection gives it meaning**.
 
 It's the app where you discover that you *are* creative, where you find your people, and where every interaction leaves you feeling more inspired than when you started.
 

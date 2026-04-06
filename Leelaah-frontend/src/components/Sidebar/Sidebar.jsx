@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
+import { setTheme } from '../../store/slices/themeSlice';
 import apiService from '../../services/api';
 import toast from 'react-hot-toast';
 import './Sidebar.css';
@@ -8,10 +9,10 @@ import './Sidebar.css';
 const Sidebar = ({ onNavigate }) => {
     const dispatch = useDispatch();
     const { user } = useSelector((state) => state.auth);
+    const { theme } = useSelector((state) => state.theme);
     const [userStats, setUserStats] = useState(null);
     const [loading, setLoading] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
-    const [theme, setTheme] = useState(localStorage.getItem('theme') || 'Dark');
     const [language, setLanguage] = useState(localStorage.getItem('language') || 'English');
 
     // Fetch user profile with stats
@@ -61,9 +62,7 @@ const Sidebar = ({ onNavigate }) => {
     // Handle theme change
     const handleThemeChange = (e) => {
         const newTheme = e.target.value;
-        setTheme(newTheme);
-        localStorage.setItem('theme', newTheme);
-        // TODO: Implement actual theme switching logic
+        dispatch(setTheme(newTheme));
     };
 
     // Handle language change
@@ -217,6 +216,23 @@ const Sidebar = ({ onNavigate }) => {
                         <div className="nav-item-content">
                             <img src="/assets/lucide_user.png" alt="Profile" width="18" height="18" />
                             <span>View Profile</span>
+                        </div>
+                        <i className="fa-solid fa-chevron-right"></i>
+                    </button>
+
+                    <button className="sidebar-nav-item" onClick={() => {
+                        if (onNavigate) {
+                            onNavigate('coinStore');
+                            const offcanvasElement = document.getElementById('offcanvasRight');
+                            const bsOffcanvas = bootstrap.Offcanvas.getInstance(offcanvasElement);
+                            if (bsOffcanvas) {
+                                bsOffcanvas.hide();
+                            }
+                        }
+                    }}>
+                        <div className="nav-item-content">
+                            <i className="fa-solid fa-coins" style={{ fontSize: '18px', color: '#f5a623' }}></i>
+                            <span>Coin Store</span>
                         </div>
                         <i className="fa-solid fa-chevron-right"></i>
                     </button>

@@ -1,5 +1,10 @@
 .view-profile {
     min-height: 100vh;
+    background-color: #f8f8fa;
+    transition: background-color 0.3s ease;
+}
+
+.dark .view-profile {
     background-color: #000;
 }
 
@@ -9,6 +14,10 @@
     align-items: center;
     justify-content: center;
     min-height: 60vh;
+    color: #333;
+}
+
+.dark .profile-loading {
     color: #fff;
 }
 
@@ -38,9 +47,15 @@
 
 /* Profile Hero Section */
 .profile-hero {
+    background: linear-gradient(180deg, rgba(155, 108, 248, 0.08) 0%, rgba(255, 255, 255, 0) 100%);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    padding: 3rem 0 2rem;
+    transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.dark .profile-hero {
     background: linear-gradient(180deg, rgba(155, 108, 248, 0.1) 0%, rgba(0, 0, 0, 0) 100%);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    padding: 3rem 0 2rem;
 }
 
 .profile-hero-content {
@@ -85,8 +100,13 @@
 .profile-username {
     font-size: 28px;
     font-weight: 700;
-    color: #fff;
+    color: #1a1a1a;
     margin: 0;
+    transition: color 0.3s ease;
+}
+
+.dark .profile-username {
+    color: #fff;
 }
 
 .profile-actions {
@@ -136,8 +156,13 @@
 .profile-display-name {
     font-size: 20px;
     font-weight: 600;
-    color: #fff;
+    color: #1a1a1a;
     margin: 0 0 0.5rem 0;
+    transition: color 0.3s ease;
+}
+
+.dark .profile-display-name {
+    color: #fff;
 }
 
 .profile-bio {
@@ -145,6 +170,29 @@
     color: #999;
     margin: 0 0 1rem 0;
     line-height: 1.5;
+}
+
+/* ── Earned Badges ── */
+.profile-badges {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 0 0 1.25rem 0;
+}
+
+.profile-badges-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #555;
+}
+
+.profile-badges-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-start;
 }
 
 .profile-meta {
@@ -238,6 +286,11 @@
 .stat-value {
     font-size: 20px;
     font-weight: 700;
+    color: #1a1a1a;
+    transition: color 0.3s ease;
+}
+
+.dark .stat-value {
     color: #fff;
 }
 
@@ -265,6 +318,11 @@
     display: flex;
     gap: 0.5rem;
     margin-bottom: 2rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    transition: border-color 0.3s ease;
+}
+
+.dark .profile-tabs {
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -281,12 +339,20 @@
 }
 
 .profile-tab:hover {
+    color: #1a1a1a;
+}
+
+.dark .profile-tab:hover {
     color: #fff;
 }
 
 .profile-tab.active {
-    color: #fff;
+    color: #1a1a1a;
     border-bottom-color: #9b6cf8;
+}
+
+.dark .profile-tab.active {
+    color: #fff;
 }
 
 /* Posts Section */

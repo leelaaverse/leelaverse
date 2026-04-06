@@ -508,7 +508,8 @@ const getModelConfig = (modelId) => {
 		maxSteps: model.maxSteps,
 		defaultGuidance: model.defaultGuidance,
 		defaultDuration: model.defaultDuration,
-		maxDuration: model.maxDuration
+		maxDuration: model.maxDuration,
+		creditCost: model.creditCost
 	};
 };
 

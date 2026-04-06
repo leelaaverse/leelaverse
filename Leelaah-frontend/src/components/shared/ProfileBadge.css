@@ -1,0 +1,117 @@
+/* ────────────────────────────────────────────────────────────────
+   ProfileBadge — unique badge medallions shown below bio
+──────────────────────────────────────────────────────────────── */
+
+.pb-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: default;
+  user-select: none;
+}
+
+/* The shaped medallion */
+.pb-shape {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, filter 0.2s ease;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.pb-item:hover .pb-shape {
+  transform: scale(1.14) translateY(-3px);
+  filter: drop-shadow(0 4px 10px var(--badge-glow, rgba(255,255,255,0.3)));
+}
+
+/* Emoji icon inside shape */
+.pb-icon {
+  font-size: 22px;
+  line-height: 1;
+  display: block;
+  /* prevent emoji from getting clipped by clip-path */
+  pointer-events: none;
+}
+
+/* Image icon inside shape (when iconUrl set) */
+.pb-img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+}
+
+/* Badge name label */
+.pb-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #888;
+  text-align: center;
+  max-width: 64px;
+  line-height: 1.25;
+  word-break: break-word;
+  transition: color 0.2s ease;
+}
+
+.pb-item:hover .pb-label {
+  color: #ccc;
+}
+
+/* ── Rarity outer ring/aura ────────────────────────────────────── */
+
+/* Common — subtle ring */
+.pb-rarity--common .pb-shape::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  border: 1.5px solid rgba(160, 160, 160, 0.25);
+  pointer-events: none;
+}
+
+/* Uncommon — green tint ring */
+.pb-rarity--uncommon .pb-shape::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  border: 1.5px solid rgba(80, 200, 120, 0.4);
+  pointer-events: none;
+}
+
+/* Rare — blue pulsing ring */
+.pb-rarity--rare .pb-shape::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  border: 1.5px solid rgba(80, 140, 255, 0.5);
+  pointer-events: none;
+}
+
+/* Epic — purple animated glow ring */
+.pb-rarity--epic .pb-shape {
+  filter: drop-shadow(0 0 6px rgba(155, 108, 248, 0.4));
+}
+.pb-rarity--epic:hover .pb-shape {
+  filter: drop-shadow(0 4px 14px var(--badge-glow, #b88fff));
+}
+
+/* Legendary — gold pulsing glow, always lit */
+.pb-rarity--legendary .pb-shape {
+  filter: drop-shadow(0 0 8px rgba(255, 200, 50, 0.5));
+  animation: legendary-pulse 2.4s ease-in-out infinite;
+}
+.pb-rarity--legendary:hover .pb-shape {
+  filter: drop-shadow(0 0 18px var(--badge-glow, #ffd200));
+  animation: none;
+  transform: scale(1.16) translateY(-3px);
+}
+
+@keyframes legendary-pulse {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(255,200,50,0.4)); }
+  50%       { filter: drop-shadow(0 0 14px rgba(255,200,50,0.75)); }
+}

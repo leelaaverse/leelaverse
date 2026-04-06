@@ -2,7 +2,7 @@
 .model-selector-container {
 	position: relative;
 	width: 100%;
-	font-family: 'Inter', sans-serif;
+	font-family: inherit;
 	/* Assuming Inter or similar */
 	z-index: 10;
 	/* Ensure container is above other elements */
@@ -10,8 +10,8 @@
 
 /* Trigger (The box you click) */
 .model-selector-trigger {
-	background: rgba(255, 255, 255, 0.05);
-	border: 1px solid rgba(255, 255, 255, 0.1);
+	background: rgba(0, 0, 0, 0.04);
+	border: 1px solid rgba(0, 0, 0, 0.08);
 	border-radius: 12px;
 	padding: 10px 14px;
 	/* Reduced padding height */
@@ -25,6 +25,11 @@
 	user-select: none;
 }
 
+.dark .model-selector-trigger {
+	background: rgba(255, 255, 255, 0.05);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .model-selector-trigger:hover:not(.disabled) {
 	background: rgba(255, 255, 255, 0.08);
 	border-color: rgba(155, 108, 248, 0.4);
@@ -33,6 +38,10 @@
 
 .model-selector-trigger.open {
 	border-color: #9b6cf8;
+	background: #f5f5f5;
+}
+
+.dark .model-selector-trigger.open {
 	background: rgba(20, 20, 20, 1);
 }
 

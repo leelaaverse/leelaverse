@@ -2,13 +2,15 @@
 // Using PostgreSQL with Supabase
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions", "fullTextSearchPostgres"]
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
+  extensions = [pg_trgm]
 }
 
 // ============================================
@@ -74,6 +76,17 @@ model User {
   totalCoinsEarned Int @default(0)
   totalCoinsSpent  Int @default(0)
 
+  // Creator Game Stats
+  creatorXP           Int      @default(0)
+  creatorScore        Int      @default(0)
+  creatorRank         Int?
+  creatorTier         String   @default("bronze") // 'bronze','silver','gold','platinum','diamond'
+  competitionsEntered Int      @default(0)
+  competitionsWon     Int      @default(0)
+  currentStreak       Int      @default(0)
+  longestStreak       Int      @default(0)
+  lastPostDate        DateTime?
+
   // Subscription
   subscriptionTier        String? // 'free', 'basic', 'pro', 'enterprise'
   subscriptionStatus      String? // 'active', 'cancelled', 'expired'
@@ -120,6 +133,15 @@ model User {
   conversationsAsParticipant1 Conversation[] @relation("ConversationParticipant1")
   conversationsAsParticipant2 Conversation[] @relation("ConversationParticipant2")
   messagesSent                Message[]      @relation("MessageSender")
+
+  // Community Relations
+  earnedBadges                UserBadge[]                @relation("UserBadges")
+  competitionsCreated         Competition[]              @relation("CompetitionCreator")
+  competitionSubmissions      CompetitionSubmission[]     @relation("UserSubmissions")
+  competitionVotes            CompetitionVote[]           @relation("UserVotes")
+  competitionParticipations   CompetitionParticipant[]    @relation("CompetitionParticipants")
+  templatesCreated            Template[]                 @relation("TemplateCreator")
+  templateRatings             TemplateRating[]           @relation("TemplateRatings")
 
   @@index([email])
   @@index([username])
@@ -219,12 +241,13 @@ model Post {
   publishedAt  DateTime  @default(now())
 
   // Relations
-  comments         Comment[]
-  likes            Like[]
-  saves            Save[]
-  aiGenerations    AIGeneration[] // Multiple AI generations can link to one post
-  coinTransactions CoinTransaction[]
-  notifications    Notification[]
+  comments               Comment[]
+  likes                  Like[]
+  saves                  Save[]
+  aiGenerations          AIGeneration[] // Multiple AI generations can link to one post
+  coinTransactions       CoinTransaction[]
+  notifications          Notification[]
+  competitionSubmissions CompetitionSubmission[]
 
   @@index([authorId])
   @@index([type])
@@ -675,4 +698,334 @@ model Message {
   @@index([senderId])
   @@index([createdAt])
   @@index([isRead])
+}
+
+// ============================================
+// AI MODEL REGISTRY
+// ============================================
+model AIModel {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Model Info
+  name        String  @unique // e.g. "FLUX Schnell", "Kling Video v2"
+  provider    String // e.g. "fal-ai", "openai"
+  category    String // "image_generation" or "video_generation"
+  modelId     String  @unique // e.g. "fal-ai/flux/schnell"
+  description String?
+  coinCost    Int // coins consumed per request
+  isActive    Boolean @default(true)
+
+  // Relations
+  usageLogs ModelUsageLog[]
+
+  @@index([category])
+  @@index([isActive])
+}
+
+// ============================================
+// MODEL USAGE LOG
+// ============================================
+model ModelUsageLog {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  // User & Model
+  userId    String
+  aiModelId String
+  aiModel   AIModel @relation(fields: [aiModelId], references: [id])
+
+  // Coin Tracking
+  coinsCharged Int
+  status       String @default("completed") // "completed", "failed", "refunded"
+
+  // Optional metadata (prompt, params, etc.)
+  metadata Json?
+
+  @@index([userId])
+  @@index([aiModelId])
+  @@index([createdAt])
+}
+
+// ============================================
+// BADGE MODEL (Admin-defined achievements)
+// ============================================
+model Badge {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name        String @unique // 'first_post', 'streak_7', etc.
+  displayName String
+  description String
+  iconUrl     String?
+  category    String // 'posting', 'engagement', 'competition', 'milestone', 'special'
+
+  // Requirements (JSON: {type: 'post_count', value: 1})
+  requirement Json
+
+  // Rewards when earned
+  coinReward Int @default(0)
+  xpReward   Int @default(0)
+
+  // Tier badge
+  tier String? // If set, earning this = reaching that tier
+
+  // Display
+  rarity    String  @default("common") // 'common','uncommon','rare','epic','legendary'
+  isActive  Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  // Relations
+  earnedBy UserBadge[]
+
+  @@index([category])
+  @@index([rarity])
+  @@index([isActive])
+}
+
+// ============================================
+// USER BADGE (Junction: User <-> Badge)
+// ============================================
+model UserBadge {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  userId  String
+  user    User  @relation("UserBadges", fields: [userId], references: [id], onDelete: Cascade)
+
+  badgeId String
+  badge   Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  metadata Json? // e.g., { competitionId: 'xxx' }
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+  @@index([badgeId])
+}
+
+// ============================================
+// COMPETITION MODEL
+// ============================================
+model Competition {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Creator (admin or verified creator)
+  creatorId String
+  creator   User @relation("CompetitionCreator", fields: [creatorId], references: [id])
+
+  // Details
+  title       String
+  description String
+  rules       String?
+  coverImage  String?
+  category    String // 'ai-art', 'storytelling', 'video', 'music', 'photography', 'general'
+
+  // Submission constraints
+  submissionType String // 'image', 'video', 'text', 'any'
+  maxSubmissions Int    @default(1)
+
+  // Timing
+  startsAt DateTime
+  endsAt   DateTime
+  status   String @default("upcoming") // 'upcoming','live','judging','completed','cancelled'
+
+  // Prize Pool
+  prizePool      Int    @default(0)
+  prizeBreakdown Json?  // {1st: 500, 2nd: 200, 3rd: 100}
+  prizeBadge     String?
+
+  // Engagement
+  participantsCount Int @default(0)
+  submissionsCount  Int @default(0)
+  votesCount        Int @default(0)
+
+  // Tags
+  tags String[]
+
+  // Admin controls
+  isFeatured    Boolean @default(false)
+  isTrending    Boolean @default(false)
+  isApproved    Boolean @default(true)
+  createdByRole String  @default("admin") // 'admin' or 'creator'
+
+  // Relations
+  submissions  CompetitionSubmission[]
+  participants CompetitionParticipant[]
+
+  @@index([status])
+  @@index([startsAt])
+  @@index([endsAt])
+  @@index([category])
+  @@index([creatorId])
+  @@index([isFeatured])
+  @@index([isApproved])
+}
+
+// ============================================
+// COMPETITION PARTICIPANT MODEL
+// ============================================
+model CompetitionParticipant {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  competitionId String
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User @relation("CompetitionParticipants", fields: [userId], references: [id])
+
+  status String @default("joined") // 'joined','submitted','disqualified'
+
+  @@unique([competitionId, userId])
+  @@index([competitionId])
+  @@index([userId])
+}
+
+// ============================================
+// COMPETITION SUBMISSION MODEL
+// ============================================
+model CompetitionSubmission {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  competitionId String
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User @relation("UserSubmissions", fields: [userId], references: [id])
+
+  // Link to existing post
+  postId String?
+  post   Post? @relation(fields: [postId], references: [id], onDelete: SetNull)
+
+  // Direct submission (if not linking a post)
+  mediaUrl String?
+  caption  String?
+  prompt   String?
+
+  // Voting
+  votesCount Int     @default(0)
+  score      Decimal @default(0) @db.Decimal(10, 2)
+
+  // Result
+  status       String @default("submitted") // 'submitted','approved','rejected','winner','runner_up'
+  rank         Int?
+  prizeAwarded Int    @default(0)
+
+  // Relations
+  votes CompetitionVote[]
+
+  @@unique([competitionId, userId])
+  @@index([competitionId])
+  @@index([userId])
+  @@index([votesCount])
+}
+
+// ============================================
+// COMPETITION VOTE MODEL
+// ============================================
+model CompetitionVote {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  submissionId String
+  submission   CompetitionSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  voterId String
+  voter   User @relation("UserVotes", fields: [voterId], references: [id])
+
+  @@unique([submissionId, voterId])
+  @@index([submissionId])
+  @@index([voterId])
+}
+
+// ============================================
+// TEMPLATE MODEL
+// ============================================
+model Template {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  creatorId String
+  creator   User @relation("TemplateCreator", fields: [creatorId], references: [id])
+
+  name        String
+  description String?
+  category    String // 'cinematic','portrait','landscape','abstract','anime','photorealistic'
+  prompt      String // AI prompt template with [placeholders]
+  previewUrl  String?
+  thumbnailUrl String?
+
+  // AI defaults
+  aiModel        String?
+  aspectRatio    String?
+  style          String?
+  negativePrompt String?
+
+  // Engagement
+  usageCount  Int     @default(0)
+  rating      Decimal @default(0) @db.Decimal(3, 2)
+  ratingCount Int     @default(0)
+  savesCount  Int     @default(0)
+
+  // Monetization
+  coinCost Int @default(0) // 0 = free
+
+  // Status
+  isActive   Boolean @default(true)
+  isFeatured Boolean @default(false)
+  isOfficial Boolean @default(false)
+
+  tags String[]
+
+  // Relations
+  ratings TemplateRating[]
+
+  @@index([creatorId])
+  @@index([category])
+  @@index([usageCount])
+  @@index([isFeatured])
+  @@index([isActive])
+}
+
+// ============================================
+// TEMPLATE RATING MODEL
+// ============================================
+model TemplateRating {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  templateId String
+  template   Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User @relation("TemplateRatings", fields: [userId], references: [id])
+
+  rating Int // 1-5
+
+  @@unique([templateId, userId])
+  @@index([templateId])
+  @@index([userId])
+}
+
+// ============================================
+// REWARD CONFIG (Admin-tunable reward rates)
+// ============================================
+model RewardConfig {
+  id        String   @id @default(cuid())
+  updatedAt DateTime @updatedAt
+
+  key         String  @unique // 'post_created', 'like_received', etc.
+  coinReward  Int     @default(0)
+  xpReward    Int     @default(0)
+  description String
+  isActive    Boolean @default(true)
+
+  @@index([key])
 }

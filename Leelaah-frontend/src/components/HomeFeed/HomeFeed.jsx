@@ -4,11 +4,10 @@ import { setAuth } from '../../store/slices/authSlice';
 import Navbar from '../Navbar/Navbar';
 import MainContent from '../MainContent/MainContent';
 import FloatingBar from '../FloatingBar/FloatingBar';
-import Sidebar from '../Sidebar/Sidebar';
 import AuthModal from '../AuthModal/AuthModal';
 import './HomeFeed.css';
 
-const HomeFeed = ({ onNavigate, onPostClick, onUserClick }) => {
+const HomeFeed = ({ onNavigate, onPostClick, onUserClick, onOpenCreateModal }) => {
     const dispatch = useDispatch();
     const { isLoggedIn } = useSelector((state) => state.auth);
 
@@ -118,20 +117,13 @@ const HomeFeed = ({ onNavigate, onPostClick, onUserClick }) => {
                 onLogin={handleLogin}
                 onSignup={handleSignup}
                 onChatClick={() => onNavigate('chat')}
+                onNavigate={onNavigate}
             />
             <MainContent activeTab={activeTab} onShowAuthModal={handleOpenAuth} onPostClick={onPostClick} onUserClick={onUserClick} />
             <FloatingBar
                 onOpenAuth={handleOpenAuth}
                 onNavigate={onNavigate}
-            />
-            <Sidebar onNavigate={onNavigate} />
-
-            {/* Auth Modal */}
-            <AuthModal
-                isOpen={isAuthModalOpen}
-                onClose={handleCloseModal}
-                mode={authMode}
-                onSuccess={handleAuthSuccess}
+                onOpenCreateModal={onOpenCreateModal}
             />
 
             {/* Auth Modal */}
@@ -167,10 +159,10 @@ const HomeFeed = ({ onNavigate, onPostClick, onUserClick }) => {
                             margin: '0 auto 20px',
                             animation: 'spin 1s linear infinite'
                         }}></div>
-                        <h2 style={{ fontSize: '20px', marginBottom: '10px', fontFamily: 'Poppins, sans-serif' }}>
+                        <h2 style={{ fontSize: '20px', marginBottom: '10px',  }}>
                             Processing authentication...
                         </h2>
-                        <p style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '14px', fontFamily: 'Poppins, sans-serif' }}>
+                        <p style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '14px',  }}>
                             Please wait while we log you in
                         </p>
                     </div>

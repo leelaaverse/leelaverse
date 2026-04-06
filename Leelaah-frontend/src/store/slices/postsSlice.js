@@ -6,26 +6,11 @@ export const fetchFeedPosts = createAsyncThunk(
 	'posts/fetchFeedPosts',
 	async ({ category = 'featured', page = 1, limit = 12 }, { rejectWithValue }) => {
 		try {
-			console.log('🔄 Fetching posts:', { category, page, limit });
-
 			const response = await apiService.posts.getFeed({
 				category,
 				page,
 				limit,
 			});
-
-			console.log('✅ Posts fetched successfully:', {
-				count: response.data.posts?.length || 0,
-				total: response.data.pagination?.total || 0
-			});
-
-			if (response.data.posts && response.data.posts.length > 0) {
-				console.log('📸 First post:', {
-					id: response.data.posts[0].id,
-					hasImage: !!(response.data.posts[0].mediaUrl || response.data.posts[0].thumbnailUrl || response.data.posts[0].mediaUrls),
-					category: response.data.posts[0].category
-				});
-			}
 
 			return {
 				posts: response.data.posts,
@@ -34,15 +19,24 @@ export const fetchFeedPosts = createAsyncThunk(
 				page,
 			};
 		} catch (error) {
-			console.error('❌ Failed to fetch posts:', {
-				message: error.message,
-				response: error.response?.data,
-				status: error.response?.status
-			});
 			return rejectWithValue(
 				error.response?.data?.message || 'Failed to fetch posts'
 			);
 		}
+	},
+	{
+		// Prevent duplicate fetches: skip if page-1 data already exists for this category
+		condition: ({ category, page, forceRefresh }, { getState }) => {
+			if (forceRefresh) return true;
+			const { posts } = getState();
+			// If loading, never dispatch again
+			if (posts.loading || posts.loadingMore) return false;
+			// If page 1 and we already have posts for this category, skip
+			if (page === 1 && posts.posts.length > 0 && posts.currentCategory === category) {
+				return false;
+			}
+			return true;
+		},
 	}
 );
 
@@ -61,19 +55,39 @@ const postsSlice = createSlice({
 			pages: 0,
 		},
 		hasMore: true,
+		// Per-category cache to avoid re-fetching on navigation
+		cachedCategories: {},
 	},
 	reducers: {
 		setCategory: (state, action) => {
-			state.currentCategory = action.payload;
-			state.posts = [];
-			state.pagination.page = 1;
-			state.hasMore = true;
+			const newCategory = action.payload;
+			// Save current category data to cache before switching
+			if (state.posts.length > 0) {
+				state.cachedCategories[state.currentCategory] = {
+					posts: state.posts,
+					pagination: { ...state.pagination },
+					hasMore: state.hasMore,
+				};
+			}
+			state.currentCategory = newCategory;
+			// Restore from cache if available
+			const cached = state.cachedCategories[newCategory];
+			if (cached) {
+				state.posts = cached.posts;
+				state.pagination = cached.pagination;
+				state.hasMore = cached.hasMore;
+			} else {
+				state.posts = [];
+				state.pagination = { page: 1, limit: 12, total: 0, pages: 0 };
+				state.hasMore = true;
+			}
 		},
 		resetPosts: (state) => {
 			state.posts = [];
-			state.pagination.page = 1;
+			state.pagination = { page: 1, limit: 12, total: 0, pages: 0 };
 			state.hasMore = true;
 			state.error = null;
+			state.cachedCategories = {};
 		},
 	},
 	extraReducers: (builder) => {
@@ -92,33 +106,17 @@ const postsSlice = createSlice({
 
 				const { posts, pagination, page } = action.payload;
 
-				console.log('📥 Redux: Received posts from API:', {
-					page,
-					receivedCount: posts.length,
-					currentStateCount: state.posts.length,
-					pagination
-				});
-
 				if (page === 1) {
 					state.posts = posts;
-					console.log('✅ Redux: Set posts (page 1), new count:', posts.length);
 				} else {
 					// Avoid duplicates
 					const existingIds = new Set(state.posts.map((p) => p.id));
 					const newPosts = posts.filter((p) => !existingIds.has(p.id));
 					state.posts = [...state.posts, ...newPosts];
-					console.log('✅ Redux: Appended posts (page', page, '), added:', newPosts.length, ', total now:', state.posts.length);
 				}
 
 				state.pagination = pagination;
 				state.hasMore = pagination.page < pagination.pages;
-
-				console.log('📊 Redux State Summary:', {
-					totalPosts: state.posts.length,
-					hasMore: state.hasMore,
-					currentPage: state.pagination.page,
-					totalPages: state.pagination.pages
-				});
 			})
 			.addCase(fetchFeedPosts.rejected, (state, action) => {
 				state.loading = false;

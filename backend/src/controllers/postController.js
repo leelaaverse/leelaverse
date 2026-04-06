@@ -4,6 +4,7 @@ const cloudinary = require('cloudinary').v2;
 const axios = require('axios');
 const { getAllModels, getModelsByType, getFeaturedModels, getModelById, getModelConfig } = require('../config/aiModels');
 const { createNotification } = require('../utils/notificationService');
+const rewardEngine = require('../services/rewardEngine');
 
 // Configure Cloudinary
 cloudinary.config({
@@ -152,6 +153,23 @@ exports.generateImage = async (req, res) => {
 			inputParams.acceleration = 'regular';
 		}
 
+		// Calculate total cost
+		const modelConfig = getModelConfig(selectedModel);
+		const creditCostPerImage = modelConfig ? modelConfig.creditCost : (selectedModel === 'flux-schnell' ? 50 : 100);
+		const totalCreditCost = creditCostPerImage * imageCount;
+
+		// Verify User has enough coins before generating
+		const dbUser = await prisma.user.findUnique({
+			where: { id: userId }
+		});
+
+		if (!dbUser || dbUser.coinBalance < totalCreditCost) {
+			return res.status(400).json({
+				success: false,
+				message: `Insufficient coins. You need ${totalCreditCost} coins to generate ${imageCount} ${modelName} image(s), but you currently have ${dbUser?.coinBalance || 0}.`
+			});
+		}
+
 		// Generate multiple images by submitting multiple requests
 		const generations = [];
 
@@ -186,13 +204,37 @@ exports.generateImage = async (req, res) => {
 			});
 		}
 
+		// Deduct coins and log transaction
+		const updatedUser = await prisma.user.update({
+			where: { id: userId },
+			data: {
+				coinBalance: {
+					decrement: totalCreditCost
+				},
+				totalCoinsSpent: {
+					increment: totalCreditCost
+				}
+			}
+		});
+
+		await prisma.coinTransaction.create({
+			data: {
+				userId: userId,
+				type: 'spend',
+				amount: totalCreditCost,
+				balanceAfter: updatedUser.coinBalance,
+				description: `Generated ${imageCount} AI Image(s) using ${modelName}`
+			}
+		});
+
 		// Return array of request IDs for tracking
 		res.json({
 			success: true,
-			message: `${imageCount} image generation(s) started`,
+			message: `${imageCount} image generation(s) started. ${totalCreditCost} coins deducted.`,
 			generations: generations,
 			count: imageCount,
-			estimatedTime: '15-30 seconds per image'
+			estimatedTime: '15-30 seconds per image',
+			newBalance: updatedUser.coinBalance
 		});
 
 	} catch (error) {
@@ -262,9 +304,48 @@ exports.generateVideo = async (req, res) => {
 			inputParams.aspect_ratio = aspectMap[aspectRatio] || '16:9';
 		}
 
+		// Calculate total cost
+		const creditCost = modelConfig.creditCost || 150; // default for unknown models
+		const totalCreditCost = creditCost; // Currently we only generate one video at a time
+
+		// Verify User has enough coins before generating
+		const dbUser = await prisma.user.findUnique({
+			where: { id: userId }
+		});
+
+		if (!dbUser || dbUser.coinBalance < totalCreditCost) {
+			return res.status(400).json({
+				success: false,
+				message: `Insufficient coins. You need ${totalCreditCost} coins to generate a ${modelName} video, but you currently have ${dbUser?.coinBalance || 0}.`
+			});
+		}
+
 		// Submit to FAL
 		const { request_id } = await fal.queue.submit(falModel, {
 			input: inputParams
+		});
+
+		// Deduct coins and log transaction
+		const updatedUser = await prisma.user.update({
+			where: { id: userId },
+			data: {
+				coinBalance: {
+					decrement: totalCreditCost
+				},
+				totalCoinsSpent: {
+					increment: totalCreditCost
+				}
+			}
+		});
+
+		await prisma.coinTransaction.create({
+			data: {
+				userId: userId,
+				type: 'spend',
+				amount: totalCreditCost,
+				balanceAfter: updatedUser.coinBalance,
+				description: `Generated AI Video using ${modelName}`
+			}
 		});
 
 		// Create record
@@ -442,7 +523,8 @@ exports.createPostFromGeneration = async (req, res) => {
 			type = 'content',
 			category = 'image-post',
 			tags = [],
-			visibility = 'public'
+			visibility = 'public',
+			aiAspectRatio
 		} = req.body;
 
 		console.log('🔍 Request Body Debug:', {
@@ -499,7 +581,7 @@ exports.createPostFromGeneration = async (req, res) => {
 				model: aiGenerations[0].model,
 				prompt: aiGenerations[0].prompt,
 				style: aiGenerations[0].style,
-				aspectRatio: aiGenerations[0].aspectRatio,
+				aspectRatio: aiAspectRatio || aiGenerations[0].style || aiGenerations[0].aspectRatio,
 				steps: aiGenerations[0].steps,
 				seed: aiGenerations[0].seed
 			},
@@ -554,7 +636,8 @@ exports.uploadAndCreatePost = async (req, res) => {
 			title,
 			tags = [],
 			locationName,
-			visibility = 'public'
+			visibility = 'public',
+			aiAspectRatio
 		} = req.body;
 
 		// Validate media
@@ -620,6 +703,7 @@ exports.uploadAndCreatePost = async (req, res) => {
 			thumbnailUrl: uploadResult.secure_url,
 			mediaType: mediaType,
 			aiGenerated: false,
+			aiAspectRatio: aiAspectRatio || null,
 			tags: tags.map(tag => tag.toLowerCase().trim()),
 			locationName: locationName || null,
 			visibility: visibility,
@@ -661,6 +745,9 @@ exports.uploadAndCreatePost = async (req, res) => {
 				}
 			}
 		});
+
+		// Reward Engine Hook
+		await rewardEngine.onPostCreated(userId, post.id);
 
 		res.status(201).json({
 			success: true,
@@ -903,6 +990,11 @@ exports.createPost = async (req, res) => {
 				}
 			}
 		});
+
+		// Reward Engine Hook
+		if (userId) { // Only reward logged-in users
+			await rewardEngine.onPostCreated(finalUserId, post.id);
+		}
 
 		console.log('✅ Post creation complete! Should appear in feed immediately.');
 
@@ -1673,6 +1765,9 @@ exports.likePost = async (req, res) => {
 			link: `/post/${postId}`
 		});
 
+		// Reward Engine Hook
+		await rewardEngine.onLikeReceived(post.authorId, postId);
+
 		res.json({
 			success: true,
 			message: 'Post liked successfully',
@@ -1931,6 +2026,12 @@ exports.addComment = async (req, res) => {
 			commentId: comment.id,
 			link: `/post/${postId}`
 		});
+
+		// Reward Engine Hook
+		// Only reward if it's someone else commenting on your post
+		if (post.authorId !== userId) {
+			await rewardEngine.onCommentReceived(post.authorId, postId);
+		}
 
 		res.status(201).json({
 			success: true,

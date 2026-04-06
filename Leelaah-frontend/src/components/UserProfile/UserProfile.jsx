@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSelector } from 'react-redux';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import apiService from '../../services/api';
 import Navbar from '../Navbar/Navbar';
 import Sidebar from '../Sidebar/Sidebar';
 import SinglePost from '../SinglePost/SinglePost';
+import PostCard from '../PostCard/PostCard';
+import ProfileBadge from '../shared/ProfileBadge';
 import './UserProfile.css';
 
-const UserProfile = ({ userId, onNavigate, onBack, onChatClick }) => {
+const UserProfile = ({ userId, onNavigate, onBack, onChatClick, onOpenCreateModal }) => {
 	const { user: currentUser } = useSelector((state) => state.auth);
 	const [profile, setProfile] = useState(null);
 	const [posts, setPosts] = useState([]);
@@ -106,6 +108,82 @@ const UserProfile = ({ userId, onNavigate, onBack, onChatClick }) => {
 		fetchUserProfile();
 	};
 
+	const parseAspectRatio = useCallback((ratioStr) => {
+		if (!ratioStr) return null;
+
+		if (ratioStr.includes(':')) {
+			const parts = ratioStr.split(':');
+			if (parts.length === 2) {
+				const w = parseFloat(parts[0]);
+				const h = parseFloat(parts[1]);
+				if (w > 0 && h > 0) return w / h;
+			}
+		}
+
+		if (ratioStr.includes('x')) {
+			const parts = ratioStr.split('x');
+			if (parts.length === 2) {
+				const w = parseFloat(parts[0]);
+				const h = parseFloat(parts[1]);
+				if (w > 0 && h > 0) return w / h;
+			}
+		}
+
+		if (ratioStr.startsWith('landscape')) return 16 / 9;
+		if (ratioStr.startsWith('portrait')) return 9 / 16;
+		if (ratioStr.startsWith('square')) return 1;
+		if (ratioStr.startsWith('auto')) return null;
+
+		return null;
+	}, []);
+
+	const getAspectRatio = useCallback((post) => {
+		let numericRatio = null;
+
+		if (post.aiAspectRatio) {
+			numericRatio = parseAspectRatio(post.aiAspectRatio);
+		}
+
+		if (numericRatio === null) {
+			const isVideo = post.mediaType?.startsWith('video/') ||
+				post.type === 'video' ||
+				post.category === 'video-post' ||
+				post.mediaUrl?.includes('.mp4') ||
+				post.mediaUrl?.includes('.webm') ||
+				post.mediaUrl?.includes('.mov');
+
+			const width = post.width || post.metadata?.width || (isVideo ? 9 : 1);
+			const height = post.height || post.metadata?.height || (isVideo ? 16 : 1);
+			numericRatio = width / height;
+		}
+
+		if (numericRatio > 1.2) return 'landscape';
+		if (numericRatio < 0.8) return 'portrait';
+		return 'square';
+	}, [parseAspectRatio]);
+
+	const columns = useMemo(() => {
+		const cols = [[], [], [], []];
+		const colHeights = [0, 0, 0, 0];
+
+		posts.forEach((post) => {
+			let numericRatio = parseAspectRatio(post.aiAspectRatio);
+			if (!numericRatio) {
+				const aspectRatio = getAspectRatio(post);
+				if (aspectRatio === 'portrait') numericRatio = 3 / 4;
+				else if (aspectRatio === 'landscape') numericRatio = 16 / 9;
+				else numericRatio = 1;
+			}
+
+			const weight = 1 / numericRatio;
+			const minIndex = colHeights.indexOf(Math.min(...colHeights));
+			cols[minIndex].push(post);
+			colHeights[minIndex] += weight;
+		});
+
+		return cols;
+	}, [posts, getAspectRatio, parseAspectRatio]);
+
 	const displayName = profile
 		? `${profile.firstName} ${profile.lastName}`.trim()
 		: 'User';
@@ -150,11 +228,13 @@ const UserProfile = ({ userId, onNavigate, onBack, onChatClick }) => {
 
 	return (
 		<div className="user-profile">
-			<Toaster position="top-center" />
 			<Navbar
 				isLoggedIn={!!currentUser}
 				onBack={onBack}
 				showBackButton={true}
+				onNavigate={onNavigate}
+				setActiveTab={(tab) => onNavigate && onNavigate('home')}
+				onChatClick={onChatClick}
 			/>
 
 			<main className="profile-main">
@@ -220,6 +300,18 @@ const UserProfile = ({ userId, onNavigate, onBack, onChatClick }) => {
 							</div>
 							<h3 className="profile-display-name">{displayName}</h3>
 							<p className="profile-bio">{bio}</p>
+
+							{/* Earned Badges */}
+							{profile?.earnedBadges?.length > 0 && (
+								<div className="profile-badges">
+									<span className="profile-badges-label">Badges</span>
+									<div className="profile-badges-list">
+										{profile.earnedBadges.map(({ badge }) => (
+											<ProfileBadge key={badge.id} badge={badge} />
+										))}
+									</div>
+								</div>
+							)}
 
 							{/* Location and Website */}
 							<div className="profile-meta">
@@ -304,86 +396,26 @@ const UserProfile = ({ userId, onNavigate, onBack, onChatClick }) => {
 					<div className="profile-posts-section">
 						{posts.length > 0 ? (
 							<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1 md:gap-2 px-4">
-								{Array.from({ length: 4 }).map((_, colIndex) => {
-									const columnPosts = posts.filter((_, idx) => idx % 4 === colIndex);
-									return (
-										<div key={colIndex} className="flex flex-col">
-											{columnPosts.map((post) => {
-												// Determine aspect ratio from post data
-												const getAspectRatio = () => {
-													if (post.aiAspectRatio === '9:16') return 'portrait';
-													if (post.aiAspectRatio === '16:9') return 'landscape';
-													return 'square';
-												};
-												const aspectRatio = getAspectRatio();
-												const minHeight = aspectRatio === 'portrait' ? 'min-h-[400px]' : aspectRatio === 'landscape' ? 'min-h-[200px]' : 'min-h-[300px]';
-
-												// Detect if post is a video
-												const isVideo = post.mediaType?.startsWith('video/') ||
-													post.type === 'video' ||
-													post.category === 'video-post' ||
-													post.mediaUrl?.includes('.mp4') ||
-													post.mediaUrl?.includes('.webm') ||
-													post.mediaUrl?.includes('.mov');
-
-												return (
-													<div
-														key={post.id}
-														className={`relative w-full overflow-hidden rounded-lg cursor-pointer mb-2 md:mb-3 group ${minHeight} bg-gray-900`}
-														onClick={() => handlePostClick(post.id)}
-													>
-														{post.mediaUrl || post.thumbnailUrl ? (
-															isVideo ? (
-																<video
-																	src={post.mediaUrl}
-																	className="w-full h-auto object-contain"
-																	muted
-																	playsInline
-																	onMouseEnter={(e) => e.target.play()}
-																	onMouseLeave={(e) => e.target.pause()}
-																/>
-															) : (
-																<img
-																	src={post.thumbnailUrl || post.mediaUrl}
-																	alt={post.title || 'Post'}
-																	className="w-full h-auto object-contain"
-																/>
-															)
-														) : (
-															<div className="absolute inset-0 flex flex-col items-center justify-center text-white/60">
-																<i className="fa-solid fa-image text-4xl mb-2"></i>
-																<p className="text-sm">{post.title || 'Untitled'}</p>
-															</div>
-														)}
-														{isVideo && (
-															<div className="absolute top-2 right-2 bg-red-500/90 backdrop-blur-sm px-2 py-1 rounded-full text-xs text-white flex items-center gap-1">
-																<i className="fa-solid fa-play text-[10px]"></i>
-																Video
-															</div>
-														)}
-														{post.aiGenerated && (
-															<div className="absolute top-2 left-2 bg-purple-500/90 backdrop-blur-sm px-2 py-1 rounded-full text-xs text-white">
-																<i className="fa-solid fa-wand-magic-sparkles mr-1"></i>
-															</div>
-														)}
-														<div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-															<div className="absolute bottom-4 left-4 right-4 flex items-center gap-4 text-white">
-																<span className="flex items-center gap-1">
-																	<i className="fa-solid fa-heart"></i>
-																	{post.likesCount || post._count?.likes || 0}
-																</span>
-																<span className="flex items-center gap-1">
-																	<i className="fa-solid fa-comment"></i>
-																	{post.commentsCount || post._count?.comments || 0}
-																</span>
-															</div>
-														</div>
-													</div>
-												);
-											})}
-										</div>
-									);
-								})}
+								{columns.map((column, colIndex) => (
+									<div key={colIndex} className="flex flex-col">
+										{column.map((post) => (
+											<PostCard
+												key={post.id}
+												post={post}
+												aspectRatio={getAspectRatio(post)}
+												onShowAuthModal={() => toast.error('Please login to interact with posts')}
+												onPostClick={handlePostClick}
+												onUserClick={(authorId) => {
+													if (authorId === currentUser?.id) {
+														onNavigate?.('profile');
+														return;
+													}
+													onNavigate?.('user', authorId);
+												}}
+											/>
+										))}
+									</div>
+								))}
 							</div>
 						) : (
 							<div className="flex flex-col items-center justify-center py-16 px-8 text-white/60">
@@ -405,6 +437,7 @@ const UserProfile = ({ userId, onNavigate, onBack, onChatClick }) => {
 						postId={selectedPostId}
 						onBack={handleClosePost}
 						onShowAuthModal={() => toast.error('Please login to interact with posts')}
+						onOpenCreateModal={onOpenCreateModal}
 					/>
 				</div>
 			)}

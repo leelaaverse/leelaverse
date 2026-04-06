@@ -38,4 +38,11 @@ router.get('/:userId/follow-status', optionalAuth, userController.checkFollowSta
  */
 router.get('/following', auth, userController.getFollowing);
 
+/**
+ * @route   GET /api/users/:userId/badges
+ * @desc    Get all earned badges for a public profile
+ * @access  Public
+ */
+router.get('/:userId/badges', userController.getUserBadges);
+
 module.exports = router;

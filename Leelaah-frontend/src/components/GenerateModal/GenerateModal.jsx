@@ -4,6 +4,9 @@ import toast, { Toaster } from 'react-hot-toast';
 import './GenerateModal.css';
 import apiService from '../../services/api';
 import { fetchFeedPosts } from '../../store/slices/postsSlice';
+import { fetchModels } from '../../store/slices/modelsSlice';
+import SearchableModelDropdown from '../shared/SearchableModelDropdown';
+import ProgressiveImageReveal from '../shared/ProgressiveImageReveal';
 
 const GenerateModal = ({ isOpen, onClose, onOpenAuth }) => {
     const dispatch = useDispatch();
@@ -17,9 +20,8 @@ const GenerateModal = ({ isOpen, onClose, onOpenAuth }) => {
     const [aiTab, setAiTab] = useState('image');
 
     // Dynamic AI Models state
-    const [imageModels, setImageModels] = useState([]);
-    const [videoModels, setVideoModels] = useState([]);
-    const [modelsLoading, setModelsLoading] = useState(true);
+    const { imageModels, videoModels, status: modelsStatus } = useSelector((state) => state.models);
+    const modelsLoading = modelsStatus === 'loading';
     const [isVideo, setIsVideo] = useState(false);
 
     const [formData, setFormData] = useState({
@@ -48,33 +50,22 @@ const GenerateModal = ({ isOpen, onClose, onOpenAuth }) => {
     // Post creation state
     const [isPosting, setIsPosting] = useState(false);
 
-    // Fetch AI models on component mount
+    // Fetch AI models when navigating to AI tab
     useEffect(() => {
-        const fetchModels = async () => {
-            try {
-                setModelsLoading(true);
-                const response = await apiService.posts.getModels();
-                if (response.data.success) {
-                    setImageModels(response.data.models.image || []);
-                    setVideoModels(response.data.models.video || []);
-                }
-            } catch (error) {
-                console.error('Failed to load AI models:', error);
-                // Fallback to default models if API fails
-                setImageModels([
-                    { id: 'flux-schnell', name: 'FLUX Schnell', description: 'Fast (15-20s)' },
-                    { id: 'flux-1-srpo', name: 'FLUX.1 SRPO', description: 'Quality (25-35s)' }
-                ]);
-            } finally {
-                setModelsLoading(false);
-            }
-        };
-        fetchModels();
-    }, []);
+        if (modalStep === 'ai' && modelsStatus === 'idle') {
+            dispatch(fetchModels());
+        }
+    }, [modalStep, modelsStatus, dispatch]);
+
+    // Calculate dynamic cost based on selected model
+    const currentCost = React.useMemo(() => {
+        const currentModels = aiTab === 'image' ? imageModels : videoModels;
+        const selectedModelData = currentModels.find(m => m.id === formData.selectedModel);
+        return selectedModelData?.creditCost || (formData.selectedModel === 'flux-schnell' ? 50 : 150);
+    }, [aiTab, imageModels, videoModels, formData.selectedModel]);
 
     // Update form defaults when model changes
-    const handleModelChange = (e) => {
-        const modelId = e.target.value;
+    const handleModelChange = (modelId) => {
         const currentModels = aiTab === 'image' ? imageModels : videoModels;
         const selectedModelData = currentModels.find(m => m.id === modelId);
 
@@ -349,85 +340,115 @@ const GenerateModal = ({ isOpen, onClose, onOpenAuth }) => {
 
     const handleRunAI = async () => {
         if (!formData.prompt.trim()) {
-            toast.error('Please enter a prompt', {
-                duration: 3000,
-                position: 'top-center'
-            });
+            toast.error('Please enter a prompt', { duration: 3000, position: 'top-center' });
             return;
         }
 
         try {
             setIsGenerating(true);
             setGenerationStatus(aiTab === 'video' ? 'Initializing Video AI...' : 'Initializing Image AI...');
-            setGenerationProgress(5); // Start slower for video
+            setGenerationProgress(5);
             setModalStep('generating');
 
-            // Set media type based on current tab
             const isVideoGeneration = aiTab === 'video';
             setIsVideo(isVideoGeneration);
 
-            // Prepare payload according to backend structure
+            // Build payload for new API
             const payload = {
+                modelId: formData.selectedModel,
                 prompt: formData.prompt.trim(),
-                selectedModel: formData.selectedModel,
-                aspectRatio: formData.aspectRatio,
+                aspect_ratio: formData.aspectRatio,
             };
 
-            // Add specific params based on type
             if (!isVideoGeneration) {
-                payload.numInferenceSteps = formData.selectedModel === 'flux-schnell' ? Math.min(formData.numInferenceSteps, 12) : formData.numInferenceSteps;
-                payload.guidanceScale = formData.guidanceScale;
-                payload.numImages = 1;
-            } else {
-                payload.duration = '5'; // Default for now
+                payload.num_inference_steps = formData.selectedModel.includes('schnell') ? Math.min(formData.numInferenceSteps, 12) : formData.numInferenceSteps;
+                payload.guidance_scale = formData.guidanceScale;
+                payload.num_images = 1;
             }
 
-            console.log(`🎨 Starting ${isVideoGeneration ? 'VIDEO' : 'IMAGE'} generation with payload:`, payload);
+            // Progressive progress animation
+            const progressInterval = setInterval(() => {
+                setGenerationProgress(prev => {
+                    if (prev >= 90) { clearInterval(progressInterval); return prev; }
+                    return prev + (isVideoGeneration ? 0.3 : 0.8);
+                });
+                setGenerationStatus(() => {
+                    const msgs = isVideoGeneration
+                        ? ['Generating video...', 'Processing frames...', 'Rendering...']
+                        : ['Generating...', 'Creating image...', 'Rendering details...', 'Finalizing...'];
+                    return msgs[Math.floor(Math.random() * msgs.length)];
+                });
+            }, 1500);
 
             let response;
             if (isVideoGeneration) {
-                response = await apiService.posts.generateVideo(payload);
+                // Video: still uses old endpoint for now
+                response = await apiService.posts.generateVideo({
+                    prompt: formData.prompt.trim(),
+                    selectedModel: formData.selectedModel,
+                    aspectRatio: formData.aspectRatio,
+                    duration: '5'
+                });
             } else {
-                response = await apiService.posts.generateImage(payload);
+                // Image: use new /api/ai/image/generate
+                response = await apiService.ai.generateImage(payload);
             }
 
-            if (response.data.success && response.data.generations && response.data.generations.length > 0) {
+            clearInterval(progressInterval);
+
+            // New API returns result directly (no polling needed)
+            if (response.data.success && response.data.data) {
+                const data = response.data.data;
+                const images = data.images || [];
+                const resultUrl = images[0]?.url || data.image?.url;
+
+                if (resultUrl) {
+                    setGenerationProgress(98);
+                    setGenerationStatus('Downloading image...');
+                    await new Promise((resolve) => {
+                        if (isVideoGeneration) return resolve();
+                        const img = new Image();
+                        img.onload = resolve;
+                        img.onerror = resolve; // Continue on error
+                        img.src = resultUrl;
+                    });
+                    
+                    setGenerationProgress(100);
+                    setGenerationStatus(isVideoGeneration ? 'Video generated!' : 'Image generated!');
+                    setImagePreview(resultUrl);
+                    setAiGenerationIds([data.generationId]);
+                    setModalStep('generated');
+                    setIsGenerating(false);
+                    toast.success(isVideoGeneration ? '🎬 Video generated!' : '🎨 Image generated!', { duration: 3000, position: 'top-center' });
+                    return;
+                }
+            }
+
+            // Fallback: old polling flow
+            if (response.data.success && response.data.generations?.length > 0) {
                 const generation = response.data.generations[0];
-
-                // Store BOTH requestId AND aiGenerationId from initial response
-                console.log('✅ Generation started:', {
-                    requestId: generation.requestId,
-                    aiGenerationId: generation.aiGenerationId
-                });
-
                 setGenerationRequestId(generation.requestId);
-                setAiGenerationIds([generation.aiGenerationId]); // ← Store ID from FIRST response!
-                setGenerationStatus(isVideoGeneration ? 'Video generating (this takes 1-2 mins)...' : 'Generation started, processing...');
+                setAiGenerationIds([generation.aiGenerationId]);
+                setGenerationStatus(isVideoGeneration ? 'Video generating...' : 'Processing...');
                 setGenerationProgress(10);
-
-                // Start polling for result
                 pollGenerationStatus(generation.requestId, isVideoGeneration);
             } else {
                 throw new Error('Failed to start generation');
             }
 
         } catch (error) {
-            console.error('❌ AI Generation Error:', error);
+            console.error('AI Generation Error:', error);
             setIsGenerating(false);
             setGenerationStatus('');
             setModalStep('ai');
 
-            // User-friendly error message
             const userMessage = error.response?.data?.message
                 || (error.response?.status === 401 ? 'Please login to generate images' : null)
+                || (error.response?.status === 402 ? 'Insufficient credits. Please purchase more coins.' : null)
                 || (error.response?.status === 429 ? 'Too many requests. Please wait a moment.' : null)
                 || 'Failed to start generation. Please try again.';
 
-            toast.error(userMessage, {
-                duration: 4000,
-                position: 'top-center'
-            });
-            return;
+            toast.error(userMessage, { duration: 4000, position: 'top-center' });
         }
     };
 
@@ -805,7 +826,7 @@ const GenerateModal = ({ isOpen, onClose, onOpenAuth }) => {
                                                             <label className="form-label font-12 font-weight-600 mb-2">PROMPT</label>
                                                             <div className="d-flex gap-2 align-items-center">
                                                                 <img src="/assets/ri_dvd-ai-line.png" alt="" />
-                                                                <p className="mb-0 font-12 fadefont">Spend 150 Credit Coins</p>
+                                                                <p className="mb-0 font-12 fadefont">Spend {currentCost} Credit Coins</p>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -838,37 +859,15 @@ const GenerateModal = ({ isOpen, onClose, onOpenAuth }) => {
                                                     <div className="col-md-6">
                                                         <div className="model-section">
                                                             <label className="model-label mb-2">MODEL</label>
-                                                            <div className="model-select-wrapper-custom">
-                                                                <select
-                                                                    className="form-control"
-                                                                    name="selectedModel"
-                                                                    value={formData.selectedModel}
-                                                                    onChange={handleModelChange}
-                                                                    disabled={isGenerating || modelsLoading}
-                                                                    style={{
-                                                                        background: 'rgba(255, 255, 255, 0.05)',
-                                                                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                                                                        borderRadius: '12px',
-                                                                        padding: '12px 16px',
-                                                                        color: '#fff',
-                                                                        fontSize: '14px',
-                                                                        fontWeight: '500',
-                                                                        cursor: 'pointer',
-                                                                        transition: 'all 0.2s ease',
-                                                                        height: '48px'
-                                                                    }}
-                                                                >
-                                                                    {modelsLoading ? (
-                                                                        <option style={{ backgroundColor: '#1a1a1a' }}>Loading models...</option>
-                                                                    ) : (
-                                                                        imageModels.map(model => (
-                                                                            <option key={model.id} value={model.id} style={{ backgroundColor: '#1a1a1a' }}>
-                                                                                {model.name} - {model.description}
-                                                                            </option>
-                                                                        ))
-                                                                    )}
-                                                                </select>
-                                                            </div>
+                                                            <SearchableModelDropdown
+                                                                models={imageModels}
+                                                                selectedModelId={formData.selectedModel}
+                                                                onSelect={handleModelChange}
+                                                                disabled={isGenerating || modelsLoading}
+                                                                isDark={true}
+                                                                compact={true}
+                                                                placeholder="Select a model"
+                                                            />
                                                         </div>
                                                     </div>
                                                     <div className="col-md-6">
@@ -923,7 +922,13 @@ const GenerateModal = ({ isOpen, onClose, onOpenAuth }) => {
                                             <div className="p-4">
                                                 <div className="row">
                                                     <div className="col-md-12 position-relative">
-                                                        <label className="form-label font-12 font-weight-600 mb-2">PROMPT</label>
+                                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                                            <label className="form-label font-12 font-weight-600 mb-0">PROMPT</label>
+                                                            <div className="d-flex gap-2 align-items-center">
+                                                                <img src="/assets/ri_dvd-ai-line.png" alt="" />
+                                                                <p className="mb-0 font-12 fadefont">Spend {currentCost} Credit Coins</p>
+                                                            </div>
+                                                        </div>
                                                         <textarea
                                                             className="form-control prompttextarea fadefont font-12"
                                                             rows="4"
@@ -938,37 +943,15 @@ const GenerateModal = ({ isOpen, onClose, onOpenAuth }) => {
                                                     <div className="col-md-6">
                                                         <div className="model-section">
                                                             <label className="model-label mb-2">VIDEO MODEL</label>
-                                                            <div className="model-select-wrapper-custom">
-                                                                <select
-                                                                    className="form-control"
-                                                                    name="selectedModel"
-                                                                    value={formData.selectedModel}
-                                                                    onChange={handleModelChange}
-                                                                    disabled={isGenerating || modelsLoading}
-                                                                    style={{
-                                                                        background: 'rgba(255, 255, 255, 0.05)',
-                                                                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                                                                        borderRadius: '12px',
-                                                                        padding: '12px 16px',
-                                                                        color: '#fff',
-                                                                        fontSize: '14px',
-                                                                        fontWeight: '500',
-                                                                        cursor: 'pointer',
-                                                                        transition: 'all 0.2s ease',
-                                                                        height: '48px'
-                                                                    }}
-                                                                >
-                                                                    {modelsLoading ? (
-                                                                        <option style={{ backgroundColor: '#1a1a1a' }}>Loading models...</option>
-                                                                    ) : (
-                                                                        videoModels.map(model => (
-                                                                            <option key={model.id} value={model.id} style={{ backgroundColor: '#1a1a1a' }}>
-                                                                                {model.name} - {model.description}
-                                                                            </option>
-                                                                        ))
-                                                                    )}
-                                                                </select>
-                                                            </div>
+                                                            <SearchableModelDropdown
+                                                                models={videoModels}
+                                                                selectedModelId={formData.selectedModel}
+                                                                onSelect={handleModelChange}
+                                                                disabled={isGenerating || modelsLoading}
+                                                                isDark={true}
+                                                                compact={true}
+                                                                placeholder="Select video model"
+                                                            />
                                                         </div>
                                                     </div>
                                                     <div className="col-md-6">
@@ -1019,40 +1002,26 @@ const GenerateModal = ({ isOpen, onClose, onOpenAuth }) => {
                 </div>
             )}
 
-            {/* Generating Modal - Progress Display */}
+            {/* Generating Modal — Progressive Image Reveal */}
             {modalStep === 'generating' && (
                 <div className="modal fade show" style={{ display: 'block' }} tabIndex="-1">
                     <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-content bg-dark text-light rounded-4">
                             <div className="modal-header bghightlight justify-content-center align-items-center border-0">
-                                <h5 className="m-0 p-0 font-16 font-weight-700">Generating Image</h5>
+                                <h5 className="m-0 p-0 font-16 font-weight-700">Generating {isVideo ? 'Video' : 'Image'}</h5>
                             </div>
-                            <div className="modal-body text-center py-5">
-                                <div className="mb-4">
-                                    <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
-                                        <span className="visually-hidden">Loading...</span>
-                                    </div>
-                                </div>
-                                <h6 className="font-14 mb-3">{generationStatus}</h6>
-                                <div className="progress mx-auto" style={{ maxWidth: '300px', height: '8px' }}>
-                                    <div
-                                        className="progress-bar bg-primary"
-                                        role="progressbar"
-                                        style={{ width: `${generationProgress}%` }}
-                                        aria-valuenow={generationProgress}
-                                        aria-valuemin="0"
-                                        aria-valuemax="100"
-                                    ></div>
-                                </div>
-                                <p className="text-muted font-12 mt-3 mb-0">{Math.round(generationProgress)}% Complete</p>
-                                <p className="text-muted font-12 mt-2">
-                                    {formData.selectedModel === 'flux-schnell'
-                                        ? 'ETA: 15-20 seconds (Fast Mode)'
-                                        : 'ETA: 25-35 seconds (Quality Mode)'}
+                            <div className="modal-body p-3">
+                                <ProgressiveImageReveal
+                                    src={imagePreview}
+                                    isGenerating={isGenerating}
+                                    progress={generationProgress}
+                                    generationStatus={generationStatus}
+                                    aspectRatio={formData.aspectRatio}
+                                    isDark={true}
+                                />
+                                <p className="text-muted font-12 mt-3 text-center mb-0">
+                                    {formData.prompt.substring(0, 80)}{formData.prompt.length > 80 ? '...' : ''}
                                 </p>
-                                <div className="mt-4">
-                                    <small className="text-muted">Prompt: {formData.prompt.substring(0, 60)}...</small>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -1186,11 +1155,6 @@ const GenerateModal = ({ isOpen, onClose, onOpenAuth }) => {
                                                     value={formData.caption}
                                                     onChange={handleInputChange}
                                                     placeholder={aiGenerationIds.length > 0 ? `Generated prompt: ${formData.prompt}` : "Share something about the picture..."}
-                                                    style={{
-                                                        backgroundColor: '#1a1a1a',
-                                                        color: '#fff',
-                                                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                                                    }}
                                                 ></textarea>
                                                 <div className="d-flex justify-content-between align-items-center mt-2">
                                                     <button className="btn_none">

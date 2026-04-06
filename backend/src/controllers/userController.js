@@ -31,7 +31,29 @@ exports.getPublicProfile = async (req, res) => {
 				discordLink: true,
 				verificationStatus: true,
 				totalCreations: true,
+				creatorTier: true,
+				creatorXP: true,
 				createdAt: true,
+				earnedBadges: {
+					select: {
+						id: true,
+						createdAt: true,
+						badge: {
+							select: {
+								id: true,
+								name: true,
+								displayName: true,
+								description: true,
+								iconUrl: true,
+								category: true,
+								rarity: true,
+								coinReward: true,
+								xpReward: true,
+							}
+						},
+					},
+					orderBy: { createdAt: 'asc' },
+				},
 				_count: {
 					select: {
 						followers: true,
@@ -372,5 +394,49 @@ exports.getFollowing = async (req, res) => {
 			message: 'Failed to get following list',
 			error: error.message
 		});
+	}
+};
+
+/**
+ * Get User Badges (public)
+ * GET /api/users/:userId/badges
+ */
+exports.getUserBadges = async (req, res) => {
+	try {
+		const { userId } = req.params;
+
+		const userExists = await prisma.user.findUnique({
+			where: { id: userId },
+			select: { id: true },
+		});
+
+		if (!userExists) {
+			return res.status(404).json({ success: false, message: 'User not found' });
+		}
+
+		const earnedBadges = await prisma.userBadge.findMany({
+			where: { userId },
+			include: {
+				badge: {
+					select: {
+						id: true,
+						name: true,
+						displayName: true,
+						description: true,
+						iconUrl: true,
+						category: true,
+						rarity: true,
+						coinReward: true,
+						xpReward: true,
+					}
+				}
+			},
+			orderBy: { createdAt: 'asc' },
+		});
+
+		res.json({ success: true, data: earnedBadges });
+	} catch (error) {
+		console.error('❌ Get user badges error:', error);
+		res.status(500).json({ success: false, message: 'Failed to get user badges', error: error.message });
 	}
 };

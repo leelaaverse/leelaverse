@@ -2,6 +2,7 @@ const UserService = require('../services/UserService');
 const prisma = require('../config/prisma');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const rewardEngine = require('../services/rewardEngine');
 
 class AuthController {
     constructor() {
@@ -58,6 +59,18 @@ class AuthController {
                 lastName: lastName || ''
             });
 
+            // Record the 100 free signup tokens as a transaction
+            await prisma.coinTransaction.create({
+                data: {
+                    userId: user.id,
+                    type: 'signup_bonus',
+                    amount: 100,
+                    balanceAfter: 100,
+                    description: 'Welcome bonus: 100 free tokens on signup',
+                    status: 'completed',
+                },
+            });
+
             // Generate tokens
             const accessToken = UserService.generateAccessToken(user.id);
             const refreshToken = UserService.generateRefreshToken(user.id);
@@ -84,8 +97,8 @@ class AuthController {
             // Handle Prisma unique constraint errors
             if (error.code === 'P2002') {
                 const field = error.meta?.target?.[0] || 'field';
-                const message = field === 'email' 
-                    ? 'Email is already registered' 
+                const message = field === 'email'
+                    ? 'Email is already registered'
                     : `${field} is already taken`;
 
                 return res.status(400).json({
@@ -293,7 +306,34 @@ class AuthController {
         try {
             const userId = req.user.id;
 
-            const user = await UserService.getUserProfile(userId);
+            // Award any newly earned badges before returning profile data
+            await rewardEngine.checkBadges(userId);
+
+            // Fetch user + badges in parallel directly via prisma
+            const [user, earnedBadges] = await Promise.all([
+                UserService.getUserProfile(userId),
+                prisma.userBadge.findMany({
+                    where: { userId },
+                    select: {
+                        id: true,
+                        createdAt: true,
+                        badge: {
+                            select: {
+                                id: true,
+                                name: true,
+                                displayName: true,
+                                description: true,
+                                iconUrl: true,
+                                category: true,
+                                rarity: true,
+                                coinReward: true,
+                                xpReward: true,
+                            },
+                        },
+                    },
+                    orderBy: { createdAt: 'asc' },
+                }),
+            ]);
 
             if (!user) {
                 return res.status(404).json({
@@ -304,7 +344,7 @@ class AuthController {
 
             res.json({
                 success: true,
-                data: { user }
+                data: { user: { ...user, earnedBadges } }
             });
 
         } catch (error) {

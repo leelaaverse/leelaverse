@@ -1,7 +1,9 @@
 import React, { useState, memo, useCallback, useRef, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { FaHeart, FaRegHeart, FaComment, FaRegComment, FaPlay } from 'react-icons/fa';
+import { PiShareFatDuotone } from 'react-icons/pi';
 import apiService from '../../services/api';
+import ShareModal from '../ShareModal/ShareModal';
 import './PostCard.css';
 
 const PostCard = memo(({ post, aspectRatio = 'square', size = 'medium', onShowAuthModal, onPostClick, onUserClick }) => {
@@ -12,27 +14,45 @@ const PostCard = memo(({ post, aspectRatio = 'square', size = 'medium', onShowAu
   const [likeCount, setLikeCount] = useState(post.likesCount || 0);
   const [showHeartAnimation, setShowHeartAnimation] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
-  const [imageHeight, setImageHeight] = useState(null);
+  // Store the real aspect ratio detected from the actual image pixels
+  const [naturalRatio, setNaturalRatio] = useState(null);
   const videoRef = useRef(null);
   const [isVideoInView, setIsVideoInView] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
-  // Get aspect ratio class for proper image sizing in masonry layout
-  const getAspectClass = () => {
-    switch (aspectRatio) {
-      case 'portrait':
-        return 'aspect-[9/16]'; // 9:16 ratio - full height
-      case 'landscape':
-        return 'aspect-[16/9]'; // 16:9 ratio - standard
-      case 'square':
-      default:
-        return 'aspect-square'; // 1:1 ratio
+  // Compute the initial best-guess aspect ratio from metadata (used as placeholder before image loads).
+  // Once the image loads, naturalRatio takes over with the real pixel dimensions.
+  const getInitialAspectStyle = () => {
+    const ratio = post.aiAspectRatio;
+    if (ratio && ratio !== 'auto') {
+      if (ratio.includes(':')) {
+        const [w, h] = ratio.split(':').map(Number);
+        if (w > 0 && h > 0) return { aspectRatio: `${w} / ${h}` };
+      }
+      if (ratio.includes('x')) {
+        const [w, h] = ratio.split('x').map(Number);
+        if (w > 0 && h > 0) return { aspectRatio: `${w} / ${h}` };
+      }
+      if (ratio.startsWith('landscape')) return { aspectRatio: '16 / 9' };
+      if (ratio.startsWith('portrait')) return { aspectRatio: '9 / 16' };
+      if (ratio.startsWith('square')) return { aspectRatio: '1 / 1' };
     }
+    // Fallback based on category from MainContent
+    if (aspectRatio === 'portrait') return { aspectRatio: '3 / 4' };
+    if (aspectRatio === 'landscape') return { aspectRatio: '16 / 9' };
+    return { aspectRatio: '1 / 1' };
   };
 
-  // Get object position - top for portraits (to show faces), center for others
-  const getObjectPosition = () => {
-    return aspectRatio === 'portrait' ? 'object-top' : 'object-center';
-  };
+  // The actual container style: prefer real image dimensions, fall back to metadata guess
+  const containerStyle = naturalRatio
+    ? { aspectRatio: `${naturalRatio.w} / ${naturalRatio.h}` }
+    : getInitialAspectStyle();
+
+  // Object position: top for tall images (to show faces), center for others
+  const isPortrait = naturalRatio
+    ? naturalRatio.w / naturalRatio.h < 0.8
+    : aspectRatio === 'portrait';
+  const objectPosition = isPortrait ? 'object-top' : 'object-center';
 
   // Determine if post is a video
   const isVideo = post.mediaType?.startsWith('video/') ||
@@ -138,6 +158,11 @@ const PostCard = memo(({ post, aspectRatio = 'square', size = 'medium', onShowAu
     onPostClick?.(post.id);
   }, [post.id, onPostClick]);
 
+  const handleShare = useCallback((e) => {
+    e?.stopPropagation();
+    setShowShareModal(true);
+  }, []);
+
   const handleCardClick = useCallback(() => {
     onPostClick?.(post.id);
   }, [post.id, onPostClick]);
@@ -177,6 +202,7 @@ const PostCard = memo(({ post, aspectRatio = 'square', size = 'medium', onShowAu
   }, [isVideo]);
 
   return (
+    <>
     <div
       className="relative w-full overflow-hidden rounded-lg cursor-pointer transition-all duration-300 hover:scale-[1.02] group mb-2 md:mb-3"
       onMouseEnter={() => setIsHovered(true)}
@@ -184,8 +210,8 @@ const PostCard = memo(({ post, aspectRatio = 'square', size = 'medium', onShowAu
       onDoubleClick={handleDoubleClick}
       onClick={handleCardClick}
     >
-      {/* Media Container - uses aspect ratio for consistent sizing */}
-      <div className={`relative w-full ${getAspectClass()} overflow-hidden`}>
+      {/* Media Container - aspect ratio from real image dimensions (or metadata guess before load) */}
+      <div className="relative w-full overflow-hidden" style={containerStyle}>
         {!imageLoaded && (
           <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 animate-pulse rounded-lg">
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-700/50 to-transparent animate-shimmer"></div>
@@ -197,12 +223,18 @@ const PostCard = memo(({ post, aspectRatio = 'square', size = 'medium', onShowAu
             <video
               ref={videoRef}
               src={mediaUrl}
-              className={`absolute inset-0 w-full h-full object-cover ${getObjectPosition()} transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+              className={`absolute inset-0 w-full h-full object-cover ${objectPosition} transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
               loop
               muted
               playsInline
               preload="metadata"
-              onLoadedData={() => setImageLoaded(true)}
+              onLoadedData={(e) => {
+                setImageLoaded(true);
+                const v = e.target;
+                if (v.videoWidth && v.videoHeight) {
+                  setNaturalRatio({ w: v.videoWidth, h: v.videoHeight });
+                }
+              }}
               onError={(e) => {
                 console.error('Video load error:', e);
                 setImageLoaded(true);
@@ -221,13 +253,14 @@ const PostCard = memo(({ post, aspectRatio = 'square', size = 'medium', onShowAu
           <img
             src={mediaUrl}
             alt={post.title || post.prompt || 'Post image'}
-            className={`absolute inset-0 w-full h-full object-cover ${getObjectPosition()} transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+            className={`absolute inset-0 w-full h-full object-cover ${objectPosition} transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
             loading="lazy"
             onLoad={(e) => {
               setImageLoaded(true);
-              // Let the image determine its natural height
-              if (e.target.naturalHeight) {
-                setImageHeight(e.target.naturalHeight);
+              // Use real pixel dimensions as source of truth for aspect ratio
+              const { naturalWidth, naturalHeight } = e.target;
+              if (naturalWidth && naturalHeight) {
+                setNaturalRatio({ w: naturalWidth, h: naturalHeight });
               }
             }}
             onError={(e) => {
@@ -249,13 +282,7 @@ const PostCard = memo(({ post, aspectRatio = 'square', size = 'medium', onShowAu
 
           {/* Top Right: Category/Date */}
           <div className="absolute top-3 right-3 z-10 flex gap-2">
-            {isVideo && (
-              <span className="px-3 py-1 text-xs font-medium bg-red-500/90 backdrop-blur-md rounded-full text-white border border-red-400/30 flex items-center gap-1">
-                <FaPlay className="text-[10px]" />
-                Video
-              </span>
-            )}
-            {post.category && !isVideo && (
+            {post.category && (
               <span className="px-3 py-1 text-xs font-medium bg-white/20 backdrop-blur-md rounded-full text-white border border-white/30">
                 {post.category}
               </span>
@@ -285,30 +312,44 @@ const PostCard = memo(({ post, aspectRatio = 'square', size = 'medium', onShowAu
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <button
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full backdrop-blur-md transition-all duration-200 ${isLiked
-                  ? 'bg-red-500/90 text-white'
-                  : 'bg-white/20 text-white hover:bg-white/30'
+                className={`flex items-center gap-2 transition-all duration-200 ${isLiked
+                  ? 'text-red-400 hover:text-red-300'
+                  : 'text-white hover:text-red-400'
                   } ${isLiking ? 'opacity-50 cursor-not-allowed' : ''}`}
                 onClick={handleLike}
                 disabled={isLiking}
               >
-                {isLiked ? <FaHeart className="text-sm" /> : <FaRegHeart className="text-sm" />}
-                <span className="text-xs font-medium">{likeCount}</span>
+                {isLiked ? <FaHeart className="text-xl" /> : <FaRegHeart className="text-xl" />}
+                <span className="text-sm font-semibold">{likeCount}</span>
               </button>
               <button
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-md text-white hover:bg-white/30 transition-all duration-200"
+                className="flex items-center gap-2 text-white hover:text-blue-300 transition-all duration-200"
                 onClick={handleCommentClick}
               >
-                <FaRegComment className="text-sm" />
-                <span className="text-xs font-medium">{post.commentsCount || 0}</span>
+                <FaRegComment className="text-xl" />
+                <span className="text-sm font-semibold">{post.commentsCount || 0}</span>
               </button>
+              <PiShareFatDuotone
+                className="ml-auto text-xl text-white cursor-pointer hover:text-purple-300 transition-colors duration-200"
+                onClick={handleShare}
+              />
             </div>
           </div>
         </div>
       </div>
+
     </div>
+
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        postId={post.id}
+        postTitle={post.title}
+        postMediaUrl={mediaUrl}
+      />
+    </>
   );
 });
 
