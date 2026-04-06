@@ -9,9 +9,11 @@
   "scripts": {
     "dev": "node app.js",
     "start": "node app.js",
+    "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:sync": "prisma generate && prisma db push",
     "prisma:studio": "prisma studio",
     "prisma:push": "prisma db push",
     "prisma:seed": "node src/utils/seedUserCredits.js",
