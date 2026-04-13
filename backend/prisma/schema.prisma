@@ -1029,3 +1029,45 @@ model RewardConfig {
 
   @@index([key])
 }
+
+// ============================================
+// PROMOTION MODEL (Admin-managed promo banners)
+// ============================================
+model Promotion {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Content
+  title       String
+  subtitle    String?
+  description String?
+  tags        String[]  // e.g., ['new', 'image-to-video', 'stylized']
+
+  // Media
+  videoUrl      String?  // Background video URL
+  imageUrl      String?  // Fallback/poster image
+  thumbnailUrl  String?
+
+  // Call to Action
+  ctaText     String?  // e.g., "Try it now!"
+  ctaLink     String?  // e.g., internal route or external URL
+  ctaSecondary     String?  // e.g., "See docs"
+  ctaSecondaryLink String?
+
+  // Scheduling & Display
+  isActive    Boolean  @default(true)
+  priority    Int      @default(0)  // Higher = shown first
+  startsAt    DateTime?
+  endsAt      DateTime?
+  placement   String   @default("home")  // 'home', 'community', 'studio'
+
+  // Metadata
+  createdBy   String?  // Admin user ID
+
+  @@index([isActive])
+  @@index([priority])
+  @@index([placement])
+  @@index([startsAt])
+  @@index([endsAt])
+}

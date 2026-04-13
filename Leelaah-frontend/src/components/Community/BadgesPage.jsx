@@ -1,267 +1,410 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Skeleton } from 'antd';
-import { RiLockLine, RiCheckLine, RiMedalLine, RiAwardFill, RiVipCrownFill, RiStarSmileFill, RiTrophyFill, RiShieldStarFill } from 'react-icons/ri';
+import {
+  RiShieldStarLine, RiFilterLine,
+} from 'react-icons/ri';
 import { fetchBadges, fetchMyBadges } from '../../store/slices/communitySlice';
 import apiService from '../../services/api';
+import BadgeArtifact from '../Badges/BadgeArtifact';
+import BadgeDetailModal from '../Badges/BadgeDetailModal';
+import { RARITY_CONFIG, CATEGORY_CONFIG } from '../Badges/badgeConfig';
 
-// ── Dummy badges ──────────────────────────────────────────────────────────────
-const DUMMY_BADGES = [
-  { id: 'b1',  name: 'first_post',      displayName: 'First Creation',    description: 'Published your very first post',             category: 'posting',     rarity: 'common',    coinReward: 10,  xpReward: 25,  isActive: true, iconUrl: null },
-  { id: 'b2',  name: 'post_10',         displayName: 'Prolific Creator',  description: 'Published 10 posts',                        category: 'posting',     rarity: 'uncommon',  coinReward: 50,  xpReward: 100, isActive: true, iconUrl: null },
-  { id: 'b3',  name: 'post_50',         displayName: 'Content Machine',   description: 'Published 50 posts',                        category: 'posting',     rarity: 'rare',      coinReward: 200, xpReward: 500, isActive: true, iconUrl: null },
-  { id: 'b4',  name: 'streak_7',        displayName: '7-Day Streak',      description: 'Posted 7 days in a row',                    category: 'posting',     rarity: 'uncommon',  coinReward: 75,  xpReward: 150, isActive: true, iconUrl: null },
-  { id: 'b5',  name: 'streak_30',       displayName: 'On Fire',           description: 'Posted 30 days in a row',                   category: 'posting',     rarity: 'epic',      coinReward: 500, xpReward: 1000, isActive: true, iconUrl: null },
-  { id: 'b6',  name: 'like_100',        displayName: 'Crowd Pleaser',     description: 'Received 100 total likes',                  category: 'engagement',  rarity: 'common',    coinReward: 25,  xpReward: 50,  isActive: true, iconUrl: null },
-  { id: 'b7',  name: 'like_1000',       displayName: 'Viral Moment',      description: 'Received 1,000 total likes',                category: 'engagement',  rarity: 'rare',      coinReward: 150, xpReward: 350, isActive: true, iconUrl: null },
-  { id: 'b8',  name: 'viral_post',      displayName: 'Going Viral',       description: 'A single post got 100+ likes',              category: 'engagement',  rarity: 'uncommon',  coinReward: 100, xpReward: 200, isActive: true, iconUrl: null },
-  { id: 'b9',  name: 'comp_enter',      displayName: 'Competitor',        description: 'Entered your first competition',            category: 'competition', rarity: 'common',    coinReward: 20,  xpReward: 50,  isActive: true, iconUrl: null },
-  { id: 'b10', name: 'comp_winner',     displayName: 'Champion',          description: 'Won first place in a competition',          category: 'competition', rarity: 'legendary', coinReward: 1000, xpReward: 2500, isActive: true, iconUrl: null },
-  { id: 'b11', name: 'comp_3wins',      displayName: 'Hat Trick',         description: 'Won 3 competitions',                       category: 'competition', rarity: 'epic',      coinReward: 750, xpReward: 1500, isActive: true, iconUrl: null },
-  { id: 'b12', name: 'silver_tier',     displayName: 'Rising Creator',    description: 'Reached Silver tier (1,000 XP)',            category: 'milestone',   rarity: 'common',    coinReward: 50,  xpReward: 0,   isActive: true, iconUrl: null },
-  { id: 'b13', name: 'gold_tier',       displayName: 'Established',       description: 'Reached Gold tier (5,000 XP)',              category: 'milestone',   rarity: 'uncommon',  coinReward: 200, xpReward: 0,   isActive: true, iconUrl: null },
-  { id: 'b14', name: 'platinum_tier',   displayName: 'Elite Creator',     description: 'Reached Platinum tier (15,000 XP)',         category: 'milestone',   rarity: 'rare',      coinReward: 800, xpReward: 0,   isActive: true, iconUrl: null },
-  { id: 'b15', name: 'diamond_tier',    displayName: 'Legendary',         description: 'Reached Diamond tier (50,000 XP)',          category: 'milestone',   rarity: 'legendary', coinReward: 5000, xpReward: 0,  isActive: true, iconUrl: null },
-  { id: 'b16', name: 'early_adopter',   displayName: 'Early Adopter',     description: 'Joined Leelaverse in its early days',      category: 'special',     rarity: 'legendary', coinReward: 500, xpReward: 1000, isActive: true, iconUrl: null },
-];
+// ────────────────────────────────────────────────────────────────────────────────
+// Nexus Artifacts — Badge Vault Page
+// ────────────────────────────────────────────────────────────────────────────────
 
-// Dummy earned (simulate user has a few)
-const DUMMY_EARNED = new Set(['first_post', 'streak_7', 'like_100', 'comp_enter', 'silver_tier', 'early_adopter']);
+// Demo earned set for logged-out preview
+const DEMO_EARNED = new Set([
+  'first_post', 'streak_3', 'streak_7', 'followers_10',
+  'comp_enter_1', 'xp_silver', 'template_creator_1',
+]);
 
-const RARITY_CFG = {
-  common:    { color: '#6a6a82', bg: '#111118', glow: 'none',                        label: 'Common' },
-  uncommon:  { color: '#3db87a', bg: '#0a1e14', glow: 'rgba(61,184,122,0.12)',       label: 'Uncommon' },
-  rare:      { color: '#5a80ff', bg: '#0d1028', glow: 'rgba(90,128,255,0.14)',       label: 'Rare' },
-  epic:      { color: '#9870f0', bg: '#140e28', glow: 'rgba(152,112,240,0.14)',      label: 'Epic' },
-  legendary: { color: '#d4a017', bg: '#1c1400', glow: 'rgba(212,160,23,0.18)',       label: 'Legendary' },
-};
+const RARITY_ORDER = ['legendary', 'epic', 'rare', 'uncommon', 'common'];
 
-const CAT_EMOJI = {
-  posting:     '✍️',
-  engagement:  '❤️',
-  competition: '⚔️',
-  milestone:   '🏔️',
-  special:     '✨',
-};
-
-const CAT_LABEL = {
-  posting: 'Posting', engagement: 'Engagement', competition: 'Competition', milestone: 'Milestone', special: 'Special',
-};
-
-// ── Badge card ────────────────────────────────────────────────────────────────
-const BadgeCard = ({ badge, earned, index }) => {
-  const r = RARITY_CFG[badge.rarity] || RARITY_CFG.common;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.94 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay: index * 0.03 }}
-      style={{
-        borderRadius: 14, padding: '18px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', position: 'relative',
-        background: earned ? r.bg : '#0a0a12',
-        border: earned ? `1px solid ${r.color}22` : '1px solid #10101c',
-        filter: earned ? 'none' : 'grayscale(0.85) opacity(0.35)',
-        boxShadow: earned && r.glow !== 'none' ? `0 0 20px ${r.glow}` : 'none',
-        transition: 'box-shadow 0.3s',
-      }}
-    >
-      {/* Check or lock */}
-      <div style={{
-        position: 'absolute', top: 8, right: 8,
-        width: 18, height: 18, borderRadius: '50%',
-        background: earned ? r.color : '#14141e',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        {earned
-          ? <RiCheckLine size={10} color="#fff" />
-          : <RiLockLine size={9} color="#22223a" />
-        }
-      </div>
-
-      {/* Icon */}
-      <div style={{
-        width: 64, height: 64, borderRadius: 20, marginBottom: 12,
-        background: earned ? `linear-gradient(135deg, ${r.bg}, ${r.color}30)` : '#0e0e18',
-        border: earned ? `2px solid ${r.color}50` : '2px solid #12121e',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        boxShadow: earned ? `inset 0 2px 10px ${r.color}50, 0 4px 15px rgba(0,0,0,0.4)` : 'none',
-      }}>
-        {badge.iconUrl ? (
-          <img src={badge.iconUrl} alt={badge.displayName} style={{ width: 36, height: 36, objectFit: 'contain', filter: earned ? `drop-shadow(0 2px 8px ${r.color})` : 'none' }} />
-        ) : earned ? (
-          badge.category === 'competition' ? <RiTrophyFill size={36} color={r.color} style={{ filter: `drop-shadow(0 2px 8px ${r.color})` }} /> :
-          badge.category === 'posting' ? <RiAwardFill size={36} color={r.color} style={{ filter: `drop-shadow(0 2px 8px ${r.color})` }} /> :
-          badge.category === 'milestone' ? <RiVipCrownFill size={36} color={r.color} style={{ filter: `drop-shadow(0 2px 8px ${r.color})` }} /> :
-          badge.category === 'special' ? <RiShieldStarFill size={36} color={r.color} style={{ filter: `drop-shadow(0 2px 8px ${r.color})` }} /> :
-          <RiStarSmileFill size={36} color={r.color} style={{ filter: `drop-shadow(0 2px 8px ${r.color})` }} />
-        ) : (
-          <RiLockLine size={28} color="#22223a" />
-        )}
-      </div>
-
-      <div style={{ fontSize: 12, fontWeight: 700, color: earned ? '#d0d0e8' : '#22223a', marginBottom: 4, lineHeight: 1.2 }}>
-        {badge.displayName}
-      </div>
-
-      <div style={{ fontSize: 10, fontWeight: 600, color: r.color, marginBottom: 6 }}>{r.label}</div>
-
-      <div style={{ fontSize: 10, color: '#22223a', lineHeight: 1.5, marginBottom: 8 }}>{badge.description}</div>
-
-      {(badge.coinReward > 0 || badge.xpReward > 0) && (
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
-          {badge.coinReward > 0 && (
-            <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 99, background: 'rgba(212,160,23,0.08)', color: '#d4a017', border: '1px solid rgba(212,160,23,0.15)' }}>
-              🪙 {badge.coinReward}
-            </span>
-          )}
-          {badge.xpReward > 0 && (
-            <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 99, background: 'rgba(90,90,255,0.08)', color: '#5a5aff', border: '1px solid rgba(90,90,255,0.15)' }}>
-              +{badge.xpReward} XP
-            </span>
-          )}
-        </div>
-      )}
-    </motion.div>
-  );
-};
-
-// ── Main page ─────────────────────────────────────────────────────────────────
 const BadgesPage = ({ isLoggedIn, myRank }) => {
   const dispatch = useDispatch();
   const { badges, myBadges } = useSelector((s) => s.community);
   const [filter, setFilter] = useState('all');
+  const [selectedBadge, setSelectedBadge] = useState(null);
 
   useEffect(() => {
     dispatch(fetchBadges());
     if (isLoggedIn) {
-      // Sync first (awards any newly qualified badges), then fetch
       apiService.community.syncBadges()
         .catch(() => {})
         .finally(() => dispatch(fetchMyBadges()));
     }
   }, [dispatch, isLoggedIn]);
 
-  const allBadges = badges.list.length > 0 ? badges.list : DUMMY_BADGES;
-  // When logged in, show only real earned badges (empty = 0 earned, not dummy)
-  // When not logged in, use DUMMY_EARNED to show a demo preview
-  const earnedIds = isLoggedIn
-    ? new Set(myBadges.list.map(b => b.badge?.name || b.badgeName))
-    : DUMMY_EARNED;
+  const allBadges = badges.list.length > 0 ? badges.list : [];
+  const earnedIds = useMemo(() => {
+    if (isLoggedIn) {
+      return new Set(myBadges.list.map(b => b.badge?.name || b.badgeName));
+    }
+    return DEMO_EARNED;
+  }, [isLoggedIn, myBadges.list]);
 
   const earnedCount = allBadges.filter(b => earnedIds.has(b.name)).length;
+  const totalCount = allBadges.length;
+  const progressPercent = totalCount > 0 ? Math.round((earnedCount / totalCount) * 100) : 0;
 
-  const cats = ['all', 'earned', ...Object.keys(CAT_LABEL)];
+  // Filter tabs
+  const categories = ['all', 'earned', ...Object.keys(CATEGORY_CONFIG)];
 
-  const filtered = filter === 'all' ? allBadges
-    : filter === 'earned' ? allBadges.filter(b => earnedIds.has(b.name))
-    : allBadges.filter(b => b.category === filter);
+  // Filter + sort badges
+  const filteredBadges = useMemo(() => {
+    let result = allBadges;
 
-  // Group by category when showing all
-  const grouped = filtered.reduce((acc, b) => {
-    const key = b.category || 'special';
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(b);
-    return acc;
-  }, {});
+    if (filter === 'earned') {
+      result = allBadges.filter(b => earnedIds.has(b.name));
+    } else if (filter !== 'all' && CATEGORY_CONFIG[filter]) {
+      result = allBadges.filter(b => b.category === filter);
+    }
+
+    // Sort: earned first, then by rarity (highest first), then sortOrder
+    return [...result].sort((a, b) => {
+      const aEarned = earnedIds.has(a.name) ? 1 : 0;
+      const bEarned = earnedIds.has(b.name) ? 1 : 0;
+      if (aEarned !== bEarned) return bEarned - aEarned;
+
+      const aRareIdx = RARITY_ORDER.indexOf(a.rarity);
+      const bRareIdx = RARITY_ORDER.indexOf(b.rarity);
+      if (aRareIdx !== bRareIdx) return aRareIdx - bRareIdx;
+
+      return (a.sortOrder || 0) - (b.sortOrder || 0);
+    });
+  }, [allBadges, filter, earnedIds]);
+
+  // Group by category for "all" view
+  const groupedBadges = useMemo(() => {
+    if (filter !== 'all') return null;
+
+    const groups = {};
+    filteredBadges.forEach(badge => {
+      const cat = badge.category || 'special';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(badge);
+    });
+    return groups;
+  }, [filter, filteredBadges]);
+
+  // Radial progress for vault header
+  const ringRadius = 38;
+  const ringCirc = 2 * Math.PI * ringRadius;
+  const ringOffset = ringCirc * (1 - progressPercent / 100);
+
+  // Tier display
+  const tierEmoji = {
+    diamond: '💎', platinum: '💠', gold: '🥇', silver: '🥈', bronze: '🥉',
+  };
 
   return (
     <div>
-      {/* Progress header */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 16, marginBottom: 28 }}>
-        <div style={{ padding: '20px 24px', borderRadius: 16, background: '#0e0e1a', border: '1px solid #16162a' }}>
-          <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#28284e', marginBottom: 8 }}>
-            Collection progress
+      {/* ── Vault Header ──────────────────────────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        style={{
+          display: 'flex', gap: 16, marginBottom: 32,
+          flexWrap: 'wrap',
+        }}
+      >
+        {/* Collection Progress — Radial Ring */}
+        <div style={{
+          flex: '1 1 auto', minWidth: 260,
+          padding: '24px 28px',
+          borderRadius: 20,
+          background: 'linear-gradient(135deg, #0c0c18 0%, #10101e 100%)',
+          border: '1px solid rgba(255,255,255,0.04)',
+          display: 'flex', alignItems: 'center', gap: 24,
+        }}>
+          {/* Radial ring */}
+          <div style={{ position: 'relative', width: 90, height: 90, flexShrink: 0 }}>
+            <svg width={90} height={90} style={{ transform: 'rotate(-90deg)' }}>
+              {/* Track */}
+              <circle
+                cx={45} cy={45} r={ringRadius}
+                fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth={5}
+              />
+              {/* Progress */}
+              <motion.circle
+                cx={45} cy={45} r={ringRadius}
+                fill="none"
+                stroke="url(#vault-progress-grad)"
+                strokeWidth={5}
+                strokeDasharray={ringCirc}
+                initial={{ strokeDashoffset: ringCirc }}
+                animate={{ strokeDashoffset: ringOffset }}
+                transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1], delay: 0.3 }}
+                strokeLinecap="round"
+              />
+              <defs>
+                <linearGradient id="vault-progress-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#8b5cf6" />
+                  <stop offset="100%" stopColor="#3b82f6" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <div style={{
+              position: 'absolute', inset: 0,
+              display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center',
+            }}>
+              <span style={{ fontSize: 22, fontWeight: 800, color: '#e8e8f0', lineHeight: 1 }}>
+                {progressPercent}%
+              </span>
+            </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 10 }}>
-            <span style={{ fontSize: 32, fontWeight: 800, color: '#d0d0e8' }}>{earnedCount}</span>
-            <span style={{ fontSize: 14, color: '#22223a' }}>/ {allBadges.length} badges</span>
-          </div>
-          <div style={{ height: 3, borderRadius: 99, background: '#12122a', overflow: 'hidden' }}>
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${Math.round((earnedCount / Math.max(allBadges.length, 1)) * 100)}%` }}
-              transition={{ duration: 0.8, ease: 'easeOut' }}
-              style={{ height: '100%', background: 'linear-gradient(90deg, #5a5aff, #9870f0)', borderRadius: 99 }}
-            />
-          </div>
-          <div style={{ fontSize: 10, color: '#22223a', marginTop: 6 }}>
-            {Math.round((earnedCount / Math.max(allBadges.length, 1)) * 100)}% complete
+
+          {/* Text */}
+          <div>
+            <div style={{
+              fontSize: 9, fontWeight: 600, letterSpacing: '0.14em',
+              textTransform: 'uppercase', color: '#2a2a48', marginBottom: 8,
+            }}>
+              Artifact Vault
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
+              <span style={{ fontSize: 28, fontWeight: 800, color: '#e8e8f0' }}>{earnedCount}</span>
+              <span style={{ fontSize: 13, color: '#2a2a48' }}>/ {totalCount}</span>
+            </div>
+            <div style={{ fontSize: 11, color: '#3a3a58' }}>
+              artifacts collected
+            </div>
           </div>
         </div>
-        <div style={{ padding: '20px 24px', borderRadius: 16, background: '#0e0e1a', border: '1px solid #16162a', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minWidth: 120 }}>
-          <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#28284e', marginBottom: 8 }}>
-            Your tier
+
+        {/* Tier Card */}
+        <div style={{
+          minWidth: 130, padding: '24px 28px',
+          borderRadius: 20,
+          background: 'linear-gradient(135deg, #0c0c18 0%, #10101e 100%)',
+          border: '1px solid rgba(255,255,255,0.04)',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{
+            fontSize: 9, fontWeight: 600, letterSpacing: '0.14em',
+            textTransform: 'uppercase', color: '#2a2a48', marginBottom: 10,
+          }}>
+            Creator Tier
           </div>
           {myRank ? (
             <>
-              <div style={{ fontSize: 28 }}>
-                {myRank.creatorTier === 'diamond' ? '💎' : myRank.creatorTier === 'platinum' ? '💠' : myRank.creatorTier === 'gold' ? '🥇' : myRank.creatorTier === 'silver' ? '🥈' : '🥉'}
+              <div style={{ fontSize: 32, lineHeight: 1, marginBottom: 6 }}>
+                {tierEmoji[myRank.creatorTier] || '🥉'}
               </div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#888898', textTransform: 'capitalize', marginTop: 4 }}>{myRank.creatorTier}</div>
+              <div style={{
+                fontSize: 12, fontWeight: 700, color: '#8888a0',
+                textTransform: 'capitalize',
+              }}>
+                {myRank.creatorTier}
+              </div>
             </>
           ) : (
-            <RiMedalLine size={28} color="#1a1a2e" />
+            <>
+              <RiShieldStarLine size={30} color="#1a1a2e" style={{ marginBottom: 6 }} />
+              <div style={{ fontSize: 11, color: '#22223a' }}>Login to see</div>
+            </>
           )}
         </div>
-      </div>
 
-      {/* Filter tabs */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2, padding: 4, borderRadius: 10, background: '#0e0e1a', border: '1px solid #16162a', marginBottom: 24, width: 'fit-content' }}>
-        {cats.map(cat => (
-          <button
-            key={cat}
-            onClick={() => setFilter(cat)}
-            style={{
-              padding: '6px 14px', borderRadius: 7, border: 'none', cursor: 'pointer',
-              fontSize: 12, fontWeight: 500, textTransform: 'capitalize', transition: 'all 0.15s',
-              background: filter === cat ? '#18182e' : 'transparent',
-              color: filter === cat ? '#c0c0d8' : '#28284e',
-            }}
-          >
-            {cat === 'all' ? `All (${allBadges.length})` : cat === 'earned' ? `Earned (${earnedCount})` : `${CAT_EMOJI[cat] || ''} ${CAT_LABEL[cat]}`}
-          </button>
-        ))}
-      </div>
+        {/* Rarity Legend Card */}
+        <div style={{
+          minWidth: 200, padding: '20px 24px',
+          borderRadius: 20,
+          background: 'linear-gradient(135deg, #0c0c18 0%, #10101e 100%)',
+          border: '1px solid rgba(255,255,255,0.04)',
+        }}>
+          <div style={{
+            fontSize: 9, fontWeight: 600, letterSpacing: '0.14em',
+            textTransform: 'uppercase', color: '#2a2a48', marginBottom: 12,
+          }}>
+            Rarity Tiers
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {Object.entries(RARITY_CONFIG).map(([key, rarCfg]) => (
+              <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{
+                  width: 8, height: 8, borderRadius: 2,
+                  background: rarCfg.primary,
+                  boxShadow: `0 0 6px ${rarCfg.glow}`,
+                }} />
+                <span style={{
+                  fontSize: 10, fontWeight: 600, color: rarCfg.textColor,
+                  letterSpacing: '0.06em',
+                }}>
+                  {rarCfg.name}
+                </span>
+                <span style={{
+                  fontSize: 9, color: '#22223a', marginLeft: 'auto',
+                }}>
+                  {allBadges.filter(b => b.rarity === key).length}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </motion.div>
 
-      {/* Badges */}
+      {/* ── Filter Tabs ───────────────────────────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15, duration: 0.4 }}
+        style={{
+          display: 'flex', flexWrap: 'wrap', gap: 2,
+          padding: 4, borderRadius: 12,
+          background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.04)',
+          marginBottom: 28,
+          width: 'fit-content',
+        }}
+      >
+        {categories.map(cat => {
+          const active = filter === cat;
+          const catCfg = CATEGORY_CONFIG[cat];
+          const catCount = cat === 'all' ? totalCount
+            : cat === 'earned' ? earnedCount
+            : allBadges.filter(b => b.category === cat).length;
+
+          return (
+            <button
+              key={cat}
+              onClick={() => setFilter(cat)}
+              style={{
+                padding: '7px 14px',
+                borderRadius: 8,
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 11,
+                fontWeight: active ? 600 : 500,
+                textTransform: 'capitalize',
+                transition: 'all 0.2s',
+                background: active ? 'rgba(255,255,255,0.06)' : 'transparent',
+                color: active ? '#c0c0d8' : '#2a2a48',
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}
+            >
+              {catCfg && <span style={{ fontSize: 12 }}>{catCfg.icon}</span>}
+              {cat === 'all' ? 'All' : cat === 'earned' ? '✓ Earned' : catCfg?.label || cat}
+              <span style={{
+                fontSize: 9, fontWeight: 600,
+                color: active ? '#6a6a82' : '#1e1e38',
+              }}>
+                ({catCount})
+              </span>
+            </button>
+          );
+        })}
+      </motion.div>
+
+      {/* ── Badge Grid ────────────────────────────────────────────────────── */}
       {badges.loading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10 }}>
+        <div className="nxa-grid">
           {Array.from({ length: 12 }).map((_, i) => (
-            <div key={i} style={{ padding: 16, borderRadius: 14, background: '#0a0a12', border: '1px solid #10101c' }}>
+            <div key={i} style={{
+              padding: 20, borderRadius: 16,
+              background: 'rgba(255,255,255,0.02)',
+              border: '1px solid rgba(255,255,255,0.03)',
+            }}>
               <Skeleton active paragraph={{ rows: 2 }} />
             </div>
           ))}
         </div>
-      ) : filtered.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '80px 0', color: '#1a1a2e', fontSize: 13 }}>
-          {filter === 'earned' ? 'Start creating to earn badges!' : 'No badges found'}
-        </div>
-      ) : (filter === 'all' || (filter !== 'earned' && Object.keys(grouped).length > 1)) && filter !== 'earned' ? (
-        // Grouped by category
-        Object.entries(grouped).map(([cat, items]) => (
-          <div key={cat} style={{ marginBottom: 32 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-              <span style={{ fontSize: 14 }}>{CAT_EMOJI[cat] || '🏅'}</span>
-              <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#22223a' }}>
-                {CAT_LABEL[cat] || cat}
-              </span>
-              <div style={{ flex: 1, height: 1, background: '#10101e' }} />
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10 }}>
-              {items.map((badge, i) => (
-                <BadgeCard key={badge.id} badge={badge} earned={earnedIds.has(badge.name)} index={i} />
-              ))}
-            </div>
-          </div>
-        ))
+      ) : filteredBadges.length === 0 ? (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          style={{
+            textAlign: 'center', padding: '80px 0',
+            color: '#1e1e38', fontSize: 13,
+          }}
+        >
+          {filter === 'earned'
+            ? '✨ Start creating to earn your first artifact!'
+            : 'No artifacts found in this category.'}
+        </motion.div>
+      ) : groupedBadges ? (
+        // Grouped view (when filter === 'all')
+        Object.entries(groupedBadges).map(([cat, items]) => {
+          const catCfg = CATEGORY_CONFIG[cat] || CATEGORY_CONFIG.special;
+          return (
+            <motion.div
+              key={cat}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              style={{ marginBottom: 36 }}
+            >
+              {/* Category header */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                marginBottom: 18, paddingBottom: 10,
+                borderBottom: `1px solid rgba(255,255,255,0.03)`,
+              }}>
+                <span style={{
+                  fontSize: 16, width: 28, height: 28,
+                  borderRadius: 8,
+                  background: `${catCfg.accent}10`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {catCfg.icon}
+                </span>
+                <span style={{
+                  fontSize: 12, fontWeight: 700, letterSpacing: '0.1em',
+                  textTransform: 'uppercase', color: catCfg.accent,
+                }}>
+                  {catCfg.label}
+                </span>
+                <span style={{
+                  fontSize: 10, color: '#22223a', fontWeight: 500,
+                }}>
+                  — {items.filter(b => earnedIds.has(b.name)).length}/{items.length}
+                </span>
+                <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.03)' }} />
+              </div>
+
+              {/* Badges */}
+              <div className="nxa-grid">
+                {items.map((badge, i) => (
+                  <BadgeArtifact
+                    key={badge.id || badge.name}
+                    badge={badge}
+                    earned={earnedIds.has(badge.name)}
+                    animationDelay={i * 0.04}
+                    onClick={() => setSelectedBadge(badge)}
+                  />
+                ))}
+              </div>
+            </motion.div>
+          );
+        })
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10 }}>
-          {filtered.map((badge, i) => (
-            <BadgeCard key={badge.id} badge={badge} earned={earnedIds.has(badge.name)} index={i} />
+        // Flat grid view (filtered)
+        <div className="nxa-grid">
+          {filteredBadges.map((badge, i) => (
+            <BadgeArtifact
+              key={badge.id || badge.name}
+              badge={badge}
+              earned={earnedIds.has(badge.name)}
+              animationDelay={i * 0.04}
+              onClick={() => setSelectedBadge(badge)}
+            />
           ))}
         </div>
+      )}
+
+      {/* ── Badge Detail Modal ────────────────────────────────────────────── */}
+      {selectedBadge && (
+        <BadgeDetailModal
+          badge={selectedBadge}
+          earned={earnedIds.has(selectedBadge.name)}
+          onClose={() => setSelectedBadge(null)}
+        />
       )}
     </div>
   );

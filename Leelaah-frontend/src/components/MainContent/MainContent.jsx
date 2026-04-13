@@ -3,12 +3,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchFeedPosts, setCategory } from '../../store/slices/postsSlice';
 import PostCard from '../PostCard/PostCard';
 import PostSkeleton from '../PostSkeleton/PostSkeleton';
+import PromoBanner from '../PromoBanner/PromoBanner';
 import { IoLockClosedOutline } from 'react-icons/io5';
 import './MainContent.css';
 
 const GUEST_POST_LIMIT = 12;
 
-const MainContent = ({ activeTab, onShowAuthModal, onPostClick, onUserClick }) => {
+const MainContent = ({ activeTab, onShowAuthModal, onPostClick, onUserClick, onOpenCreateModal }) => {
     const dispatch = useDispatch();
     const { posts, loading, loadingMore, hasMore, pagination, currentCategory, error } = useSelector(
         (state) => state.posts
@@ -231,6 +232,10 @@ const MainContent = ({ activeTab, onShowAuthModal, onPostClick, onUserClick }) =
 
                 {/* Masonry Grid Layout */}
                 {!loading && !error && posts.length > 0 && (
+                    <>
+                    {/* Promotional Banner — only rendered if DB has active promos */}
+                    <PromoBanner placement="home" onOpenCreateModal={onOpenCreateModal} onShowAuthModal={onShowAuthModal} />
+
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1 md:gap-2">
                         {columns.map((column, colIndex) => (
                             <div key={colIndex} className="flex flex-col">
@@ -250,6 +255,7 @@ const MainContent = ({ activeTab, onShowAuthModal, onPostClick, onUserClick }) =
                             </div>
                         ))}
                     </div>
+                    </>
                 )}
 
                 {/* Loading More State */}

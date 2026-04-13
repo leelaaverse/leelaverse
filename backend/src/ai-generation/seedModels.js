@@ -13,7 +13,9 @@ const categoryMap = {
     [MODEL_CATEGORIES.IMAGE_TO_IMAGE]: 'image_editing',
     [MODEL_CATEGORIES.BACKGROUND_REMOVAL]: 'image_utility',
     [MODEL_CATEGORIES.IMAGE_UPSCALE]: 'image_utility',
-    [MODEL_CATEGORIES.VIDEO_UPSCALE]: 'video_utility'
+    [MODEL_CATEGORIES.VIDEO_UPSCALE]: 'video_utility',
+    [MODEL_CATEGORIES.TEXT_TO_VIDEO]: 'video_generation',
+    [MODEL_CATEGORIES.IMAGE_TO_VIDEO]: 'video_generation'
 };
 
 async function seedModels() {

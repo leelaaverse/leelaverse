@@ -201,14 +201,16 @@ function App() {
     setIsAuthModalOpen(false);
   }, []);
 
-  const handleOpenCreateModal = useCallback((prompt = '') => {
-    setCreateModalPrompt(prompt || '');
+  const [createModalData, setCreateModalData] = useState(null);
+
+  const handleOpenCreateModal = useCallback((data = null) => {
+    setCreateModalData(typeof data === 'string' ? { prompt: data } : data);
     setIsCreateModalOpen(true);
   }, []);
 
   const handleCloseCreateModal = useCallback(() => {
     setIsCreateModalOpen(false);
-    setCreateModalPrompt('');
+    setCreateModalData(null);
   }, []);
 
   const handleAuthSuccess = useCallback((data) => {
@@ -337,7 +339,7 @@ function App() {
         onClose={handleCloseCreateModal}
         onOpenAuth={handleOpenAuth}
         onNavigate={handleNavigate}
-        initialPrompt={createModalPrompt}
+        initialData={createModalData}
       />
 
       <AuthModal

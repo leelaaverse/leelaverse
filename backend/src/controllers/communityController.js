@@ -1021,3 +1021,161 @@ exports.adminUpdateReward = async (req, res) => {
 		res.status(500).json({ success: false, message: 'Failed to update reward config' });
 	}
 };
+
+// ============================================
+// PROMOTIONS — Public
+// ============================================
+
+/**
+ * GET /api/community/promotions
+ * Returns active promotions for a given placement (default: home).
+ * Respects scheduling (startsAt / endsAt) and priority ordering.
+ * If no active promotions exist, returns an empty array.
+ */
+exports.getActivePromotions = async (req, res) => {
+	try {
+		const { placement = 'home' } = req.query;
+		const now = new Date();
+
+		const promotions = await prisma.promotion.findMany({
+			where: {
+				isActive: true,
+				placement,
+				OR: [
+					{ startsAt: null },
+					{ startsAt: { lte: now } },
+				],
+				AND: [
+					{
+						OR: [
+							{ endsAt: null },
+							{ endsAt: { gte: now } },
+						],
+					},
+				],
+			},
+			orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
+		});
+
+		res.json({ success: true, data: promotions });
+	} catch (error) {
+		console.error('getActivePromotions error:', error);
+		res.status(500).json({ success: false, message: 'Failed to get promotions' });
+	}
+};
+
+// ============================================
+// PROMOTIONS — Admin CRUD
+// ============================================
+
+/**
+ * GET /api/admin/community/promotions
+ * All promotions (including inactive)
+ */
+exports.adminGetPromotions = async (req, res) => {
+	try {
+		const promotions = await prisma.promotion.findMany({
+			orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
+		});
+		res.json({ success: true, data: promotions });
+	} catch (error) {
+		console.error('adminGetPromotions error:', error);
+		res.status(500).json({ success: false, message: 'Failed to get promotions' });
+	}
+};
+
+/**
+ * POST /api/admin/community/promotions
+ */
+exports.adminCreatePromotion = async (req, res) => {
+	try {
+		const {
+			title, subtitle, description, tags,
+			videoUrl, imageUrl, thumbnailUrl,
+			ctaText, ctaLink, ctaSecondary, ctaSecondaryLink,
+			isActive, priority, startsAt, endsAt, placement,
+		} = req.body;
+
+		if (!title) {
+			return res.status(400).json({ success: false, message: 'Title is required' });
+		}
+
+		const promotion = await prisma.promotion.create({
+			data: {
+				title,
+				subtitle: subtitle || null,
+				description: description || null,
+				tags: tags || [],
+				videoUrl: videoUrl || null,
+				imageUrl: imageUrl || null,
+				thumbnailUrl: thumbnailUrl || null,
+				ctaText: ctaText || null,
+				ctaLink: ctaLink || null,
+				ctaSecondary: ctaSecondary || null,
+				ctaSecondaryLink: ctaSecondaryLink || null,
+				isActive: isActive !== undefined ? isActive : true,
+				priority: priority || 0,
+				startsAt: startsAt ? new Date(startsAt) : null,
+				endsAt: endsAt ? new Date(endsAt) : null,
+				placement: placement || 'home',
+				createdBy: req.user.id,
+			},
+		});
+
+		res.status(201).json({ success: true, message: 'Promotion created', data: promotion });
+	} catch (error) {
+		console.error('adminCreatePromotion error:', error);
+		res.status(500).json({ success: false, message: 'Failed to create promotion' });
+	}
+};
+
+/**
+ * PUT /api/admin/community/promotions/:id
+ */
+exports.adminUpdatePromotion = async (req, res) => {
+	try {
+		const { id } = req.params;
+		const updateData = {};
+		const allowed = [
+			'title', 'subtitle', 'description', 'tags',
+			'videoUrl', 'imageUrl', 'thumbnailUrl',
+			'ctaText', 'ctaLink', 'ctaSecondary', 'ctaSecondaryLink',
+			'isActive', 'priority', 'startsAt', 'endsAt', 'placement',
+		];
+
+		for (const key of allowed) {
+			if (req.body[key] !== undefined) {
+				if (key === 'startsAt' || key === 'endsAt') {
+					updateData[key] = req.body[key] ? new Date(req.body[key]) : null;
+				} else {
+					updateData[key] = req.body[key];
+				}
+			}
+		}
+
+		const promotion = await prisma.promotion.update({
+			where: { id },
+			data: updateData,
+		});
+
+		res.json({ success: true, message: 'Promotion updated', data: promotion });
+	} catch (error) {
+		console.error('adminUpdatePromotion error:', error);
+		res.status(500).json({ success: false, message: 'Failed to update promotion' });
+	}
+};
+
+/**
+ * DELETE /api/admin/community/promotions/:id
+ */
+exports.adminDeletePromotion = async (req, res) => {
+	try {
+		const { id } = req.params;
+		await prisma.promotion.delete({ where: { id } });
+		res.json({ success: true, message: 'Promotion deleted' });
+	} catch (error) {
+		console.error('adminDeletePromotion error:', error);
+		res.status(500).json({ success: false, message: 'Failed to delete promotion' });
+	}
+};
+

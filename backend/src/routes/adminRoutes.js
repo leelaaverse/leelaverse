@@ -38,4 +38,10 @@ router.put('/community/rewards/:key', communityController.adminUpdateReward);
 // Community: Leaderboard (admin view)
 router.get('/community/leaderboard', communityController.getLeaderboard);
 
+// Community: Promotions (admin CRUD)
+router.get('/community/promotions', communityController.adminGetPromotions);
+router.post('/community/promotions', communityController.adminCreatePromotion);
+router.put('/community/promotions/:id', communityController.adminUpdatePromotion);
+router.delete('/community/promotions/:id', communityController.adminDeletePromotion);
+
 module.exports = router;

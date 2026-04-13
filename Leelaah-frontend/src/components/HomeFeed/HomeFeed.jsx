@@ -119,7 +119,7 @@ const HomeFeed = ({ onNavigate, onPostClick, onUserClick, onOpenCreateModal }) =
                 onChatClick={() => onNavigate('chat')}
                 onNavigate={onNavigate}
             />
-            <MainContent activeTab={activeTab} onShowAuthModal={handleOpenAuth} onPostClick={onPostClick} onUserClick={onUserClick} />
+            <MainContent activeTab={activeTab} onShowAuthModal={handleOpenAuth} onPostClick={onPostClick} onUserClick={onUserClick} onOpenCreateModal={onOpenCreateModal} />
             <FloatingBar
                 onOpenAuth={handleOpenAuth}
                 onNavigate={onNavigate}

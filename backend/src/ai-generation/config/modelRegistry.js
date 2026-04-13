@@ -9,7 +9,9 @@ const MODEL_CATEGORIES = {
     IMAGE_TO_IMAGE: 'image-to-image',
     BACKGROUND_REMOVAL: 'background-removal',
     IMAGE_UPSCALE: 'image-upscale',
-    VIDEO_UPSCALE: 'video-upscale'
+    VIDEO_UPSCALE: 'video-upscale',
+    TEXT_TO_VIDEO: 'text-to-video',
+    IMAGE_TO_VIDEO: 'image-to-video'
 };
 
 const DEFAULT_MULTI_IMAGE_LIMIT = 10;
@@ -632,6 +634,1624 @@ const MODELS = {
         }
     },
 
+
+    // =====================================================================
+    // VIDEO GENERATION MODELS (Text/Image to Video)
+    // =====================================================================
+
+    'fal-ai-bytedance-seedance-v1-pro-fast-text-to-video': {
+        id: "fal-ai-bytedance-seedance-v1-pro-fast-text-to-video",
+        name: "Bytedance",
+        description: "Text to Video endpoint for Seedance 1.0 Pro Fast, a next-generation video model designed to deliver maximum performance at minimal cost",
+        provider: "ByteDance",
+        falEndpoint: "fal-ai/bytedance/seedance/v1/pro/fast/text-to-video",
+        category: MODEL_CATEGORIES.TEXT_TO_VIDEO,
+        creditCost: 75,
+        featured: true,
+        inputSchema: {
+                prompt: {
+                        type: "string",
+                        required: true
+                },
+                aspect_ratio: {
+                        type: "string",
+                        default: "16:9",
+                        options: [
+                                "21:9",
+                                "16:9",
+                                "4:3",
+                                "1:1",
+                                "3:4",
+                                "9:16"
+                        ]
+                },
+                resolution: {
+                        type: "string",
+                        default: "1080p",
+                        options: [
+                                "480p",
+                                "720p",
+                                "1080p"
+                        ]
+                },
+                duration: {
+                        type: "string",
+                        default: "5",
+                        options: [
+                                "2",
+                                "3",
+                                "4",
+                                "5",
+                                "6",
+                                "7",
+                                "8",
+                                "9",
+                                "10",
+                                "11",
+                                "12"
+                        ]
+                },
+                camera_fixed: {
+                        type: "boolean",
+                        default: "false"
+                },
+                seed: {
+                        type: "integer"
+                },
+                enable_safety_checker: {
+                        type: "boolean",
+                        default: "true"
+                },
+                num_frames: {
+                        type: "integer"
+                }
+        }
+},
+
+    'xai-grok-imagine-video-text-to-video': {
+        id: "xai-grok-imagine-video-text-to-video",
+        name: "Grok Imagine Video",
+        description: "Generate videos with audio from text using Grok Imagine Video.",
+        provider: "xAI",
+        falEndpoint: "xai/grok-imagine-video/text-to-video",
+        category: MODEL_CATEGORIES.TEXT_TO_VIDEO,
+        creditCost: 35,
+        featured: true,
+        inputSchema: {
+                prompt: {
+                        type: "string",
+                        required: true
+                },
+                duration: {
+                        type: "integer",
+                        default: 6
+                },
+                aspect_ratio: {
+                        type: "string",
+                        default: "16:9",
+                        options: [
+                                "16:9",
+                                "4:3",
+                                "3:2",
+                                "1:1",
+                                "2:3",
+                                "3:4",
+                                "9:16"
+                        ]
+                },
+                resolution: {
+                        type: "string",
+                        default: "720p",
+                        options: [
+                                "480p",
+                                "720p"
+                        ]
+                }
+        }
+},
+
+    'fal-ai-kling-video-v3-pro-text-to-video': {
+        id: "fal-ai-kling-video-v3-pro-text-to-video",
+        name: "Kling Video v3 Text to Video [Pro]",
+        description: "Kling 3.0 Pro: Top-tier text-to-video with cinematic visuals, fluid motion, and native audio generation, with multi-shot support.",
+        provider: "Kuaishou",
+        falEndpoint: "fal-ai/kling-video/v3/pro/text-to-video",
+        category: MODEL_CATEGORIES.TEXT_TO_VIDEO,
+        creditCost: 84,
+        featured: true,
+        inputSchema: {
+                prompt: {
+                        type: "string"
+                },
+                duration: {
+                        type: "string",
+                        default: "5",
+                        options: [
+                                "3",
+                                "4",
+                                "5",
+                                "6",
+                                "7",
+                                "8",
+                                "9",
+                                "10",
+                                "11",
+                                "12",
+                                "13",
+                                "14",
+                                "15"
+                        ]
+                },
+                multi_prompt: {
+                        type: "string"
+                },
+                generate_audio: {
+                        type: "boolean",
+                        default: "true"
+                },
+                shot_type: {
+                        type: "string",
+                        default: "customize",
+                        options: [
+                                "customize",
+                                "intelligent"
+                        ]
+                },
+                aspect_ratio: {
+                        type: "string",
+                        default: "16:9",
+                        options: [
+                                "16:9",
+                                "9:16",
+                                "1:1"
+                        ]
+                },
+                negative_prompt: {
+                        type: "string",
+                        default: "blur, distort, and low quality"
+                },
+                cfg_scale: {
+                        type: "float",
+                        default: null
+                }
+        }
+},
+
+    'fal-ai-kling-video-lipsync-audio-to-video': {
+        id: "fal-ai-kling-video-lipsync-audio-to-video",
+        name: "Kling LipSync Audio-to-Video",
+        description: "Kling LipSync is an audio-to-video model that generates realistic lip movements from audio input.",
+        provider: "Kuaishou",
+        falEndpoint: "fal-ai/kling-video/lipsync/audio-to-video",
+        category: MODEL_CATEGORIES.TEXT_TO_VIDEO,
+        creditCost: 7,
+        featured: true,
+        inputSchema: {
+                video_url: {
+                        type: "string",
+                        required: true
+                },
+                audio_url: {
+                        type: "string",
+                        required: true
+                }
+        }
+},
+
+    'fal-ai-kling-video-v1-6-pro-text-to-video': {
+        id: "fal-ai-kling-video-v1-6-pro-text-to-video",
+        name: "Kling 1.6",
+        description: "Generate video clips from your prompts using Kling 1.6 (pro)",
+        provider: "Kuaishou",
+        falEndpoint: "fal-ai/kling-video/v1.6/pro/text-to-video",
+        category: MODEL_CATEGORIES.TEXT_TO_VIDEO,
+        creditCost: 49,
+        featured: true,
+        inputSchema: {
+                duration: {
+                        type: "string",
+                        default: "5",
+                        options: [
+                                "5",
+                                "10"
+                        ]
+                },
+                aspect_ratio: {
+                        type: "string",
+                        default: "16:9",
+                        options: [
+                                "16:9",
+                                "9:16",
+                                "1:1"
+                        ]
+                },
+                negative_prompt: {
+                        type: "string",
+                        default: "blur, distort, and low quality"
+                },
+                cfg_scale: {
+                        type: "float",
+                        default: null
+                }
+        }
+},
+
+    'fal-ai-kling-video-v1-6-standard-text-to-video': {
+        id: "fal-ai-kling-video-v1-6-standard-text-to-video",
+        name: "Kling 1.6",
+        description: "Generate video clips from your prompts using Kling 1.6 (std)",
+        provider: "Kuaishou",
+        falEndpoint: "fal-ai/kling-video/v1.6/standard/text-to-video",
+        category: MODEL_CATEGORIES.TEXT_TO_VIDEO,
+        creditCost: 28,
+        featured: true,
+        inputSchema: {
+                duration: {
+                        type: "string",
+                        default: "5",
+                        options: [
+                                "5",
+                                "10"
+                        ]
+                },
+                aspect_ratio: {
+                        type: "string",
+                        default: "16:9",
+                        options: [
+                                "16:9",
+                                "9:16",
+                                "1:1"
+                        ]
+                },
+                negative_prompt: {
+                        type: "string",
+                        default: "blur, distort, and low quality"
+                },
+                cfg_scale: {
+                        type: "float",
+                        default: null
+                }
+        }
+},
+
+    'fal-ai-kling-video-v2-1-master-text-to-video': {
+        id: "fal-ai-kling-video-v2-1-master-text-to-video",
+        name: "Kling 2.1 Master",
+        description: "Kling 2.1 Master: The premium endpoint for Kling 2.1, designed for top-tier text-to-video generation with unparalleled motion fluidity, cinematic visuals, and exceptional prompt precision.",
+        provider: "Kuaishou",
+        falEndpoint: "fal-ai/kling-video/v2.1/master/text-to-video",
+        category: MODEL_CATEGORIES.TEXT_TO_VIDEO,
+        creditCost: 140,
+        featured: true,
+        inputSchema: {
+                duration: {
+                        type: "string",
+                        default: "5",
+                        options: [
+                                "5",
+                                "10"
+                        ]
+                },
+                aspect_ratio: {
+                        type: "string",
+                        default: "16:9",
+                        options: [
+                                "16:9",
+                                "9:16",
+                                "1:1"
+                        ]
+                },
+                negative_prompt: {
+                        type: "string",
+                        default: "blur, distort, and low quality"
+                },
+                cfg_scale: {
+                        type: "float",
+                        default: null
+                }
+        }
+},
+
+    'fal-ai-kling-video-v2-5-turbo-pro-text-to-video': {
+        id: "fal-ai-kling-video-v2-5-turbo-pro-text-to-video",
+        name: "Kling v2.5 Text to Video",
+        description: "Kling 2.5 Turbo Pro: Top-tier text-to-video generation with unparalleled motion fluidity, cinematic visuals, and exceptional prompt precision.",
+        provider: "Kuaishou",
+        falEndpoint: "fal-ai/kling-video/v2.5-turbo/pro/text-to-video",
+        category: MODEL_CATEGORIES.TEXT_TO_VIDEO,
+        creditCost: 35,
+        featured: true,
+        inputSchema: {
+                duration: {
+                        type: "string",
+                        default: "5",
+                        options: [
+                                "5",
+                                "10"
+                        ]
+                },
+                aspect_ratio: {
+                        type: "string",
+                        default: "16:9",
+                        options: [
+                                "16:9",
+                                "9:16",
+                                "1:1"
+                        ]
+                },
+                negative_prompt: {
+                        type: "string",
+                        default: "blur, distort, and low quality"
+                },
+                cfg_scale: {
+                        type: "float",
+                        default: null
+                }
+        }
+},
+
+    'fal-ai-kling-video-v2-6-pro-text-to-video': {
+        id: "fal-ai-kling-video-v2-6-pro-text-to-video",
+        name: "Kling Video v2.6 Text to Video",
+        description: "Kling 2.6 Pro: Top-tier text-to-video with cinematic visuals, fluid motion, and native audio generation.",
+        provider: "Kuaishou",
+        falEndpoint: "fal-ai/kling-video/v2.6/pro/text-to-video",
+        category: MODEL_CATEGORIES.TEXT_TO_VIDEO,
+        creditCost: 70,
+        featured: true,
+        inputSchema: {
+                duration: {
+                        type: "string",
+                        default: "5",
+                        options: [
+                                "5",
+                                "10"
+                        ]
+                },
+                aspect_ratio: {
+                        type: "string",
+                        default: "16:9",
+                        options: [
+                                "16:9",
+                                "9:16",
+                                "1:1"
+                        ]
+                },
+                negative_prompt: {
+                        type: "string",
+                        default: "blur, distort, and low quality"
+                },
+                cfg_scale: {
+                        type: "float",
+                        default: null
+                },
+                generate_audio: {
+                        type: "boolean",
+                        default: "true"
+                }
+        }
+},
+
+    'fal-ai-kling-video-o3-pro-text-to-video': {
+        id: "fal-ai-kling-video-o3-pro-text-to-video",
+        name: "Kling O3 Text to Video [Pro]",
+        description: "Generate realistic videos using Kling O3 from Kling Team!",
+        provider: "Kuaishou",
+        falEndpoint: "fal-ai/kling-video/o3/pro/text-to-video",
+        category: MODEL_CATEGORIES.TEXT_TO_VIDEO,
+        creditCost: 70,
+        featured: true,
+        inputSchema: {
+                prompt: {
+                        type: "string"
+                },
+                duration: {
+                        type: "string",
+                        default: "5",
+                        options: [
+                                "3",
+                                "4",
+                                "5",
+                                "6",
+                                "7",
+                                "8",
+                                "9",
+                                "10",
+                                "11",
+                                "12",
+                                "13",
+                                "14",
+                                "15"
+                        ]
+                },
+                aspect_ratio: {
+                        type: "string",
+                        default: "16:9",
+                        options: [
+                                "16:9",
+                                "9:16",
+                                "1:1"
+                        ]
+                },
+                generate_audio: {
+                        type: "boolean",
+                        default: "false"
+                },
+                multi_prompt: {
+                        type: "string"
+                },
+                shot_type: {
+                        type: "string",
+                        default: "customize"
+                }
+        }
+},
+
+    'fal-ai-kling-video-v3-standard-text-to-video': {
+        id: "fal-ai-kling-video-v3-standard-text-to-video",
+        name: "Kling Video v3 Text to Video [Standard]",
+        description: "Kling 3.0 Standard: Top-tier text-to-video with cinematic visuals, fluid motion, and native audio generation, with multi-shot support.",
+        provider: "Kuaishou",
+        falEndpoint: "fal-ai/kling-video/v3/standard/text-to-video",
+        category: MODEL_CATEGORIES.TEXT_TO_VIDEO,
+        creditCost: 63,
+        featured: true,
+        inputSchema: {
+                prompt: {
+                        type: "string"
+                },
+                duration: {
+                        type: "string",
+                        default: "5",
+                        options: [
+                                "3",
+                                "4",
+                                "5",
+                                "6",
+                                "7",
+                                "8",
+                                "9",
+                                "10",
+                                "11",
+                                "12",
+                                "13",
+                                "14",
+                                "15"
+                        ]
+                },
+                multi_prompt: {
+                        type: "string"
+                },
+                generate_audio: {
+                        type: "boolean",
+                        default: "true"
+                },
+                shot_type: {
+                        type: "string",
+                        default: "customize",
+                        options: [
+                                "customize",
+                                "intelligent"
+                        ]
+                },
+                aspect_ratio: {
+                        type: "string",
+                        default: "16:9",
+                        options: [
+                                "16:9",
+                                "9:16",
+                                "1:1"
+                        ]
+                },
+                negative_prompt: {
+                        type: "string",
+                        default: "blur, distort, and low quality"
+                },
+                cfg_scale: {
+                        type: "float",
+                        default: null
+                }
+        }
+},
+
+    'fal-ai-ltx-2-3-text-to-video-fast': {
+        id: "fal-ai-ltx-2-3-text-to-video-fast",
+        name: "LTX 2.3 Video Fast",
+        description: "LTX-2.3 is a high-quality, fast AI video model available in Pro and Fast variants for text-to-video, image-to-video, and audio-to-video.",
+        provider: "Lightricks",
+        falEndpoint: "fal-ai/ltx-2.3/text-to-video/fast",
+        category: MODEL_CATEGORIES.TEXT_TO_VIDEO,
+        creditCost: 20,
+        featured: true,
+        inputSchema: {
+                prompt: {
+                        type: "string",
+                        required: true
+                },
+                duration: {
+                        type: "string",
+                        default: "6",
+                        options: [
+                                "6",
+                                "8",
+                                "10",
+                                "12",
+                                "14",
+                                "16",
+                                "18",
+                                "20"
+                        ]
+                },
+                resolution: {
+                        type: "string",
+                        default: "1080p",
+                        options: [
+                                "1080p",
+                                "1440p",
+                                "2160p"
+                        ]
+                },
+                aspect_ratio: {
+                        type: "string",
+                        default: "16:9",
+                        options: [
+                                "16:9",
+                                "9:16"
+                        ]
+                },
+                fps: {
+                        type: "string",
+                        default: "25",
+                        options: [
+                                "24",
+                                "25",
+                                "48",
+                                "50"
+                        ]
+                },
+                generate_audio: {
+                        type: "boolean",
+                        default: "true"
+                }
+        }
+},
+
+    'fal-ai-minimax-hailuo-02-pro-text-to-video': {
+        id: "fal-ai-minimax-hailuo-02-pro-text-to-video",
+        name: "MiniMax Hailuo 02 [Pro] (Text to Video)",
+        description: "MiniMax Hailuo-02 Text To Video API (Pro, 1080p): Advanced video generation model with 1080p resolution",
+        provider: "MiniMax",
+        falEndpoint: "fal-ai/minimax/hailuo-02/pro/text-to-video",
+        category: MODEL_CATEGORIES.TEXT_TO_VIDEO,
+        creditCost: 40,
+        featured: true,
+        inputSchema: {
+                prompt_optimizer: {
+                        type: "boolean",
+                        default: "true"
+                }
+        }
+},
+
+    'fal-ai-pixverse-c1-text-to-video': {
+        id: "fal-ai-pixverse-c1-text-to-video",
+        name: "PixVerse C1 Text to Video",
+        description: "Generate film-grade videos from text prompts with native audio, up to 1080p and 15 seconds, using PixVerse C1.",
+        provider: "PixVerse",
+        falEndpoint: "fal-ai/pixverse/c1/text-to-video",
+        category: MODEL_CATEGORIES.TEXT_TO_VIDEO,
+        creditCost: 33,
+        featured: true,
+        inputSchema: {
+                aspect_ratio: {
+                        type: "string",
+                        default: "16:9",
+                        options: [
+                                "16:9",
+                                "4:3",
+                                "1:1",
+                                "3:4",
+                                "9:16",
+                                "2:3",
+                                "3:2",
+                                "21:9"
+                        ]
+                },
+                resolution: {
+                        type: "string",
+                        default: "720p",
+                        options: [
+                                "360p",
+                                "540p",
+                                "720p",
+                                "1080p"
+                        ]
+                },
+                duration: {
+                        type: "integer",
+                        default: 5
+                },
+                seed: {
+                        type: "integer"
+                },
+                generate_audio_switch: {
+                        type: "boolean",
+                        default: "false"
+                }
+        }
+},
+
+    'bytedance-seedance-2-0-fast-text-to-video': {
+        id: "bytedance-seedance-2-0-fast-text-to-video",
+        name: "Seedance 2.0 Fast Text to Video",
+        description: "ByteDance's most advanced text-to-video model, fast tier. Lower latency and cost with cinematic output, native audio, multi-shot editing, and director-level camera control.",
+        provider: "ByteDance",
+        falEndpoint: "bytedance/seedance-2.0/fast/text-to-video",
+        category: MODEL_CATEGORIES.TEXT_TO_VIDEO,
+        creditCost: 121,
+        featured: true,
+        inputSchema: {
+                prompt: {
+                        type: "string",
+                        required: true
+                },
+                resolution: {
+                        type: "string",
+                        default: "720p",
+                        options: [
+                                "480p",
+                                "720p"
+                        ]
+                },
+                duration: {
+                        type: "string",
+                        default: "auto",
+                        options: [
+                                "auto",
+                                "4",
+                                "5",
+                                "6",
+                                "7",
+                                "8",
+                                "9",
+                                "10",
+                                "11",
+                                "12",
+                                "13",
+                                "14",
+                                "15"
+                        ]
+                },
+                aspect_ratio: {
+                        type: "string",
+                        default: "auto",
+                        options: [
+                                "auto",
+                                "21:9",
+                                "16:9",
+                                "4:3",
+                                "1:1",
+                                "3:4",
+                                "9:16"
+                        ]
+                },
+                generate_audio: {
+                        type: "boolean",
+                        default: "true"
+                },
+                seed: {
+                        type: "integer"
+                },
+                end_user_id: {
+                        type: "string"
+                }
+        }
+},
+
+    'bytedance-seedance-2-0-image-to-video': {
+        id: "bytedance-seedance-2-0-image-to-video",
+        name: "Seedance 2 Image to Video",
+        description: "ByteDance's most advanced image-to-video model. Animate still images into cinematic video with synchronized audio, start and end frame control, and motion prompts.",
+        provider: "ByteDance",
+        falEndpoint: "bytedance/seedance-2.0/image-to-video",
+        category: MODEL_CATEGORIES.IMAGE_TO_VIDEO,
+        creditCost: 151,
+        featured: true,
+        inputSchema: {
+                prompt: {
+                        type: "string",
+                        required: true
+                },
+                image_url: {
+                        type: "string",
+                        required: true
+                },
+                end_image_url: {
+                        type: "string"
+                },
+                resolution: {
+                        type: "string",
+                        default: "720p",
+                        options: [
+                                "480p",
+                                "720p"
+                        ]
+                },
+                duration: {
+                        type: "string",
+                        default: "auto",
+                        options: [
+                                "auto",
+                                "4",
+                                "5",
+                                "6",
+                                "7",
+                                "8",
+                                "9",
+                                "10",
+                                "11",
+                                "12",
+                                "13",
+                                "14",
+                                "15"
+                        ]
+                },
+                aspect_ratio: {
+                        type: "string",
+                        default: "auto",
+                        options: [
+                                "auto",
+                                "21:9",
+                                "16:9",
+                                "4:3",
+                                "1:1",
+                                "3:4",
+                                "9:16"
+                        ]
+                },
+                generate_audio: {
+                        type: "boolean",
+                        default: "true"
+                },
+                seed: {
+                        type: "integer"
+                },
+                end_user_id: {
+                        type: "string"
+                }
+        }
+},
+
+    'bytedance-seedance-2-0-fast-image-to-video': {
+        id: "bytedance-seedance-2-0-fast-image-to-video",
+        name: "Seedance 2.0 Fast Image to Video",
+        description: "ByteDance's most advanced image-to-video model, fast tier. Lower latency and cost with synchronized audio, start and end frame control, and motion prompts.",
+        provider: "ByteDance",
+        falEndpoint: "bytedance/seedance-2.0/fast/image-to-video",
+        category: MODEL_CATEGORIES.IMAGE_TO_VIDEO,
+        creditCost: 121,
+        featured: true,
+        inputSchema: {
+                prompt: {
+                        type: "string",
+                        required: true
+                },
+                image_url: {
+                        type: "string",
+                        required: true
+                },
+                end_image_url: {
+                        type: "string"
+                },
+                resolution: {
+                        type: "string",
+                        default: "720p",
+                        options: [
+                                "480p",
+                                "720p"
+                        ]
+                },
+                duration: {
+                        type: "string",
+                        default: "auto",
+                        options: [
+                                "auto",
+                                "4",
+                                "5",
+                                "6",
+                                "7",
+                                "8",
+                                "9",
+                                "10",
+                                "11",
+                                "12",
+                                "13",
+                                "14",
+                                "15"
+                        ]
+                },
+                aspect_ratio: {
+                        type: "string",
+                        default: "auto",
+                        options: [
+                                "auto",
+                                "21:9",
+                                "16:9",
+                                "4:3",
+                                "1:1",
+                                "3:4",
+                                "9:16"
+                        ]
+                },
+                generate_audio: {
+                        type: "boolean",
+                        default: "true"
+                },
+                seed: {
+                        type: "integer"
+                },
+                end_user_id: {
+                        type: "string"
+                }
+        }
+},
+
+    'fal-ai-bytedance-seedance-v1-5-pro-text-to-video': {
+        id: "fal-ai-bytedance-seedance-v1-5-pro-text-to-video",
+        name: "Bytedance",
+        description: "Generate videos with audio with Seedance 1.5",
+        provider: "ByteDance",
+        falEndpoint: "fal-ai/bytedance/seedance/v1.5/pro/text-to-video",
+        category: MODEL_CATEGORIES.TEXT_TO_VIDEO,
+        creditCost: 26,
+        featured: true,
+        inputSchema: {
+                prompt: {
+                        type: "string",
+                        required: true
+                },
+                aspect_ratio: {
+                        type: "string",
+                        default: "16:9",
+                        options: [
+                                "21:9",
+                                "16:9",
+                                "4:3",
+                                "1:1",
+                                "3:4",
+                                "9:16",
+                                "auto"
+                        ]
+                },
+                resolution: {
+                        type: "string",
+                        default: "720p",
+                        options: [
+                                "480p",
+                                "720p",
+                                "1080p"
+                        ]
+                },
+                duration: {
+                        type: "string",
+                        default: "5",
+                        options: [
+                                "4",
+                                "5",
+                                "6",
+                                "7",
+                                "8",
+                                "9",
+                                "10",
+                                "11",
+                                "12"
+                        ]
+                },
+                camera_fixed: {
+                        type: "boolean",
+                        default: "false"
+                },
+                seed: {
+                        type: "integer"
+                },
+                enable_safety_checker: {
+                        type: "boolean",
+                        default: "true"
+                },
+                generate_audio: {
+                        type: "boolean",
+                        default: "true"
+                }
+        }
+},
+
+    'fal-ai-veo3-fast': {
+        id: "fal-ai-veo3-fast",
+        name: "Veo 3 Fast",
+        description: "Faster and more cost effective version of Google's Veo 3!",
+        provider: "Google",
+        falEndpoint: "fal-ai/veo3/fast",
+        category: MODEL_CATEGORIES.TEXT_TO_VIDEO,
+        creditCost: 75,
+        featured: true,
+        inputSchema: {
+                prompt: {
+                        type: "string",
+                        required: true
+                },
+                aspect_ratio: {
+                        type: "string",
+                        default: "16:9",
+                        options: [
+                                "16:9",
+                                "9:16"
+                        ]
+                },
+                duration: {
+                        type: "string",
+                        default: "8s",
+                        options: [
+                                "4s",
+                                "6s",
+                                "8s"
+                        ]
+                },
+                negative_prompt: {
+                        type: "string"
+                },
+                resolution: {
+                        type: "string",
+                        default: "720p",
+                        options: [
+                                "720p",
+                                "1080p"
+                        ]
+                },
+                generate_audio: {
+                        type: "boolean",
+                        default: "true"
+                },
+                seed: {
+                        type: "integer"
+                },
+                auto_fix: {
+                        type: "boolean",
+                        default: "true"
+                },
+                safety_tolerance: {
+                        type: "string",
+                        default: "4",
+                        options: [
+                                "1",
+                                "2",
+                                "3",
+                                "4",
+                                "5",
+                                "6"
+                        ]
+                }
+        }
+},
+
+    'fal-ai-bytedance-seedance-v1-lite-text-to-video': {
+        id: "fal-ai-bytedance-seedance-v1-lite-text-to-video",
+        name: "Seedance 1.0 Lite",
+        description: "Seedance 1.0 Lite",
+        provider: "ByteDance",
+        falEndpoint: "fal-ai/bytedance/seedance/v1/lite/text-to-video",
+        category: MODEL_CATEGORIES.TEXT_TO_VIDEO,
+        creditCost: 18,
+        featured: true,
+        inputSchema: {
+                prompt: {
+                        type: "string",
+                        required: true
+                },
+                aspect_ratio: {
+                        type: "string",
+                        default: "16:9",
+                        options: [
+                                "21:9",
+                                "16:9",
+                                "4:3",
+                                "1:1",
+                                "3:4",
+                                "9:16",
+                                "9:21"
+                        ]
+                },
+                resolution: {
+                        type: "string",
+                        default: "720p",
+                        options: [
+                                "480p",
+                                "720p",
+                                "1080p"
+                        ]
+                },
+                duration: {
+                        type: "string",
+                        default: "5",
+                        options: [
+                                "2",
+                                "3",
+                                "4",
+                                "5",
+                                "6",
+                                "7",
+                                "8",
+                                "9",
+                                "10",
+                                "11",
+                                "12"
+                        ]
+                },
+                camera_fixed: {
+                        type: "boolean",
+                        default: "false"
+                },
+                seed: {
+                        type: "integer"
+                },
+                enable_safety_checker: {
+                        type: "boolean",
+                        default: "true"
+                },
+                num_frames: {
+                        type: "integer"
+                }
+        }
+},
+
+    'fal-ai-sora-2-text-to-video-pro': {
+        id: "fal-ai-sora-2-text-to-video-pro",
+        name: "Sora 2",
+        description: "Text-to-video endpoint for Sora 2 Pro, OpenAI's state-of-the-art video model capable of creating richly detailed, dynamic clips with audio from natural language or images.",
+        provider: "OpenAI",
+        falEndpoint: "fal-ai/sora-2/text-to-video/pro",
+        category: MODEL_CATEGORIES.TEXT_TO_VIDEO,
+        creditCost: 84,
+        featured: true,
+        inputSchema: {
+                prompt: {
+                        type: "string",
+                        required: true
+                },
+                resolution: {
+                        type: "string",
+                        default: "1080p",
+                        options: [
+                                "720p",
+                                "1080p",
+                                "true_1080p"
+                        ]
+                },
+                aspect_ratio: {
+                        type: "string",
+                        default: "16:9",
+                        options: [
+                                "9:16",
+                                "16:9"
+                        ]
+                },
+                duration: {
+                        type: "string",
+                        default: "4",
+                        options: [
+                                "4",
+                                "8",
+                                "12",
+                                "16",
+                                "20"
+                        ]
+                },
+                delete_video: {
+                        type: "boolean",
+                        default: "true"
+                },
+                detect_and_block_ip: {
+                        type: "boolean",
+                        default: "false"
+                },
+                character_ids: {
+                        type: "string"
+                }
+        }
+},
+
+    'fal-ai-kling-video-v2-master-text-to-video': {
+        id: "fal-ai-kling-video-v2-master-text-to-video",
+        name: "Kling 2.0 Master",
+        description: "Generate video clips from your prompts using Kling 2.0 Master",
+        provider: "Kuaishou",
+        falEndpoint: "fal-ai/kling-video/v2/master/text-to-video",
+        category: MODEL_CATEGORIES.TEXT_TO_VIDEO,
+        creditCost: 140,
+        featured: true,
+        inputSchema: {
+                duration: {
+                        type: "string",
+                        default: "5",
+                        options: [
+                                "5",
+                                "10"
+                        ]
+                },
+                aspect_ratio: {
+                        type: "string",
+                        default: "16:9",
+                        options: [
+                                "16:9",
+                                "9:16",
+                                "1:1"
+                        ]
+                },
+                negative_prompt: {
+                        type: "string",
+                        default: "blur, distort, and low quality"
+                },
+                cfg_scale: {
+                        type: "float",
+                        default: null
+                }
+        }
+},
+
+    'fal-ai-veo3-1-fast': {
+        id: "fal-ai-veo3-1-fast",
+        name: "Veo 3.1 Fast",
+        description: "Faster and more cost effective version of Google's Veo 3.1!",
+        provider: "Google",
+        falEndpoint: "fal-ai/veo3.1/fast",
+        category: MODEL_CATEGORIES.TEXT_TO_VIDEO,
+        creditCost: 75,
+        featured: true,
+        inputSchema: {
+                prompt: {
+                        type: "string",
+                        required: true
+                },
+                aspect_ratio: {
+                        type: "string",
+                        default: "16:9",
+                        options: [
+                                "16:9",
+                                "9:16"
+                        ]
+                },
+                duration: {
+                        type: "string",
+                        default: "8s",
+                        options: [
+                                "4s",
+                                "6s",
+                                "8s"
+                        ]
+                },
+                negative_prompt: {
+                        type: "string"
+                },
+                resolution: {
+                        type: "string",
+                        default: "720p",
+                        options: [
+                                "720p",
+                                "1080p",
+                                "4k"
+                        ]
+                },
+                generate_audio: {
+                        type: "boolean",
+                        default: "true"
+                },
+                seed: {
+                        type: "integer"
+                },
+                auto_fix: {
+                        type: "boolean",
+                        default: "true"
+                },
+                safety_tolerance: {
+                        type: "string",
+                        default: "4",
+                        options: [
+                                "1",
+                                "2",
+                                "3",
+                                "4",
+                                "5",
+                                "6"
+                        ]
+                }
+        }
+},
+
+    'fal-ai-veo3': {
+        id: "fal-ai-veo3",
+        name: "Veo 3",
+        description: "Veo 3 by Google, the most advanced AI video generation model in the world. With sound on!",
+        provider: "Google",
+        falEndpoint: "fal-ai/veo3",
+        category: MODEL_CATEGORIES.TEXT_TO_VIDEO,
+        creditCost: 200,
+        featured: true,
+        inputSchema: {
+                prompt: {
+                        type: "string",
+                        required: true
+                },
+                aspect_ratio: {
+                        type: "string",
+                        default: "16:9",
+                        options: [
+                                "16:9",
+                                "9:16"
+                        ]
+                },
+                duration: {
+                        type: "string",
+                        default: "8s",
+                        options: [
+                                "4s",
+                                "6s",
+                                "8s"
+                        ]
+                },
+                negative_prompt: {
+                        type: "string"
+                },
+                resolution: {
+                        type: "string",
+                        default: "720p",
+                        options: [
+                                "720p",
+                                "1080p"
+                        ]
+                },
+                generate_audio: {
+                        type: "boolean",
+                        default: "true"
+                },
+                seed: {
+                        type: "integer"
+                },
+                auto_fix: {
+                        type: "boolean",
+                        default: "true"
+                },
+                safety_tolerance: {
+                        type: "string",
+                        default: "4",
+                        options: [
+                                "1",
+                                "2",
+                                "3",
+                                "4",
+                                "5",
+                                "6"
+                        ]
+                }
+        }
+},
+
+    'fal-ai-veo3-1': {
+        id: "fal-ai-veo3-1",
+        name: "Veo 3.1",
+        description: "Veo 3.1 by Google, the most advanced AI video generation model in the world. With sound on!",
+        provider: "Google",
+        falEndpoint: "fal-ai/veo3.1",
+        category: MODEL_CATEGORIES.TEXT_TO_VIDEO,
+        creditCost: 200,
+        featured: true,
+        inputSchema: {
+                prompt: {
+                        type: "string",
+                        required: true
+                },
+                aspect_ratio: {
+                        type: "string",
+                        default: "16:9",
+                        options: [
+                                "16:9",
+                                "9:16"
+                        ]
+                },
+                duration: {
+                        type: "string",
+                        default: "8s",
+                        options: [
+                                "4s",
+                                "6s",
+                                "8s"
+                        ]
+                },
+                negative_prompt: {
+                        type: "string"
+                },
+                resolution: {
+                        type: "string",
+                        default: "720p",
+                        options: [
+                                "720p",
+                                "1080p",
+                                "4k"
+                        ]
+                },
+                generate_audio: {
+                        type: "boolean",
+                        default: "true"
+                },
+                seed: {
+                        type: "integer"
+                },
+                auto_fix: {
+                        type: "boolean",
+                        default: "true"
+                },
+                safety_tolerance: {
+                        type: "string",
+                        default: "4",
+                        options: [
+                                "1",
+                                "2",
+                                "3",
+                                "4",
+                                "5",
+                                "6"
+                        ]
+                }
+        }
+},
+
+    'fal-ai-vidu-q3-text-to-video': {
+        id: "fal-ai-vidu-q3-text-to-video",
+        name: "Vidu",
+        description: "Vidu's latest Q3 pro models",
+        provider: "Shengshu",
+        falEndpoint: "fal-ai/vidu/q3/text-to-video",
+        category: MODEL_CATEGORIES.TEXT_TO_VIDEO,
+        creditCost: 77,
+        featured: true,
+        inputSchema: {
+                prompt: {
+                        type: "string",
+                        required: true
+                },
+                duration: {
+                        type: "integer",
+                        default: 5
+                },
+                seed: {
+                        type: "integer"
+                },
+                aspect_ratio: {
+                        type: "string",
+                        default: "16:9",
+                        options: [
+                                "16:9",
+                                "9:16",
+                                "4:3",
+                                "3:4",
+                                "1:1"
+                        ]
+                },
+                resolution: {
+                        type: "string",
+                        default: "720p",
+                        options: [
+                                "360p",
+                                "540p",
+                                "720p",
+                                "1080p"
+                        ]
+                },
+                audio: {
+                        type: "boolean",
+                        default: "true"
+                }
+        }
+},
+
+    'fal-ai-wan-25-preview-text-to-video': {
+        id: "fal-ai-wan-25-preview-text-to-video",
+        name: "Wan 2.5 Text to Video",
+        description: "Wan 2.5 text-to-video model.",
+        provider: "Alibaba",
+        falEndpoint: "fal-ai/wan-25-preview/text-to-video",
+        category: MODEL_CATEGORIES.TEXT_TO_VIDEO,
+        creditCost: 50,
+        featured: true,
+        inputSchema: {
+                prompt: {
+                        type: "string",
+                        required: true
+                },
+                audio_url: {
+                        type: "string"
+                },
+                aspect_ratio: {
+                        type: "string",
+                        default: "16:9",
+                        options: [
+                                "16:9",
+                                "9:16",
+                                "1:1"
+                        ]
+                },
+                resolution: {
+                        type: "string",
+                        default: "1080p",
+                        options: [
+                                "480p",
+                                "720p",
+                                "1080p"
+                        ]
+                },
+                duration: {
+                        type: "string",
+                        default: "5",
+                        options: [
+                                "5",
+                                "10"
+                        ]
+                },
+                negative_prompt: {
+                        type: "string"
+                },
+                enable_prompt_expansion: {
+                        type: "boolean",
+                        default: "true"
+                },
+                seed: {
+                        type: "integer"
+                },
+                enable_safety_checker: {
+                        type: "boolean",
+                        default: "true"
+                }
+        }
+},
+
+    'wan-v2-6-text-to-video': {
+        id: "wan-v2-6-text-to-video",
+        name: "Wan v2.6 Text to Video",
+        description: "Wan 2.6 text-to-video model.",
+        provider: "Alibaba",
+        falEndpoint: "wan/v2.6/text-to-video",
+        category: MODEL_CATEGORIES.TEXT_TO_VIDEO,
+        creditCost: 50,
+        featured: true,
+        inputSchema: {
+                prompt: {
+                        type: "string",
+                        required: true
+                },
+                audio_url: {
+                        type: "string"
+                },
+                aspect_ratio: {
+                        type: "string",
+                        default: "16:9",
+                        options: [
+                                "16:9",
+                                "9:16",
+                                "1:1",
+                                "4:3",
+                                "3:4"
+                        ]
+                },
+                resolution: {
+                        type: "string",
+                        default: "1080p",
+                        options: [
+                                "720p",
+                                "1080p"
+                        ]
+                },
+                duration: {
+                        type: "string",
+                        default: "5",
+                        options: [
+                                "5",
+                                "10",
+                                "15"
+                        ]
+                },
+                negative_prompt: {
+                        type: "string",
+                        default: ""
+                },
+                enable_prompt_expansion: {
+                        type: "boolean",
+                        default: "true"
+                },
+                multi_shots: {
+                        type: "boolean",
+                        default: "true"
+                },
+                seed: {
+                        type: "integer"
+                },
+                enable_safety_checker: {
+                        type: "boolean",
+                        default: "true"
+                }
+        }
+},
+
+    'fal-ai-wan-v2-7-text-to-video': {
+        id: "fal-ai-wan-v2-7-text-to-video",
+        name: "Wan Text to Video",
+        description: "Wan 2.7 is the latest generation AI video model, delivering enhanced motion smoothness, superior scene fidelity, and greater visual coherence.",
+        provider: "Alibaba",
+        falEndpoint: "fal-ai/wan/v2.7/text-to-video",
+        category: MODEL_CATEGORIES.TEXT_TO_VIDEO,
+        creditCost: 50,
+        featured: true,
+        inputSchema: {
+                prompt: {
+                        type: "string",
+                        required: true
+                },
+                audio_url: {
+                        type: "string"
+                },
+                aspect_ratio: {
+                        type: "string",
+                        default: "16:9",
+                        options: [
+                                "16:9",
+                                "9:16",
+                                "1:1",
+                                "4:3",
+                                "3:4"
+                        ]
+                },
+                resolution: {
+                        type: "string",
+                        default: "1080p",
+                        options: [
+                                "720p",
+                                "1080p"
+                        ]
+                },
+                duration: {
+                        type: "string",
+                        default: "5",
+                        options: [
+                                "2",
+                                "3",
+                                "4",
+                                "5",
+                                "6",
+                                "7",
+                                "8",
+                                "9",
+                                "10",
+                                "11",
+                                "12",
+                                "13",
+                                "14",
+                                "15"
+                        ]
+                },
+                negative_prompt: {
+                        type: "string"
+                },
+                enable_prompt_expansion: {
+                        type: "boolean",
+                        default: "true"
+                },
+                seed: {
+                        type: "integer"
+                },
+                enable_safety_checker: {
+                        type: "boolean",
+                        default: "true"
+                }
+        }
+},
+
     // =====================================================================
     // VIDEO UPSCALE MODELS
     // =====================================================================
@@ -707,6 +2327,17 @@ const getImageUpscaleModels = () => getModelsByCategory(MODEL_CATEGORIES.IMAGE_U
  * Get all video upscale models
  */
 const getVideoUpscaleModels = () => getModelsByCategory(MODEL_CATEGORIES.VIDEO_UPSCALE);
+
+/**
+ * Get all text-to-video models
+ */
+const getTextToVideoModels = () => getModelsByCategory(MODEL_CATEGORIES.TEXT_TO_VIDEO);
+
+/**
+ * Get all image-to-video models
+ */
+const getImageToVideoModels = () => getModelsByCategory(MODEL_CATEGORIES.IMAGE_TO_VIDEO);
+
 
 /**
  * Get ALL models as flat array
@@ -798,8 +2429,12 @@ const validateInput = (modelId, input) => {
             continue;
         }
 
-        // Validate options
+        // Validate options — for optional fields, fall back to model default instead of hard-failing
         if (rules.options && !rules.options.includes(value)) {
+            if (!rules.required && rules.default !== undefined) {
+                sanitizedInput[key] = rules.default;
+                continue;
+            }
             errors.push(`'${key}' must be one of: ${rules.options.join(', ')}`);
             continue;
         }
@@ -832,6 +2467,8 @@ module.exports = {
     getBackgroundRemovalModels,
     getImageUpscaleModels,
     getVideoUpscaleModels,
+    getTextToVideoModels,
+    getImageToVideoModels,
     getAllModels,
     getImageInputMetadata,
     validateInput

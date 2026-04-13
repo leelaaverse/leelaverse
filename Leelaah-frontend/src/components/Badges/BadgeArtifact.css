@@ -1,0 +1,518 @@
+/* ────────────────────────────────────────────────────────────────────────────────
+   Nexus Artifacts — Badge CSS System
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/* ── Base Badge Container ──────────────────────────────────────────────────── */
+.nxa-badge {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.nxa-badge:hover {
+  transform: scale(1.08) translateY(-4px);
+  z-index: 2;
+}
+
+/* ── SVG Frame Wrapper ─────────────────────────────────────────────────────── */
+.nxa-frame {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: filter 0.35s ease, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.nxa-badge:hover .nxa-frame {
+  filter: var(--nxa-hover-glow);
+}
+
+/* ── Inner Icon Container ──────────────────────────────────────────────────── */
+.nxa-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40%;
+  height: 40%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.nxa-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Badge Label ───────────────────────────────────────────────────────────── */
+.nxa-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #6a6a82;
+  text-align: center;
+  max-width: 80px;
+  line-height: 1.3;
+  word-break: break-word;
+  transition: color 0.25s ease;
+  letter-spacing: 0.02em;
+}
+
+.nxa-badge:hover .nxa-label {
+  color: #b0b0cc;
+}
+
+/* ── Rarity Label ──────────────────────────────────────────────────────────── */
+.nxa-rarity-tag {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 99px;
+  margin-top: -4px;
+}
+
+/* ── Badge States ──────────────────────────────────────────────────────────── */
+
+/* Locked State */
+.nxa-badge--locked {
+  cursor: default;
+}
+
+.nxa-badge--locked .nxa-frame {
+  filter: grayscale(0.95) brightness(0.3);
+  opacity: 0.3;
+}
+
+.nxa-badge--locked:hover {
+  transform: none;
+}
+
+.nxa-badge--locked:hover .nxa-frame {
+  filter: grayscale(0.9) brightness(0.35);
+  opacity: 0.35;
+}
+
+.nxa-badge--locked .nxa-label {
+  color: #22223a;
+}
+
+.nxa-badge--locked:hover .nxa-label {
+  color: #33334e;
+}
+
+.nxa-lock-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(10, 10, 18, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.nxa-lock-overlay svg {
+  width: 12px;
+  height: 12px;
+  color: #22223a;
+}
+
+/* In-Progress State */
+.nxa-badge--progress .nxa-frame {
+  filter: saturate(0.6) brightness(0.65);
+  opacity: 0.65;
+}
+
+.nxa-progress-ring {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.nxa-progress-ring circle {
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── Rarity-specific Styles ────────────────────────────────────────────────── */
+
+/* Spark (common) — completely static */
+.nxa-rarity--common .nxa-frame {
+  --nxa-hover-glow: drop-shadow(0 2px 6px rgba(107,114,128,0.2));
+}
+
+.nxa-rarity--common .nxa-rarity-tag {
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
+  border: 1px solid rgba(107, 114, 128, 0.15);
+}
+
+/* Prism (uncommon) — soft hover glow */
+.nxa-rarity--uncommon .nxa-frame {
+  --nxa-hover-glow: drop-shadow(0 2px 10px rgba(16,185,129,0.35));
+}
+
+.nxa-rarity--uncommon .nxa-rarity-tag {
+  background: rgba(16, 185, 129, 0.1);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+/* Aether (rare) — idle scanline + medium glow */
+.nxa-rarity--rare .nxa-frame {
+  --nxa-hover-glow: drop-shadow(0 4px 14px rgba(59,130,246,0.45));
+}
+
+.nxa-rarity--rare .nxa-rarity-tag {
+  background: rgba(59, 130, 246, 0.12);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+.nxa-rarity--rare .nxa-frame::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(59, 130, 246, 0.08) 45%,
+    rgba(96, 165, 250, 0.15) 50%,
+    rgba(59, 130, 246, 0.08) 55%,
+    transparent 100%
+  );
+  animation: nxa-scanline 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Celestial (epic) — continuous glow + particle hint */
+.nxa-rarity--epic .nxa-frame {
+  --nxa-hover-glow: drop-shadow(0 4px 18px rgba(139,92,246,0.5));
+  filter: drop-shadow(0 0 6px rgba(139, 92, 246, 0.25));
+  animation: nxa-pulse-epic 3s ease-in-out infinite;
+}
+
+.nxa-rarity--epic .nxa-rarity-tag {
+  background: rgba(139, 92, 246, 0.12);
+  color: #a78bfa;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.nxa-rarity--epic .nxa-frame::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(139, 92, 246, 0.06) 40%,
+    rgba(167, 139, 250, 0.18) 50%,
+    rgba(139, 92, 246, 0.06) 60%,
+    transparent 100%
+  );
+  animation: nxa-scanline 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Mythic (legendary) — maximum drama */
+.nxa-rarity--legendary .nxa-frame {
+  --nxa-hover-glow: drop-shadow(0 4px 22px rgba(245,158,11,0.6)) drop-shadow(0 0 8px rgba(239,68,68,0.3));
+  filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.35));
+  animation: nxa-pulse-legendary 2.5s ease-in-out infinite;
+}
+
+.nxa-rarity--legendary .nxa-rarity-tag {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(239, 68, 68, 0.1));
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.nxa-rarity--legendary .nxa-frame::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.08) 0%, transparent 70%);
+  animation: nxa-rotate-glow 8s linear infinite;
+  pointer-events: none;
+}
+
+.nxa-rarity--legendary .nxa-frame::after {
+  content: '';
+  position: absolute;
+  top: -20%;
+  left: -100%;
+  width: 100%;
+  height: 140%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(245, 158, 11, 0.05) 35%,
+    rgba(251, 191, 36, 0.2) 50%,
+    rgba(245, 158, 11, 0.05) 65%,
+    transparent 100%
+  );
+  animation: nxa-scanline 2.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* ── Earned Check Indicator ────────────────────────────────────────────────── */
+.nxa-earned-check {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.nxa-earned-check svg {
+  width: 10px;
+  height: 10px;
+  color: #fff;
+}
+
+/* ── Reward Tags ───────────────────────────────────────────────────────────── */
+.nxa-rewards {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.nxa-reward-tag {
+  font-size: 8px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 99px;
+  line-height: 1.5;
+}
+
+.nxa-reward-coin {
+  background: rgba(245, 158, 11, 0.08);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.12);
+}
+
+.nxa-reward-xp {
+  background: rgba(99, 102, 241, 0.08);
+  color: #818cf8;
+  border: 1px solid rgba(99, 102, 241, 0.12);
+}
+
+/* ── Shimmer Overlay (for rare+) ───────────────────────────────────────────── */
+.nxa-shimmer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 4;
+}
+
+/* ── Compact mode (for profile display) ────────────────────────────────────── */
+.nxa-badge--compact {
+  gap: 4px;
+}
+
+.nxa-badge--compact .nxa-label {
+  font-size: 9px;
+  max-width: 60px;
+}
+
+.nxa-badge--compact .nxa-rarity-tag {
+  display: none;
+}
+
+.nxa-badge--compact .nxa-rewards {
+  display: none;
+}
+
+/* ── Animations ────────────────────────────────────────────────────────────── */
+
+@keyframes nxa-scanline {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 200%;
+  }
+}
+
+@keyframes nxa-pulse-epic {
+  0%, 100% {
+    filter: drop-shadow(0 0 4px rgba(139, 92, 246, 0.2));
+  }
+  50% {
+    filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.4));
+  }
+}
+
+@keyframes nxa-pulse-legendary {
+  0%, 100% {
+    filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 16px rgba(245, 158, 11, 0.55)) drop-shadow(0 0 4px rgba(239, 68, 68, 0.2));
+  }
+}
+
+@keyframes nxa-rotate-glow {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes nxa-unlock-ring {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.6);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+@keyframes nxa-unlock-pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  40% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  60% {
+    transform: scale(0.95);
+  }
+  80% {
+    transform: scale(1.03);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes nxa-particle-burst {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--px)), calc(-50% + var(--py))) scale(0);
+    opacity: 0;
+  }
+}
+
+@keyframes nxa-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+/* ── Tooltip ───────────────────────────────────────────────────────────────── */
+.nxa-tooltip {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: rgba(12, 12, 22, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 12px 16px;
+  min-width: 180px;
+  max-width: 240px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 100;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.nxa-badge:hover .nxa-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.nxa-tooltip-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #e8e8f0;
+  margin-bottom: 4px;
+}
+
+.nxa-tooltip-desc {
+  font-size: 11px;
+  color: #6a6a82;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.nxa-tooltip-footer {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+/* ── Grid Layout for Badge Collection ──────────────────────────────────────── */
+.nxa-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 16px;
+  padding: 4px;
+}
+
+@media (min-width: 768px) {
+  .nxa-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 20px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .nxa-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  }
+}

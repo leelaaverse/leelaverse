@@ -28,9 +28,11 @@ export const fetchModels = createAsyncThunk(
                 const utilsModels = allModels.filter(m =>
                     m.category === 'background-removal' || m.category === 'image-upscale' || m.category === 'background_removal' || m.category === 'image_upscale'
                 );
-                const videoModels = allModels.filter(m =>
-                    m.category === 'video-upscale' || m.category === 'video-generation' || m.category === 'video_upscale' || m.category === 'text_to_video'
-                );
+                const videoModels = allModels.filter(m => {
+                    const c = m.category || '';
+                    // Only text-to-video and image-to-video — NOT video-upscale (that's a utility)
+                    return c === 'text-to-video' || c === 'image-to-video' || c === 'text_to_video' || c === 'video-generation' || c === 'image_generation_video';
+                });
 
                 return {
                     allModels,

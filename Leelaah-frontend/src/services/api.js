@@ -183,6 +183,10 @@ const apiService = {
 		upscaleImage: (data) => apiClient.post('/api/ai/utils/upscale', data, { timeout: 120000 }),
 		getUpscaleModels: () => apiClient.get('/api/ai/utils/upscale/models'),
 
+		// Video generation
+		generateVideo: (data) => apiClient.post('/api/ai/video/generate', data, { timeout: 300000 }),
+		getVideoModels: () => apiClient.get('/api/ai/video/generate/models'),
+
 		// Video upscale
 		upscaleVideo: (data) => apiClient.post('/api/ai/video/upscale', data, { timeout: 180000 }),
 		getVideoUpscaleModels: () => apiClient.get('/api/ai/video/upscale/models'),
@@ -214,6 +218,9 @@ const apiService = {
 		getBadges: () => apiClient.get('/api/community/badges'),
 		getMyBadges: () => apiClient.get('/api/community/badges/my'),
 		syncBadges: () => apiClient.post('/api/community/badges/sync'),
+
+		// Promotions
+		getPromotions: (placement = 'home') => apiClient.get('/api/community/promotions', { params: { placement } }),
 	},
 
 	// Admin Community API
@@ -230,6 +237,12 @@ const apiService = {
 		getRewards: () => apiClient.get('/api/admin/community/rewards'),
 		updateReward: (key, data) => apiClient.put(`/api/admin/community/rewards/${key}`, data),
 		getLeaderboard: (params) => apiClient.get('/api/admin/community/leaderboard', { params }),
+
+		// Promotions
+		getPromotions: () => apiClient.get('/api/admin/community/promotions'),
+		createPromotion: (data) => apiClient.post('/api/admin/community/promotions', data),
+		updatePromotion: (id, data) => apiClient.put(`/api/admin/community/promotions/${id}`, data),
+		deletePromotion: (id) => apiClient.delete(`/api/admin/community/promotions/${id}`),
 	},
 
 	// Health check

@@ -382,11 +382,11 @@ const GenerateModal = ({ isOpen, onClose, onOpenAuth }) => {
 
             let response;
             if (isVideoGeneration) {
-                // Video: still uses old endpoint for now
-                response = await apiService.posts.generateVideo({
+                // Video: use new /api/ai/video/generate
+                response = await apiService.ai.generateVideo({
+                    modelId: formData.selectedModel,
                     prompt: formData.prompt.trim(),
-                    selectedModel: formData.selectedModel,
-                    aspectRatio: formData.aspectRatio,
+                    aspect_ratio: formData.aspectRatio,
                     duration: '5'
                 });
             } else {
@@ -400,7 +400,7 @@ const GenerateModal = ({ isOpen, onClose, onOpenAuth }) => {
             if (response.data.success && response.data.data) {
                 const data = response.data.data;
                 const images = data.images || [];
-                const resultUrl = images[0]?.url || data.image?.url;
+                const resultUrl = images[0]?.url || data.image?.url || data.video?.url;
 
                 if (resultUrl) {
                     setGenerationProgress(98);

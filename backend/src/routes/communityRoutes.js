@@ -25,6 +25,9 @@ router.get('/badges', communityController.getAllBadges);
 router.get('/badges/my', auth, communityController.getMyBadges);
 router.post('/badges/sync', auth, communityController.syncMyBadges);
 
+// Promotions (public — returns only active, scheduled promos)
+router.get('/promotions', communityController.getActivePromotions);
+
 // ============================================
 // AUTHENTICATED ROUTES
 // ============================================

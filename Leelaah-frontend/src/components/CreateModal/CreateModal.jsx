@@ -21,7 +21,7 @@ const ASPECT_RATIOS = [
 // ──────────────────────────────────────────────
 // CreateModal
 // ──────────────────────────────────────────────
-const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate, initialPrompt = '' }) => {
+const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate, initialData = null }) => {
     const dispatch = useDispatch();
     const { isLoggedIn, user } = useSelector((s) => s.auth);
     const { imageModels, videoModels, status: modelsStatus } = useSelector((s) => s.models);
@@ -68,10 +68,22 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate, initialPrompt = 
 
     useEffect(() => {
         if (!isOpen) return;
-        const hasInitialPrompt = Boolean(initialPrompt?.trim());
-        setStep(hasInitialPrompt ? 'generate' : 'create');
-        setPrompt(initialPrompt || '');
-    }, [initialPrompt, isOpen]);
+        
+        if (initialData) {
+            setStep('generate');
+            setPrompt(initialData.prompt || '');
+            if (initialData.type === 'video' || initialData.type === 'image') {
+                setMediaType(initialData.type);
+            }
+            if (initialData.model) {
+                // We'll set the selected model, but we have to wait for the models to load
+                setSelectedModel(initialData.model);
+            }
+        } else {
+            setStep('create');
+            setPrompt('');
+        }
+    }, [initialData, isOpen]);
 
     useEffect(() => {
         const models = mediaType === 'image' ? imageModels : videoModels;
@@ -99,8 +111,12 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate, initialPrompt = 
     }, [mediaType, imageModels, videoModels, selectedModel]);
 
     const availableModels = useMemo(() => {
-        return mediaType === 'image' ? imageModels : videoModels;
-    }, [mediaType, imageModels, videoModels]);
+        if (mediaType === 'image') return imageModels;
+        // For video: only show text-to-video when no reference image is provided,
+        // show all video models (including image-to-video) when a reference is uploaded
+        if (referenceFile) return videoModels;
+        return videoModels.filter(m => !m.requiresImage);
+    }, [mediaType, imageModels, videoModels, referenceFile]);
 
     const resetAll = useCallback(() => {
         setStep('create'); setMediaType('image'); setPrompt(''); setSelectedModel('');
@@ -118,7 +134,14 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate, initialPrompt = 
         const models = mediaType === 'image' ? imageModels : videoModels;
         const m = models.find((m) => m.id === modelId);
         setSelectedModel(modelId);
-        if (m) { setNumInferenceSteps(m.defaultSteps || 4); setGuidanceScale(m.defaultGuidance || 3.5); }
+        if (m) {
+            setNumInferenceSteps(m.defaultSteps || 4);
+            setGuidanceScale(m.defaultGuidance || 3.5);
+        }
+        // Video models have restricted aspect ratio support — reset to 16:9 which all support
+        if (mediaType === 'video') {
+            setAspectRatio('16:9');
+        }
     }, [mediaType, imageModels, videoModels]);
 
     const handleFileChange = useCallback((e) => {
@@ -230,11 +253,26 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate, initialPrompt = 
 
     const handleGenerate = useCallback(async () => {
         if (!prompt.trim()) { toast.error('Please enter a prompt'); return; }
+
+        // Guard: image-to-video models need a reference image
+        const isVideoGen = mediaType === 'video';
+        if (isVideoGen) {
+            const modelInfo = availableModels.find(m => m.id === selectedModel);
+            if (modelInfo?.requiresImage && !referencePreview) {
+                toast.error('This model requires a reference image. Upload one using the Reference button.');
+                return;
+            }
+            if (!selectedModel) {
+                toast.error('Please select a video model');
+                return;
+            }
+        }
+
         try {
             setIsGenerating(true);
-            setGenerationStatus(mediaType === 'video' ? 'Initializing Video AI...' : 'Initializing Image AI...');
+            setGenerationStatus(isVideoGen ? 'Initializing Video AI...' : 'Initializing Image AI...');
             setGenerationProgress(5); setStep('generating');
-            const isVideoGen = mediaType === 'video'; setIsVideo(isVideoGen);
+            setIsVideo(isVideoGen);
 
             // Build payload for new API
             const payload = {
@@ -246,6 +284,9 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate, initialPrompt = 
                 payload.num_inference_steps = selectedModel.includes('schnell') ? Math.min(numInferenceSteps, 12) : numInferenceSteps;
                 payload.guidance_scale = guidanceScale;
                 payload.num_images = 1;
+            } else if (referencePreview) {
+                // Include reference image for image-to-video models
+                payload.image_url = referencePreview;
             }
 
             // Progressive progress animation
@@ -264,7 +305,7 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate, initialPrompt = 
 
             let response;
             if (isVideoGen) {
-                response = await apiService.posts.generateVideo({ prompt: prompt.trim(), selectedModel, aspectRatio, duration: '5' });
+                response = await apiService.ai.generateVideo(payload);
             } else {
                 response = await apiService.ai.generateImage(payload);
             }
@@ -275,10 +316,10 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate, initialPrompt = 
             if (response.data.success && response.data.data) {
                 const data = response.data.data;
                 const images = data.images || [];
-                const resultUrl = images[0]?.url || data.image?.url || data.resultUrl;
+                const resultUrl = images[0]?.url || data.image?.url || data.video?.url || data.resultUrl;
                 if (resultUrl) {
                     setGenerationProgress(98); 
-                    setGenerationStatus('Downloading image...');
+                    setGenerationStatus(isVideoGen ? 'Downloading video...' : 'Downloading image...');
                     // Preload the image so it doesn't blink black
                     await new Promise((resolve) => {
                         if (isVideoGen) return resolve();
@@ -305,9 +346,15 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate, initialPrompt = 
             } else throw new Error('Failed to start generation');
         } catch (error) {
             setIsGenerating(false); setStep('generate');
-            toast.error(error.response?.data?.message || error.message || 'Failed to start generation.');
+            // Show the specific error — fal.ai errors, validation errors, credit errors, etc.
+            const errMsg = error.response?.data?.errors?.join(', ')
+                || error.response?.data?.error
+                || error.response?.data?.message
+                || error.message
+                || 'Failed to start generation.';
+            toast.error(errMsg, { duration: 5000 });
         }
-    }, [prompt, mediaType, selectedModel, aspectRatio, numInferenceSteps, guidanceScale, pollGenerationStatus]);
+    }, [prompt, mediaType, selectedModel, aspectRatio, numInferenceSteps, guidanceScale, pollGenerationStatus, availableModels, referencePreview]);
 
     // ── POST ──
     const handlePost = useCallback(async () => {
@@ -559,7 +606,7 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate, initialPrompt = 
                             <div style={{ ...S.panel, overflow: 'hidden' }}>
                                 <div style={{ background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 280, maxHeight: 400 }}>
                                     {imagePreview && (isVideo
-                                        ? <video src={imagePreview} controls autoPlay loop className="cm-vid" style={{ maxHeight: 400, width: '100%', objectFit: 'contain' }} />
+                                        ? <video src={imagePreview} autoPlay loop muted playsInline className="cm-vid" style={{ maxHeight: 400, width: '100%', objectFit: 'contain' }} />
                                         : <img src={imagePreview} alt="Generated" style={{ maxHeight: 400, width: '100%', objectFit: 'contain' }} />
                                     )}
                                 </div>
@@ -595,7 +642,7 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate, initialPrompt = 
                             <div style={{ ...S.panel, overflow: 'hidden' }}>
                                 <div style={{ background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 280, maxHeight: 400 }}>
                                     {imagePreview && (isVideo
-                                        ? <video src={imagePreview} controls className="cm-vid" style={{ maxHeight: 400, width: '100%', objectFit: 'contain' }} />
+                                        ? <video src={imagePreview} autoPlay loop muted playsInline className="cm-vid" style={{ maxHeight: 400, width: '100%', objectFit: 'contain' }} />
                                         : <img src={imagePreview} alt="Preview" style={{ maxHeight: 400, width: '100%', objectFit: 'contain' }} />
                                     )}
                                 </div>
@@ -639,7 +686,7 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate, initialPrompt = 
                                     {/* Preview */}
                                     <div style={{ flex: '0 0 40%', minWidth: 180, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 240 }}>
                                         {imagePreview && (isVideo
-                                            ? <video src={imagePreview} controls className="cm-vid" style={{ maxHeight: 320, width: '100%', objectFit: 'contain' }} />
+                                            ? <video src={imagePreview} autoPlay loop muted playsInline className="cm-vid" style={{ maxHeight: 320, width: '100%', objectFit: 'contain' }} />
                                             : <img src={imagePreview} alt="" style={{ maxHeight: 320, width: '100%', objectFit: 'contain' }} />
                                         )}
                                     </div>
