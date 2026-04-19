@@ -30,6 +30,7 @@ const adminRoutes = require('./src/routes/adminRoutes');
 const searchRoutes = require('./src/routes/searchRoutes');
 const aiGenerationRoutes = require('./src/ai-generation');
 const communityRoutes = require('./src/routes/communityRoutes');
+const notificationRoutes = require('./src/routes/notificationRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -216,6 +217,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/ai', aiGenerationRoutes);
 app.use('/api/community', communityRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Handle 404 errors
 app.use('*', (req, res) => {
@@ -362,8 +364,9 @@ io.on('connection', (socket) => {
     });
 });
 
-// Make io accessible to routes
+// Make io accessible to routes and globally (for notification controller)
 app.set('io', io);
+global.io = io;
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {

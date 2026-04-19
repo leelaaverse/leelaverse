@@ -16,6 +16,8 @@ import Settings from './components/Settings/Settings';
 import AIStudio from './components/AIStudio/AIStudio';
 import ModelsPage from './components/AIStudio/ModelsPage';
 import CreateModal from './components/CreateModal/CreateModal';
+import FloatingPostProgress from './components/FloatingPostProgress/FloatingPostProgress';
+import { PostProgressProvider } from './contexts/PostProgressContext';
 
 // ... (existing imports)
 
@@ -342,6 +344,9 @@ function App() {
         initialData={createModalData}
       />
 
+      {/* Floating progress widget for minimized posting */}
+      <FloatingPostProgress />
+
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={handleCloseModal}
@@ -352,5 +357,13 @@ function App() {
   );
 }
 
-export default App;
+// Wrap App with PostProgressProvider
+function AppWithProviders() {
+  return (
+    <PostProgressProvider>
+      <App />
+    </PostProgressProvider>
+  );
+}
 
+export default AppWithProviders;

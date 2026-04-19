@@ -5,11 +5,14 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 // Create axios instance with default config
 const apiClient = axios.create({
 	baseURL: API_URL,
-	timeout: 30000,
+	timeout: 60000,
 	headers: {
 		'Content-Type': 'application/json',
 	},
 });
+
+// Extended timeout for heavy operations (video download + Cloudinary upload)
+const LONG_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 
 // Request interceptor to add auth token
 apiClient.interceptors.request.use(
@@ -75,17 +78,17 @@ const apiService = {
 		getUserPosts: (userId) => apiClient.get(`/api/posts/user/${userId}`),
 
 		// AI Generation
-		generateImage: (data) => apiClient.post('/api/posts/generate-image', data),
-		generateVideo: (data) => apiClient.post('/api/posts/generate-video', data),
+		generateImage: (data) => apiClient.post('/api/posts/generate-image', data, { timeout: LONG_TIMEOUT }),
+		generateVideo: (data) => apiClient.post('/api/posts/generate-video', data, { timeout: LONG_TIMEOUT }),
 		getGenerationResult: (requestId) => apiClient.get(`/api/posts/generation/${requestId}`),
 		getMyGenerations: () => apiClient.get('/api/posts/my-generations'),
-		createPostFromGeneration: (data) => apiClient.post('/api/posts/create-from-generation', data),
+		createPostFromGeneration: (data) => apiClient.post('/api/posts/create-from-generation', data, { timeout: LONG_TIMEOUT }),
 
 		// AI Models
 		getModels: (type, featured = false) => apiClient.get('/api/posts/models', { params: { type, featured } }),
 
 		// Direct File Upload
-		uploadAndCreatePost: (data) => apiClient.post('/api/posts/upload', data),
+		uploadAndCreatePost: (data) => apiClient.post('/api/posts/upload', data, { timeout: LONG_TIMEOUT }),
 
 		// Like APIs
 		likePost: (postId) => apiClient.post(`/api/posts/${postId}/like`),
@@ -190,6 +193,20 @@ const apiService = {
 		// Video upscale
 		upscaleVideo: (data) => apiClient.post('/api/ai/video/upscale', data, { timeout: 180000 }),
 		getVideoUpscaleModels: () => apiClient.get('/api/ai/video/upscale/models'),
+
+		// Prompt Enhancer (SSE streaming — uses native fetch)
+		enhancePromptStream: (prompt, type = 'video') => {
+			const token = localStorage.getItem('accessToken');
+			return fetch(`${API_URL}/api/ai/enhance-prompt`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'Authorization': `Bearer ${token}`
+				},
+				body: JSON.stringify({ prompt, type })
+			});
+		},
+		enhancePromptSync: (data) => apiClient.post('/api/ai/enhance-prompt/sync', data),
 	},
 
 	// Community API
@@ -243,6 +260,14 @@ const apiService = {
 		createPromotion: (data) => apiClient.post('/api/admin/community/promotions', data),
 		updatePromotion: (id, data) => apiClient.put(`/api/admin/community/promotions/${id}`, data),
 		deletePromotion: (id) => apiClient.delete(`/api/admin/community/promotions/${id}`),
+	},
+
+	// Notifications API
+	notifications: {
+		getAll: (params) => apiClient.get('/api/notifications', { params }),
+		getUnreadCount: () => apiClient.get('/api/notifications/unread-count'),
+		markAsRead: (id) => apiClient.put(`/api/notifications/${id}/read`),
+		markAllAsRead: () => apiClient.put('/api/notifications/read-all'),
 	},
 
 	// Health check

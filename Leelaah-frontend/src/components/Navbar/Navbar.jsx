@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
+import { fetchUnreadCount, addRealtimeNotification } from '../../store/slices/notificationSlice';
 import { IoChatbubbleEllipsesOutline, IoNotificationsOutline } from 'react-icons/io5';
 import { FiUser, FiSettings, FiLogOut } from 'react-icons/fi';
 import { PiCoinsBold } from 'react-icons/pi';
@@ -8,20 +9,24 @@ import { HiOutlineSparkles } from 'react-icons/hi';
 import socketService from '../../services/socket';
 import apiService from '../../services/api';
 import toast from 'react-hot-toast';
+import NotificationDropdown from './NotificationDropdown';
 import './Navbar.css';
 
 const Navbar = ({ activeTab, setActiveTab, isLoggedIn = false, onLogin, onSignup, showBackButton = false, onBack, onChatClick, onNavigate }) => {
     const dispatch = useDispatch();
     const { user } = useSelector((state) => state.auth);
     const { theme } = useSelector((state) => state.theme);
+    const { unreadCount: unreadNotifications } = useSelector((state) => state.notifications);
     const [unreadMessages, setUnreadMessages] = useState(0);
-    const [unreadNotifications, setUnreadNotifications] = useState(0);
     const [isDarkMode, setIsDarkMode] = useState(false);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [isNotifOpen, setIsNotifOpen] = useState(false);
     const [userStats, setUserStats] = useState(null);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const dropdownRef = useRef(null);
     const avatarBtnRef = useRef(null);
+    const notifRef = useRef(null);
+    const notifBtnRef = useRef(null);
 
     // Determine actual dark mode state
     useEffect(() => {
@@ -40,15 +45,19 @@ const Navbar = ({ activeTab, setActiveTab, isLoggedIn = false, onLogin, onSignup
     // Subscribe to socket notifications
     useEffect(() => {
         if (!isLoggedIn) return;
+        // Fetch initial unread count from backend
+        dispatch(fetchUnreadCount());
         const handleNewMessage = () => setUnreadMessages(prev => prev + 1);
-        const handleNewNotification = () => setUnreadNotifications(prev => prev + 1);
+        const handleNewNotification = (notif) => {
+            dispatch(addRealtimeNotification(notif));
+        };
         socketService.onNewMessageNotification(handleNewMessage);
         socketService.onNotification(handleNewNotification);
         return () => {
             socketService.off('new:message:notification', handleNewMessage);
             socketService.off('new:notification', handleNewNotification);
         };
-    }, [isLoggedIn]);
+    }, [isLoggedIn, dispatch]);
 
     // Fetch user stats for credit usage
     useEffect(() => {
@@ -64,7 +73,7 @@ const Navbar = ({ activeTab, setActiveTab, isLoggedIn = false, onLogin, onSignup
         fetchStats();
     }, [isLoggedIn, user]);
 
-    // Close dropdown on outside click
+    // Close dropdowns on outside click
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (
@@ -72,6 +81,12 @@ const Navbar = ({ activeTab, setActiveTab, isLoggedIn = false, onLogin, onSignup
                 avatarBtnRef.current && !avatarBtnRef.current.contains(e.target)
             ) {
                 setIsDropdownOpen(false);
+            }
+            if (
+                notifRef.current && !notifRef.current.contains(e.target) &&
+                notifBtnRef.current && !notifBtnRef.current.contains(e.target)
+            ) {
+                setIsNotifOpen(false);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
@@ -84,7 +99,8 @@ const Navbar = ({ activeTab, setActiveTab, isLoggedIn = false, onLogin, onSignup
     };
 
     const handleNotificationClick = () => {
-        setUnreadNotifications(0);
+        setIsNotifOpen(prev => !prev);
+        setIsDropdownOpen(false); // close profile dropdown
     };
 
     const handleLogout = async () => {
@@ -151,14 +167,22 @@ const Navbar = ({ activeTab, setActiveTab, isLoggedIn = false, onLogin, onSignup
                                 </span>
                             )}
                         </button>
-                        <button title="Notifications" onClick={handleNotificationClick} className="position-relative">
-                            <IoNotificationsOutline size={22} />
-                            {unreadNotifications > 0 && (
-                                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: '0.6rem', padding: '0.25em 0.4em' }}>
-                                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                                </span>
-                            )}
-                        </button>
+                        <div style={{ position: 'relative' }} ref={notifRef}>
+                            <button ref={notifBtnRef} title="Notifications" onClick={handleNotificationClick} className="position-relative">
+                                <IoNotificationsOutline size={22} />
+                                {unreadNotifications > 0 && (
+                                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: '0.6rem', padding: '0.25em 0.4em' }}>
+                                        {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                                    </span>
+                                )}
+                            </button>
+                            <NotificationDropdown
+                                isOpen={isNotifOpen}
+                                onClose={() => setIsNotifOpen(false)}
+                                onNavigate={(view, id) => { setIsNotifOpen(false); onNavigate?.(view, id); }}
+                                isDarkMode={isDarkMode}
+                            />
+                        </div>
 
                         {/* Profile Avatar (replaces hamburger) */}
                         <div className="relative">

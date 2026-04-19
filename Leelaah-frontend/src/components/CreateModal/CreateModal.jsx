@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useSelector, useDispatch } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { FiX, FiImage, FiVideo, FiUpload, FiChevronDown, FiMapPin, FiTag, FiEye, FiType, FiSend, FiRefreshCw, FiArrowLeft, FiPaperclip } from 'react-icons/fi';
+import { FiX, FiImage, FiVideo, FiUpload, FiChevronDown, FiMapPin, FiTag, FiEye, FiType, FiSend, FiRefreshCw, FiArrowLeft, FiPaperclip, FiMinimize2 } from 'react-icons/fi';
+import { usePostProgress } from '../../contexts/PostProgressContext';
 import { HiOutlineSparkles } from 'react-icons/hi';
 import { PiCoinsBold } from 'react-icons/pi';
 import apiService from '../../services/api';
@@ -21,30 +22,51 @@ const ASPECT_RATIOS = [
 // ──────────────────────────────────────────────
 // CreateModal
 // ──────────────────────────────────────────────
-const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate, initialData = null }) => {
+const CreateModal = ({
+    isOpen, onClose, onOpenAuth, onNavigate, initialData = null,
+    // Draft-posting props (from ViewProfile Drafts tab)
+    initialStep, initialImagePreview, initialAiGenerationIds,
+    initialModel, initialPrompt, initialAspectRatio, initialIsVideo
+}) => {
     const dispatch = useDispatch();
     const { isLoggedIn, user } = useSelector((s) => s.auth);
     const { imageModels, videoModels, status: modelsStatus } = useSelector((s) => s.models);
     const modelsLoading = modelsStatus === 'loading';
 
-    const [step, setStep] = useState('create');
+    const [step, setStep] = useState(initialStep || 'create');
     const [mediaType, setMediaType] = useState('image');
 
-    const [prompt, setPrompt] = useState('');
-    const [selectedModel, setSelectedModel] = useState('');
-    const [aspectRatio, setAspectRatio] = useState('1:1');
+    const [prompt, setPrompt] = useState(initialPrompt || '');
+    const [selectedModel, setSelectedModel] = useState(initialModel || '');
+    const [aspectRatio, setAspectRatio] = useState(initialAspectRatio || '1:1');
     const [numInferenceSteps, setNumInferenceSteps] = useState(4);
     const [guidanceScale, setGuidanceScale] = useState(3.5);
+    const [duration, setDuration] = useState(null); // video duration — auto-set from model params
 
     const [isGenerating, setIsGenerating] = useState(false);
+    const [mediaLoaded, setMediaLoaded] = useState(false);
     const [generationProgress, setGenerationProgress] = useState(0);
     const [generationStatus, setGenerationStatus] = useState('');
     const [generationRequestId, setGenerationRequestId] = useState(null);
-    const [aiGenerationIds, setAiGenerationIds] = useState([]);
+    const [aiGenerationIds, setAiGenerationIds] = useState(initialAiGenerationIds || []);
+
+    // Prompt enhancer state
+    const [isEnhancing, setIsEnhancing] = useState(false);
+    const enhanceAbortRef = useRef(null);
+    const promptTextareaRef = useRef(null);
+
+    // Auto-resize textarea when prompt updates (from enhancer streaming)
+    useEffect(() => {
+        const ta = promptTextareaRef.current;
+        if (ta) {
+            ta.style.height = 'auto';
+            ta.style.height = ta.scrollHeight + 'px';
+        }
+    }, [prompt]);
 
     const [selectedFile, setSelectedFile] = useState(null);
-    const [imagePreview, setImagePreview] = useState(null);
-    const [isVideo, setIsVideo] = useState(false);
+    const [imagePreview, setImagePreview] = useState(initialImagePreview || null);
+    const [isVideo, setIsVideo] = useState(initialIsVideo || false);
 
     // ── reference media (for img2img, img2vid, vid2vid) ──
     const [referenceFile, setReferenceFile] = useState(null);
@@ -69,6 +91,9 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate, initialData = nu
     useEffect(() => {
         if (!isOpen) return;
         
+        // If draft-posting props are provided, skip regular initialData logic
+        if (initialStep) return;
+
         if (initialData) {
             setStep('generate');
             setPrompt(initialData.prompt || '');
@@ -83,7 +108,7 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate, initialData = nu
             setStep('create');
             setPrompt('');
         }
-    }, [initialData, isOpen]);
+    }, [initialData, isOpen, initialStep]);
 
     useEffect(() => {
         const models = mediaType === 'image' ? imageModels : videoModels;
@@ -119,8 +144,8 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate, initialData = nu
     }, [mediaType, imageModels, videoModels, referenceFile]);
 
     const resetAll = useCallback(() => {
-        setStep('create'); setMediaType('image'); setPrompt(''); setSelectedModel('');
-        setAspectRatio('1:1'); setNumInferenceSteps(4); setGuidanceScale(3.5);
+        setStep('create'); setMediaType('image'); setPrompt(''); setSelectedModel(''); setMediaLoaded(false);
+        setAspectRatio('1:1'); setNumInferenceSteps(4); setGuidanceScale(3.5); setDuration(null);
         setIsGenerating(false); setGenerationProgress(0); setGenerationStatus('');
         setGenerationRequestId(null); setAiGenerationIds([]); setSelectedFile(null);
         setImagePreview(null); setIsVideo(false); setCaption(''); setTitle('');
@@ -137,6 +162,13 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate, initialData = nu
         if (m) {
             setNumInferenceSteps(m.defaultSteps || 4);
             setGuidanceScale(m.defaultGuidance || 3.5);
+            // Auto-set duration from model parameters
+            if (m.parameters?.duration) {
+                const d = m.parameters.duration;
+                setDuration(d.default != null ? String(d.default) : null);
+            } else {
+                setDuration(null);
+            }
         }
         // Video models have restricted aspect ratio support — reset to 16:9 which all support
         if (mediaType === 'video') {
@@ -251,6 +283,66 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate, initialData = nu
         poll();
     }, []);
 
+    // ── PROMPT ENHANCER (SSE streaming — typing effect) ──
+    const handleEnhancePrompt = useCallback(async () => {
+        if (!prompt.trim() || isEnhancing) return;
+        setIsEnhancing(true);
+
+        const abortController = new AbortController();
+        enhanceAbortRef.current = abortController;
+
+        try {
+            const type = mediaType === 'video' ? 'video' : 'video'; // use video enhancer for both image/video
+            const response = await apiService.ai.enhancePromptStream(prompt.trim(), type);
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.message || 'Enhancement failed');
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let enhanced = '';
+
+            // Clear prompt and start typing
+            setPrompt('');
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                if (abortController.signal.aborted) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n');
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(line.slice(6));
+                            if (data.token) {
+                                enhanced += data.token;
+                                setPrompt(enhanced);
+                            }
+                            if (data.done && data.fullText) {
+                                enhanced = data.fullText;
+                                setPrompt(data.fullText);
+                            }
+                            if (data.error) {
+                                toast.error(data.error);
+                            }
+                        } catch (e) { /* skip malformed JSON */ }
+                    }
+                }
+            }
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                toast.error(err.message || 'Failed to enhance prompt');
+            }
+        } finally {
+            setIsEnhancing(false);
+            enhanceAbortRef.current = null;
+        }
+    }, [prompt, mediaType, isEnhancing]);
+
     const handleGenerate = useCallback(async () => {
         if (!prompt.trim()) { toast.error('Please enter a prompt'); return; }
 
@@ -284,9 +376,15 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate, initialData = nu
                 payload.num_inference_steps = selectedModel.includes('schnell') ? Math.min(numInferenceSteps, 12) : numInferenceSteps;
                 payload.guidance_scale = guidanceScale;
                 payload.num_images = 1;
-            } else if (referencePreview) {
-                // Include reference image for image-to-video models
-                payload.image_url = referencePreview;
+            } else {
+                // Include duration for video models
+                if (duration) {
+                    payload.duration = duration;
+                }
+                if (referencePreview) {
+                    // Include reference image for image-to-video models
+                    payload.image_url = referencePreview;
+                }
             }
 
             // Progressive progress animation
@@ -356,36 +454,65 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate, initialData = nu
         }
     }, [prompt, mediaType, selectedModel, aspectRatio, numInferenceSteps, guidanceScale, pollGenerationStatus, availableModels, referencePreview]);
 
-    // ── POST ──
+    // ── POST (via PostProgressContext — minimizable) ──
+    const postProgress = usePostProgress();
+
+    const handleMinimize = useCallback(() => {
+        postProgress.minimize();
+        onClose();  // close the modal overlay but don't reset state
+    }, [postProgress, onClose]);
+
     const handlePost = useCallback(async () => {
-        setIsPosting(true);
-        try {
-            const token = localStorage.getItem('accessToken');
-            if (!token || !isLoggedIn) { toast.error('Please log in to create a post'); setIsPosting(false); return; }
-            if (aiGenerationIds.length > 0) {
-                const validIds = aiGenerationIds.filter((id) => id != null);
-                if (validIds.length === 0) throw new Error('No valid generation IDs.');
-                const allTags = ['ai-generated', selectedModel, ...tags];
-                const postData = { aiGenerationIds: validIds, caption: caption.trim() || `AI generated: ${prompt}`, title: title.trim() || caption.trim() || 'AI Generated Image', type: isVideo ? 'video' : 'image', tags: allTags, visibility, locationName: locationName.trim() || undefined, aiAspectRatio: aspectRatio };
+        const token = localStorage.getItem('accessToken');
+        if (!token || !isLoggedIn) { toast.error('Please log in to create a post'); return; }
+
+        if (aiGenerationIds.length > 0) {
+            const validIds = aiGenerationIds.filter((id) => id != null);
+            if (validIds.length === 0) { toast.error('No valid generation IDs.'); return; }
+            const allTags = ['ai-generated', selectedModel, ...tags];
+            const postData = { aiGenerationIds: validIds, caption: caption.trim() || `AI generated: ${prompt}`, title: title.trim() || caption.trim() || (isVideo ? 'AI Generated Video' : 'AI Generated Image'), type: isVideo ? 'video' : 'image', category: isVideo ? 'video-post' : 'image-post', tags: allTags, visibility, locationName: locationName.trim() || undefined, aiAspectRatio: aspectRatio };
+
+            setIsPosting(true);
+
+            // Use PostProgressContext — modal stays open showing progress
+            const result = await postProgress.startPost(async () => {
                 const res = await apiService.posts.createPostFromGeneration(postData);
-                if (res.data.success) { toast.success('Post created successfully!'); dispatch(fetchFeedPosts({ category: 'featured', page: 1, limit: 12, forceRefresh: true })); handleClose(); }
-                else throw new Error(res.data.message || 'Failed');
-            } else if (imagePreview) {
-                toast.loading('Uploading post...', { id: 'upload' });
-                const uploadData = { image: imagePreview, caption: caption || '', title: title || 'Uploaded Image', tags, locationName: locationName || '', visibility, aiAspectRatio: aspectRatio };
+                if (res.data.success) {
+                    try { dispatch(fetchFeedPosts({ category: 'featured', page: 1, limit: 12, forceRefresh: true })); } catch (_) {}
+                    return { success: true, message: 'Your creation is now live 🎉' };
+                } else {
+                    throw new Error(res.data.message || 'Unknown error');
+                }
+            });
+
+            // After completion, auto-close modal after a brief moment
+            if (result?.success) {
+                setTimeout(() => { handleClose(); }, 1500);
+            } else {
+                setIsPosting(false);
+            }
+        } else if (imagePreview) {
+            // For direct uploads
+            const uploadData = { image: imagePreview, caption: caption || '', title: title || 'Uploaded Image', tags, locationName: locationName || '', visibility, aiAspectRatio: aspectRatio };
+            setIsPosting(true);
+
+            const result = await postProgress.startPost(async () => {
                 const res = await apiService.posts.uploadAndCreatePost(uploadData);
-                if (res.data.success) { toast.success('Post uploaded!', { id: 'upload' }); dispatch(fetchFeedPosts({ category: 'featured', page: 1, limit: 12, forceRefresh: true })); handleClose(); }
-                else throw new Error(res.data.message || 'Failed');
-            } else toast.error('No content to share');
-        } catch (error) {
-            let msg = 'Failed to create post.';
-            if (error.response?.status === 401) msg = 'Please log in again.';
-            else if (error.response?.status === 413) msg = 'File too large.';
-            else if (error.response?.status === 429) msg = 'Too many requests.';
-            else if (error.response?.data?.message) msg = error.response.data.message;
-            toast.error(msg);
-        } finally { setIsPosting(false); }
-    }, [isLoggedIn, aiGenerationIds, selectedModel, tags, caption, title, isVideo, visibility, locationName, prompt, imagePreview, dispatch, handleClose]);
+                if (res.data.success) {
+                    try { dispatch(fetchFeedPosts({ category: 'featured', page: 1, limit: 12, forceRefresh: true })); } catch (_) {}
+                    return { success: true, message: 'Post uploaded! 🎉' };
+                } else {
+                    throw new Error(res.data.message || 'Failed');
+                }
+            });
+
+            if (result?.success) {
+                setTimeout(() => { handleClose(); }, 1500);
+            } else {
+                setIsPosting(false);
+            }
+        } else toast.error('No content to share');
+    }, [isLoggedIn, aiGenerationIds, selectedModel, tags, caption, title, isVideo, visibility, locationName, prompt, imagePreview, dispatch, handleClose, aspectRatio, postProgress]);
 
     if (!isOpen) return null;
 
@@ -410,6 +537,22 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate, initialData = nu
 
                     {/* Clickable backdrop */}
                     <div style={{ position: 'absolute', inset: 0 }} onClick={step === 'generating' ? undefined : handleClose} />
+
+                    {/* Snake border animation styles */}
+                    <style>{`
+                        .snake-glow-purple {
+                            background: conic-gradient(from 0deg at 50% 50%, transparent 0%, transparent 60%, rgba(155,108,248,0.08) 70%, rgba(155,108,248,0.35) 78%, #9b6cf8 85%, #c084fc 90%, #9b6cf8 95%, rgba(155,108,248,0.15) 99%, transparent 100%);
+                            animation: snakeRotate 3s linear infinite;
+                        }
+                        .snake-glow-cyan {
+                            background: conic-gradient(from 0deg at 50% 50%, transparent 0%, transparent 60%, rgba(56,189,248,0.08) 70%, rgba(56,189,248,0.35) 78%, #38bdf8 85%, #22d3ee 90%, #38bdf8 95%, rgba(56,189,248,0.15) 99%, transparent 100%);
+                            animation: snakeRotate 2s linear infinite;
+                        }
+                        @keyframes snakeRotate {
+                            from { transform: rotate(0deg); }
+                            to { transform: rotate(360deg); }
+                        }
+                    `}</style>
 
                     {/* ── CREATE ── */}
                     {step === 'create' && (
@@ -497,14 +640,54 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate, initialData = nu
                                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '14px 20px 10px' }}>
                                     <HiOutlineSparkles size={16} color="rgba(255,255,255,0.2)" style={{ marginTop: 4, flexShrink: 0 }} />
                                     <textarea
+                                        ref={promptTextareaRef}
                                         value={prompt} onChange={(e) => setPrompt(e.target.value)}
                                         placeholder="Describe the scene you imagine"
                                         rows={1}
-                                        style={{ flex: 1, background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.85)', fontSize: 14, outline: 'none', resize: 'none', minHeight: 22, maxHeight: 80, lineHeight: '1.5', fontFamily: 'inherit' }}
+                                        style={{ flex: 1, background: 'transparent', border: 'none', color: isEnhancing ? '#c4a5ff' : 'rgba(255,255,255,0.85)', fontSize: 14, outline: 'none', resize: 'none', minHeight: 22, lineHeight: '1.5', fontFamily: 'inherit', transition: 'color 0.2s', overflow: 'hidden' }}
                                         onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
+                                        disabled={isEnhancing}
                                     />
+                                    {/* Enhance button */}
+                                    <button
+                                        onClick={isEnhancing ? () => { enhanceAbortRef.current?.abort(); setIsEnhancing(false); } : handleEnhancePrompt}
+                                        disabled={!prompt.trim() && !isEnhancing}
+                                        title={isEnhancing ? 'Stop enhancing' : 'Enhance prompt with AI'}
+                                        style={{
+                                            background: isEnhancing ? 'rgba(155,108,248,0.15)' : 'rgba(155,108,248,0.08)',
+                                            border: `1px solid ${isEnhancing ? 'rgba(155,108,248,0.4)' : 'rgba(155,108,248,0.15)'}`,
+                                            borderRadius: 8,
+                                            cursor: (!prompt.trim() && !isEnhancing) ? 'not-allowed' : 'pointer',
+                                            padding: '5px 10px',
+                                            flexShrink: 0,
+                                            marginTop: 1,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 4,
+                                            fontSize: 11,
+                                            fontWeight: 600,
+                                            color: isEnhancing ? '#c4a5ff' : '#9b6cf8',
+                                            transition: 'all 0.2s',
+                                            opacity: (!prompt.trim() && !isEnhancing) ? 0.3 : 1,
+                                            animation: isEnhancing ? 'fpPulseEnhance 1.5s ease-in-out infinite' : 'none',
+                                        }}
+                                        onMouseEnter={(e) => { if (!isEnhancing) e.currentTarget.style.background = 'rgba(155,108,248,0.18)'; }}
+                                        onMouseLeave={(e) => { if (!isEnhancing) e.currentTarget.style.background = 'rgba(155,108,248,0.08)'; }}
+                                    >
+                                        <HiOutlineSparkles size={12} style={{ animation: isEnhancing ? 'fpSpin 1s linear infinite' : 'none' }} />
+                                        {isEnhancing ? 'Stop' : 'Enhance'}
+                                    </button>
+                                    <style>{`
+                                        @keyframes fpPulseEnhance {
+                                            0%, 100% { box-shadow: 0 0 0 0 rgba(155,108,248,0); }
+                                            50% { box-shadow: 0 0 12px 2px rgba(155,108,248,0.15); }
+                                        }
+                                        @keyframes fpSpin {
+                                            to { transform: rotate(360deg); }
+                                        }
+                                    `}</style>
                                     {/* Close button */}
-                                    <button onClick={() => { setStep('create'); removeReference(); }}
+                                    <button onClick={() => { setStep('create'); removeReference(); if (isEnhancing) { enhanceAbortRef.current?.abort(); setIsEnhancing(false); } }}
                                         style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, flexShrink: 0, marginTop: 2 }}>
                                         <FiX size={16} color="rgba(255,255,255,0.3)" />
                                     </button>
@@ -553,6 +736,32 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate, initialData = nu
                                         ))}
                                     </div>
 
+                                    {/* Duration selector (video models only) */}
+                                    {mediaType === 'video' && (() => {
+                                        const model = availableModels.find(m => m.id === selectedModel);
+                                        const durParam = model?.parameters?.duration;
+                                        if (!durParam) return null;
+                                        const options = durParam.options
+                                            ? durParam.options.map(o => String(o))
+                                            : (durParam.min != null && durParam.max != null)
+                                                ? Array.from({ length: durParam.max - durParam.min + 1 }, (_, i) => String(durParam.min + i))
+                                                : null;
+                                        if (!options || options.length === 0) return null;
+                                        return (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: 500, whiteSpace: 'nowrap' }}>Duration</span>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                                    {options.map(opt => (
+                                                        <button key={opt} onClick={() => setDuration(opt)}
+                                                            style={S.pill(duration === opt)}>
+                                                            {opt.endsWith('s') ? opt : `${opt}s`}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
+
                                     {/* Mode label (when ref is uploaded) */}
                                     {referenceFile && (
                                         <span style={{ fontSize: 10, fontWeight: 600, color: '#9b6cf8', opacity: 0.75, letterSpacing: '0.3px' }}>{generationMode}</span>
@@ -582,16 +791,43 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate, initialData = nu
                             style={{ position: 'relative', zIndex: 10, margin: 'auto', width: '100%', maxWidth: 420, padding: '0 20px' }}
                             initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.25 }}
                         >
-                            <div style={{ ...S.panel, padding: 20, overflow: 'hidden' }}>
-                                <ProgressiveImageReveal
-                                    src={imagePreview}
-                                    isGenerating={isGenerating}
-                                    progress={generationProgress}
-                                    generationStatus={generationStatus}
-                                    aspectRatio={aspectRatio}
-                                    isDark={true}
-                                />
-                                <p style={{ margin: '12px auto 0', color: 'rgba(255,255,255,0.2)', fontSize: 11, textAlign: 'center', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{prompt}</p>
+                            <div style={{ position: 'relative', borderRadius: 22, padding: 2 }}>
+                                {/* Snake border - purple for AI generation */}
+                                <div style={{ position: 'absolute', inset: 0, borderRadius: 22, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
+                                    <div className="snake-glow-purple" style={{ position: 'absolute', inset: '-50%', width: '200%', height: '200%' }} />
+                                </div>
+                                <div style={{ ...S.panel, padding: 20, overflow: 'hidden', position: 'relative', zIndex: 1 }}>
+                                    <ProgressiveImageReveal
+                                        src={imagePreview}
+                                        isGenerating={isGenerating}
+                                        progress={generationProgress}
+                                        generationStatus={generationStatus}
+                                        aspectRatio={aspectRatio}
+                                        isDark={true}
+                                    />
+                                    <p style={{ margin: '12px auto 0', color: 'rgba(255,255,255,0.2)', fontSize: 11, textAlign: 'center', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{prompt}</p>
+                                    {/* Minimize button during generation */}
+                                    <button
+                                        onClick={() => {
+                                            postProgress.startGeneration({ mediaType });
+                                            postProgress.updateGenerationProgress(generationProgress, generationStatus);
+                                            postProgress.minimize();
+                                            onClose();
+                                        }}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: 6,
+                                            margin: '12px auto 0', padding: '8px 18px',
+                                            background: 'rgba(155,108,248,0.1)', border: '1px solid rgba(155,108,248,0.2)',
+                                            borderRadius: 12, cursor: 'pointer',
+                                            color: '#9b6cf8', fontSize: 12, fontWeight: 600,
+                                            transition: 'all 0.2s',
+                                        }}
+                                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(155,108,248,0.2)'}
+                                        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(155,108,248,0.1)'}
+                                    >
+                                        <FiMinimize2 size={13} /> Minimize & Continue Browsing
+                                    </button>
+                                </div>
                             </div>
                         </motion.div>
                     )}
@@ -604,10 +840,16 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate, initialData = nu
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div style={{ ...S.panel, overflow: 'hidden' }}>
-                                <div style={{ background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 280, maxHeight: 400 }}>
+                                <div style={{ background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', minHeight: mediaLoaded ? 'auto' : 200 }}>
+                                    {/* Shimmer skeleton while media loads */}
+                                    {!mediaLoaded && (
+                                        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0d0d0d' }}>
+                                            <div style={{ width: '100%', height: '100%', minHeight: 200, background: 'linear-gradient(110deg, rgba(255,255,255,0.02) 30%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.02) 70%)', backgroundSize: '200% 100%', animation: 'shimmer 1.8s ease-in-out infinite', borderRadius: 4 }} />
+                                        </div>
+                                    )}
                                     {imagePreview && (isVideo
-                                        ? <video src={imagePreview} autoPlay loop muted playsInline className="cm-vid" style={{ maxHeight: 400, width: '100%', objectFit: 'contain' }} />
-                                        : <img src={imagePreview} alt="Generated" style={{ maxHeight: 400, width: '100%', objectFit: 'contain' }} />
+                                        ? <video src={imagePreview} autoPlay loop muted playsInline className="cm-vid" onCanPlay={() => setMediaLoaded(true)} style={{ width: '100%', maxHeight: '60vh', objectFit: 'contain', opacity: mediaLoaded ? 1 : 0, transition: 'opacity 0.4s ease' }} />
+                                        : <img src={imagePreview} alt="Generated" onLoad={() => setMediaLoaded(true)} style={{ width: '100%', maxHeight: '60vh', objectFit: 'contain', display: 'block', opacity: mediaLoaded ? 1 : 0, transition: 'opacity 0.4s ease' }} />
                                     )}
                                 </div>
                                 <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -616,7 +858,7 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate, initialData = nu
                                         <p style={{ margin: 0, color: 'rgba(255,255,255,0.2)', fontSize: 11 }}>{aspectRatio}</p>
                                     </div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                        <button onClick={() => { setStep('generate'); setImagePreview(null); setAiGenerationIds([]); }}
+                                        <button onClick={() => { setStep('generate'); setImagePreview(null); setAiGenerationIds([]); setMediaLoaded(false); }}
                                             style={S.btnGhost}
                                             onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
                                             onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
@@ -666,33 +908,66 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate, initialData = nu
                             initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ type: 'spring', damping: 26, stiffness: 260 }}
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <div style={{ ...S.panel, overflow: 'hidden' }}>
+                            <div style={{ position: 'relative', borderRadius: 22, padding: 2 }}>
+                                {/* Snake border - cyan for posting */}
+                                {isPosting && (
+                                    <div style={{ position: 'absolute', inset: 0, borderRadius: 22, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
+                                        <div className="snake-glow-cyan" style={{ position: 'absolute', inset: '-50%', width: '200%', height: '200%' }} />
+                                    </div>
+                                )}
+                                <div style={{ ...S.panel, overflow: 'hidden', position: 'relative', zIndex: 1 }}>
                                 {/* Header */}
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                    <button onClick={() => setStep(aiGenerationIds.length > 0 ? 'result' : 'upload')}
-                                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex' }}>
+                                    <button onClick={() => { if (!isPosting) setStep(aiGenerationIds.length > 0 ? 'result' : 'upload'); }}
+                                        style={{ background: 'none', border: 'none', cursor: isPosting ? 'default' : 'pointer', padding: 4, display: 'flex', opacity: isPosting ? 0.3 : 1 }}>
                                         <FiArrowLeft size={17} color="rgba(255,255,255,0.45)" />
                                     </button>
                                     <span style={{ color: '#fff', fontSize: 14, fontWeight: 600 }}>
-                                        {aiGenerationIds.length > 0 ? 'Post AI Creation' : 'Upload Post'}
+                                        {isPosting
+                                            ? (postProgress.stage === 'done' ? '✅ Posted!' : postProgress.stage === 'error' ? '❌ Failed' : '⏳ Posting...')
+                                            : (aiGenerationIds.length > 0 ? 'Post AI Creation' : 'Upload Post')}
                                     </span>
-                                    <button onClick={handlePost} disabled={isPosting}
-                                        style={{ ...S.btnPrimary, padding: '7px 18px', fontSize: 12, opacity: isPosting ? 0.4 : 1 }}>
-                                        {isPosting ? 'Posting...' : 'Share'}
-                                    </button>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        {/* Minimize button — only shows when posting is active */}
+                                        {isPosting && postProgress.stage !== 'done' && postProgress.stage !== 'error' && (
+                                            <button onClick={handleMinimize} title="Minimize to background"
+                                                style={{ background: 'rgba(255,255,255,0.06)', border: 'none', cursor: 'pointer', padding: 6, display: 'flex', borderRadius: 8, transition: 'background 0.15s' }}
+                                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.12)'}
+                                                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}>
+                                                <FiMinimize2 size={15} color="rgba(255,255,255,0.6)" />
+                                            </button>
+                                        )}
+                                        <button onClick={handlePost} disabled={isPosting}
+                                            style={{ ...S.btnPrimary, padding: '7px 18px', fontSize: 12, opacity: isPosting ? 0.4 : 1 }}>
+                                            {isPosting ? (postProgress.stage === 'done' ? 'Done!' : 'Posting...') : 'Share'}
+                                        </button>
+                                    </div>
                                 </div>
 
-                                <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-                                    {/* Preview */}
-                                    <div style={{ flex: '0 0 40%', minWidth: 180, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 240 }}>
+                                {/* Inline posting progress bar */}
+                                {isPosting && postProgress.stage !== 'done' && postProgress.stage !== 'error' && (
+                                    <div style={{ padding: '0 20px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0' }}>
+                                            <div style={{ width: 20, height: 20, border: '2px solid rgba(155,108,248,0.3)', borderTop: '2px solid #9b6cf8', borderRadius: '50%', animation: 'snakeRotate 0.8s linear infinite', flexShrink: 0 }} />
+                                            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>{postProgress.message}</span>
+                                        </div>
+                                        <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.06)', overflow: 'hidden', marginBottom: 8 }}>
+                                            <div style={{ height: '100%', width: `${postProgress.progress}%`, background: 'linear-gradient(90deg, #9b6cf8, #a78bfa)', borderRadius: 2, transition: 'width 0.5s ease' }} />
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                    {/* Preview - full width on top, adapts to content ratio */}
+                                    <div style={{ background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', maxHeight: 320, overflow: 'hidden' }}>
                                         {imagePreview && (isVideo
-                                            ? <video src={imagePreview} autoPlay loop muted playsInline className="cm-vid" style={{ maxHeight: 320, width: '100%', objectFit: 'contain' }} />
-                                            : <img src={imagePreview} alt="" style={{ maxHeight: 320, width: '100%', objectFit: 'contain' }} />
+                                            ? <video src={imagePreview} autoPlay loop muted playsInline className="cm-vid" style={{ width: '100%', maxHeight: 320, objectFit: 'contain', display: 'block' }} />
+                                            : <img src={imagePreview} alt="" style={{ width: '100%', maxHeight: 320, objectFit: 'contain', display: 'block' }} />
                                         )}
                                     </div>
 
                                     {/* Form */}
-                                    <div style={{ flex: 1, minWidth: 220, padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
+                                    <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
                                         {/* User */}
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                             <img src={user?.avatar || '/assets/profile.png'} alt=""
@@ -759,6 +1034,7 @@ const CreateModal = ({ isOpen, onClose, onOpenAuth, onNavigate, initialData = nu
                                             </select>
                                         </div>
                                     </div>
+                                </div>
                                 </div>
                             </div>
                         </motion.div>

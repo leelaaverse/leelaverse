@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@fal-ai/client": "^1.6.2",
+    "@openrouter/sdk": "^0.12.15",
     "@prisma/client": "^6.2.0",
     "axios": "^1.12.2",
     "bcryptjs": "^2.4.3",

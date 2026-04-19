@@ -5,6 +5,7 @@ import modelsReducer from './slices/modelsSlice';
 import themeReducer from './slices/themeSlice';
 import searchReducer from './slices/searchSlice';
 import communityReducer from './slices/communitySlice';
+import notificationReducer from './slices/notificationSlice';
 
 export const store = configureStore({
 	reducer: {
@@ -14,6 +15,7 @@ export const store = configureStore({
 		theme: themeReducer,
 		search: searchReducer,
 		community: communityReducer,
+		notifications: notificationReducer,
 	},
 	middleware: (getDefaultMiddleware) =>
 		getDefaultMiddleware({

@@ -211,27 +211,15 @@ const ProgressiveImageReveal = ({
                     justifyContent: 'center',
                     gap: 12,
                 }}>
-                    {/* Pulsing orb */}
+                    {/* Soft glow pulse */}
                     <div style={{
-                        width: 48,
-                        height: 48,
+                        width: 36,
+                        height: 36,
                         borderRadius: '50%',
-                        background: `radial-gradient(circle, ${accentColor}44 0%, transparent 70%)`,
-                        border: `2px solid ${accentColor}66`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        animation: 'pulseOrb 2s ease-in-out infinite',
-                    }}>
-                        <div style={{
-                            width: 20,
-                            height: 20,
-                            borderRadius: '50%',
-                            border: `2px solid transparent`,
-                            borderTopColor: accentColor,
-                            animation: 'spin 0.8s linear infinite',
-                        }} />
-                    </div>
+                        background: `radial-gradient(circle, ${accentColor}55 0%, ${accentColor}15 50%, transparent 70%)`,
+                        animation: 'pulseOrb 3s ease-in-out infinite',
+                        filter: 'blur(2px)',
+                    }} />
 
                     {/* Status text */}
                     <p style={{
@@ -284,10 +272,7 @@ const ProgressiveImageReveal = ({
                     0%, 100% { transform: scale(1); opacity: 0.8; }
                     50% { transform: scale(1.15); opacity: 1; }
                 }
-                @keyframes spin {
-                    from { transform: rotate(0deg); }
-                    to { transform: rotate(360deg); }
-                }
+
             `}</style>
         </div>
     );

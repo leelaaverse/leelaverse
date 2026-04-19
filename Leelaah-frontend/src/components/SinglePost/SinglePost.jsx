@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { FaHeart, FaRegHeart, FaRegComment, FaArrowLeft, FaTrash, FaPaperPlane } from 'react-icons/fa';
 import { HiOutlinePencilSquare } from 'react-icons/hi2';
@@ -33,6 +33,16 @@ const SinglePost = ({ postId, onBack, onShowAuthModal, onNavigate, onOpenCreateM
 	const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 	const [commentsPagination, setCommentsPagination] = useState({ page: 1, pages: 1 });
 	const [showShareModal, setShowShareModal] = useState(false);
+
+	// Video player state
+	const videoRef = useRef(null);
+	const controlsTimerRef = useRef(null);
+	const [videoPlaying, setVideoPlaying] = useState(true);
+	const [videoMuted, setVideoMuted] = useState(true);
+	const [videoProgress, setVideoProgress] = useState(0);
+	const [videoCurrentTime, setVideoCurrentTime] = useState(0);
+	const [videoDuration, setVideoDuration] = useState(0);
+	const [showVideoControls, setShowVideoControls] = useState(true);
 
 	// Fetch post details
 	useEffect(() => {
@@ -303,6 +313,45 @@ const SinglePost = ({ postId, onBack, onShowAuthModal, onNavigate, onOpenCreateM
 	// Prevent right-click download on media
 	const preventContextMenu = (e) => e.preventDefault();
 
+	// Video player helpers
+	const fmtTime = (t) => {
+		const m = Math.floor(t / 60);
+		const s = Math.floor(t % 60);
+		return `${m}:${s.toString().padStart(2, '0')}`;
+	};
+
+	const toggleVideoPlay = () => {
+		const v = videoRef.current;
+		if (!v) return;
+		if (v.paused) { v.play(); setVideoPlaying(true); }
+		else { v.pause(); setVideoPlaying(false); }
+	};
+
+	const handleVideoTimeUpdate = () => {
+		const v = videoRef.current;
+		if (!v || !v.duration) return;
+		setVideoProgress((v.currentTime / v.duration) * 100);
+		setVideoCurrentTime(v.currentTime);
+	};
+
+	const handleVideoSeek = (e) => {
+		const v = videoRef.current;
+		if (!v) return;
+		const rect = e.currentTarget.getBoundingClientRect();
+		const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+		v.currentTime = pct * v.duration;
+	};
+
+	const handleVideoMouseMove = () => {
+		setShowVideoControls(true);
+		clearTimeout(controlsTimerRef.current);
+		controlsTimerRef.current = setTimeout(() => setShowVideoControls(false), 2500);
+	};
+
+	useEffect(() => {
+		return () => clearTimeout(controlsTimerRef.current);
+	}, []);
+
 	if (loading) {
 		return (
 			<div className="single-post-container">
@@ -367,19 +416,51 @@ const SinglePost = ({ postId, onBack, onShowAuthModal, onNavigate, onOpenCreateM
 				<div className="post-media-section">
 					<div className="media-wrapper">
 						{isVideo ? (
-							<video
-								src={getMediaUrl(post)}
-								autoPlay
-								loop
-								muted
-								playsInline
-								className="post-media"
-								controlsList="nodownload nofullscreen noremoteplayback"
-								disablePictureInPicture
-								onContextMenu={preventContextMenu}
-								onClick={() => onNavigate && onNavigate('bloops')}
-								style={{ cursor: 'pointer' }}
-							/>
+							<div
+								className="sp-custom-player"
+								onMouseMove={handleVideoMouseMove}
+								onMouseLeave={() => setShowVideoControls(false)}
+							>
+								<video
+									ref={videoRef}
+									src={getMediaUrl(post)}
+									autoPlay
+									loop
+									muted={videoMuted}
+									playsInline
+									className="post-media"
+									onTimeUpdate={handleVideoTimeUpdate}
+									onLoadedMetadata={() => setVideoDuration(videoRef.current?.duration || 0)}
+									onClick={toggleVideoPlay}
+									controlsList="nodownload nofullscreen noremoteplayback"
+									disablePictureInPicture
+									onContextMenu={preventContextMenu}
+									style={{ cursor: 'pointer' }}
+								/>
+								{/* Center play icon when paused */}
+								{!videoPlaying && (
+									<div className="sp-play-overlay" onClick={toggleVideoPlay}>
+										<i className="fa-solid fa-play"></i>
+									</div>
+								)}
+								{/* Bottom controls */}
+								<div className={`sp-controls ${showVideoControls || !videoPlaying ? 'visible' : ''}`}>
+									<button className="sp-ctrl-btn" onClick={toggleVideoPlay}>
+										<i className={`fa-solid ${videoPlaying ? 'fa-pause' : 'fa-play'}`}></i>
+									</button>
+									<span className="sp-time">{fmtTime(videoCurrentTime)}</span>
+									<div className="sp-progress-bar" onClick={handleVideoSeek}>
+										<div className="sp-progress-track">
+											<div className="sp-progress-fill" style={{ width: `${videoProgress}%` }} />
+											<div className="sp-progress-thumb" style={{ left: `${videoProgress}%` }} />
+										</div>
+									</div>
+									<span className="sp-time">{fmtTime(videoDuration)}</span>
+									<button className="sp-ctrl-btn" onClick={() => setVideoMuted(!videoMuted)}>
+										<i className={`fa-solid ${videoMuted ? 'fa-volume-xmark' : 'fa-volume-high'}`}></i>
+									</button>
+								</div>
+							</div>
 						) : (
 							<img
 								src={getMediaUrl(post)}

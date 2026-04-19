@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import apiService from '../../services/api';
 import Navbar from '../Navbar/Navbar';
@@ -6,7 +6,121 @@ import EditProfileModal from '../EditProfileModal/EditProfileModal';
 import SinglePost from '../SinglePost/SinglePost';
 import PostCard from '../PostCard/PostCard';
 import ProfileBadge from '../shared/ProfileBadge';
+import CreateModal from '../CreateModal/CreateModal';
 import './ViewProfile.css';
+
+// ── Custom Draft Preview Modal with Aesthetic Video Player ──
+const DraftPreviewModal = ({ draft, isVideo, onClose, onPost }) => {
+    const videoRef = useRef(null);
+    const [playing, setPlaying] = useState(true);
+    const [muted, setMuted] = useState(true);
+    const [progress, setProgress] = useState(0);
+    const [currentTime, setCurrentTime] = useState(0);
+    const [duration, setDuration] = useState(0);
+    const [showControls, setShowControls] = useState(true);
+    const controlsTimer = useRef(null);
+
+    const formatTime = (t) => {
+        const m = Math.floor(t / 60);
+        const s = Math.floor(t % 60);
+        return `${m}:${s.toString().padStart(2, '0')}`;
+    };
+
+    const togglePlay = () => {
+        const v = videoRef.current;
+        if (!v) return;
+        if (v.paused) { v.play(); setPlaying(true); }
+        else { v.pause(); setPlaying(false); }
+    };
+
+    const handleTimeUpdate = () => {
+        const v = videoRef.current;
+        if (!v || !v.duration) return;
+        setProgress((v.currentTime / v.duration) * 100);
+        setCurrentTime(v.currentTime);
+    };
+
+    const handleSeek = (e) => {
+        const v = videoRef.current;
+        if (!v) return;
+        const bar = e.currentTarget;
+        const rect = bar.getBoundingClientRect();
+        const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        v.currentTime = pct * v.duration;
+    };
+
+    const handleMouseMove = () => {
+        setShowControls(true);
+        clearTimeout(controlsTimer.current);
+        controlsTimer.current = setTimeout(() => setShowControls(false), 2500);
+    };
+
+    useEffect(() => {
+        return () => clearTimeout(controlsTimer.current);
+    }, []);
+
+    return (
+        <div className="draft-preview-overlay" onClick={onClose}>
+            <div className="draft-preview-content" onClick={e => e.stopPropagation()}>
+                <button className="draft-preview-close" onClick={onClose}>
+                    <i className="fa-solid fa-xmark"></i>
+                </button>
+
+                {isVideo ? (
+                    <div
+                        className="custom-player"
+                        onMouseMove={handleMouseMove}
+                        onMouseLeave={() => setShowControls(false)}
+                    >
+                        <video
+                            ref={videoRef}
+                            src={draft.resultUrl}
+                            autoPlay loop muted={muted} playsInline
+                            onTimeUpdate={handleTimeUpdate}
+                            onLoadedMetadata={() => setDuration(videoRef.current?.duration || 0)}
+                            onClick={togglePlay}
+                            className="custom-player-video"
+                        />
+                        {/* Play/pause center icon */}
+                        {!playing && (
+                            <div className="custom-player-play-overlay" onClick={togglePlay}>
+                                <i className="fa-solid fa-play"></i>
+                            </div>
+                        )}
+                        {/* Bottom controls bar */}
+                        <div className={`custom-player-controls ${showControls || !playing ? 'visible' : ''}`}>
+                            <button className="cp-btn" onClick={togglePlay}>
+                                <i className={`fa-solid ${playing ? 'fa-pause' : 'fa-play'}`}></i>
+                            </button>
+                            <span className="cp-time">{formatTime(currentTime)}</span>
+                            <div className="cp-progress-bar" onClick={handleSeek}>
+                                <div className="cp-progress-track">
+                                    <div className="cp-progress-fill" style={{ width: `${progress}%` }} />
+                                    <div className="cp-progress-thumb" style={{ left: `${progress}%` }} />
+                                </div>
+                            </div>
+                            <span className="cp-time">{formatTime(duration)}</span>
+                            <button className="cp-btn" onClick={() => setMuted(!muted)}>
+                                <i className={`fa-solid ${muted ? 'fa-volume-xmark' : 'fa-volume-high'}`}></i>
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <img src={draft.resultUrl} alt={draft.prompt} />
+                )}
+
+                <div className="draft-preview-info">
+                    <div className="draft-preview-meta">
+                        <strong>{draft.model?.split('/').pop()}</strong> · {draft.aspectRatio || '1:1'}
+                    </div>
+                    <button className="draft-btn-post" onClick={onPost}>
+                        <i className="fa-solid fa-paper-plane"></i> Post This
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const ViewProfile = ({ onNavigate, onOpenCreateModal }) => {
     const { user } = useSelector((state) => state.auth);
@@ -18,11 +132,22 @@ const ViewProfile = ({ onNavigate, onOpenCreateModal }) => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [selectedPostId, setSelectedPostId] = useState(null);
     const [viewingPost, setViewingPost] = useState(false);
+    const [drafts, setDrafts] = useState([]);
+    const [draftsLoading, setDraftsLoading] = useState(false);
+    const [draftsLoaded, setDraftsLoaded] = useState(false);
+    const [draftForPost, setDraftForPost] = useState(null);
+    const [previewDraft, setPreviewDraft] = useState(null);
 
     useEffect(() => {
         fetchUserProfile();
         fetchUserPosts();
     }, [user]);
+
+    useEffect(() => {
+        if (activeTab === 'drafts' && !draftsLoaded) {
+            fetchDrafts();
+        }
+    }, [activeTab]);
 
     const fetchUserProfile = async () => {
         try {
@@ -54,6 +179,47 @@ const ViewProfile = ({ onNavigate, onOpenCreateModal }) => {
             console.error('Failed to fetch user posts:', error);
             setUserPosts([]);
         }
+    };
+
+    const fetchDrafts = async () => {
+        try {
+            setDraftsLoading(true);
+            const response = await apiService.posts.getMyGenerations();
+            if (response.data.success) {
+                setDrafts(response.data.data.generations || []);
+            }
+        } catch (error) {
+            console.error('Failed to fetch drafts:', error);
+            setDrafts([]);
+        } finally {
+            setDraftsLoading(false);
+            setDraftsLoaded(true);
+        }
+    };
+
+    const handlePostDraft = (draft) => {
+        setDraftForPost(draft);
+    };
+
+    const handleDraftModalClose = () => {
+        setDraftForPost(null);
+        // Refresh drafts to remove drafted item
+        fetchDrafts();
+        fetchUserPosts();
+    };
+
+    const handleDeleteDraft = async (draftId) => {
+        try {
+            // For now just remove from local state - backend delete can be added later
+            setDrafts(prev => prev.filter(d => d.id !== draftId));
+        } catch (error) {
+            console.error('Failed to delete draft:', error);
+        }
+    };
+
+    const isVideoUrl = (url) => {
+        if (!url) return false;
+        return /\.(mp4|webm|mov|avi|mkv)(\?|$)/i.test(url);
     };
 
     const handlePostClick = (postId) => {
@@ -377,6 +543,13 @@ const ViewProfile = ({ onNavigate, onOpenCreateModal }) => {
                             <i className="fa-solid fa-wand-magic-sparkles"></i> AI Generated
                         </button>
                         <button
+                            className={`profile-tab ${activeTab === 'drafts' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('drafts')}
+                        >
+                            <i className="fa-solid fa-pen-ruler"></i> Drafts
+                            {drafts.length > 0 && <span className="draft-count-badge">{drafts.length}</span>}
+                        </button>
+                        <button
                             className={`profile-tab ${activeTab === 'saved' ? 'active' : ''}`}
                             onClick={() => setActiveTab('saved')}
                         >
@@ -385,6 +558,73 @@ const ViewProfile = ({ onNavigate, onOpenCreateModal }) => {
                     </div>
 
                     <div className="profile-posts-section">
+                        {/* ── DRAFTS TAB ── */}
+                        {activeTab === 'drafts' ? (
+                            <div className="drafts-section">
+                                {draftsLoading ? (
+                                    <div className="drafts-grid">
+                                        {[1,2,3,4,5,6].map(i => (
+                                            <div key={i} className="draft-card-skeleton">
+                                                <div className="draft-skeleton-media animate-shimmer" />
+                                                <div className="draft-skeleton-info">
+                                                    <div className="draft-skeleton-line w-60" />
+                                                    <div className="draft-skeleton-line w-80" />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : drafts.length > 0 ? (
+                                    <div className="drafts-grid">
+                                        {drafts.map(draft => (
+                                            <div key={draft.id} className="draft-card">
+                                                <div className="draft-media" onClick={() => setPreviewDraft(draft)}>
+                                                    {isVideoUrl(draft.resultUrl) ? (
+                                                        <video
+                                                            src={draft.resultUrl}
+                                                            muted
+                                                            loop
+                                                            playsInline
+                                                            onMouseOver={e => e.target.play()}
+                                                            onMouseOut={e => { e.target.pause(); e.target.currentTime = 0; }}
+                                                            className="draft-media-content"
+                                                        />
+                                                    ) : (
+                                                        <img src={draft.resultUrl} alt={draft.prompt} className="draft-media-content" />
+                                                    )}
+                                                    <div className="draft-overlay">
+                                                        <button className="draft-btn-post" onClick={() => handlePostDraft(draft)}>
+                                                            <i className="fa-solid fa-paper-plane"></i> Post
+                                                        </button>
+                                                        <button className="draft-btn-delete" onClick={() => handleDeleteDraft(draft.id)}>
+                                                            <i className="fa-solid fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                    {isVideoUrl(draft.resultUrl) && (
+                                                        <span className="draft-type-badge"><i className="fa-solid fa-play"></i></span>
+                                                    )}
+                                                    <span className="draft-ratio-badge">{draft.aspectRatio || '1:1'}</span>
+                                                </div>
+                                                <div className="draft-info">
+                                                    <p className="draft-model">
+                                                        <i className="fa-solid fa-microchip"></i>
+                                                        {draft.model?.split('/').pop() || 'AI Model'}
+                                                    </p>
+                                                    <p className="draft-prompt">{draft.prompt?.slice(0, 80)}{draft.prompt?.length > 80 ? '…' : ''}</p>
+                                                    <p className="draft-date">{new Date(draft.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center py-16 px-8 text-white/60">
+                                        <i className="fa-solid fa-pen-ruler text-6xl mb-4" style={{ opacity: 0.4 }}></i>
+                                        <h3 className="text-xl font-semibold mb-2">No drafts</h3>
+                                        <p className="text-sm">AI generations that you haven't posted yet will appear here.</p>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                        <>
                         {/* Filter Dropdown */}
                         <div className="posts-filter">
                             <button
@@ -443,6 +683,8 @@ const ViewProfile = ({ onNavigate, onOpenCreateModal }) => {
                                 <p className="text-sm">Start creating amazing content!</p>
                             </div>
                         )}
+                        </>
+                        )}
                     </div>
                 </div>
             </main>
@@ -465,6 +707,31 @@ const ViewProfile = ({ onNavigate, onOpenCreateModal }) => {
                         onOpenCreateModal={onOpenCreateModal}
                     />
                 </div>
+            )}
+
+            {/* Draft Preview Modal */}
+            {previewDraft && (
+                <DraftPreviewModal
+                    draft={previewDraft}
+                    isVideo={isVideoUrl(previewDraft.resultUrl)}
+                    onClose={() => setPreviewDraft(null)}
+                    onPost={() => { setPreviewDraft(null); handlePostDraft(previewDraft); }}
+                />
+            )}
+
+            {/* Draft Post Modal */}
+            {draftForPost && (
+                <CreateModal
+                    isOpen={true}
+                    onClose={handleDraftModalClose}
+                    initialStep="postForm"
+                    initialImagePreview={draftForPost.resultUrl}
+                    initialAiGenerationIds={[draftForPost.id]}
+                    initialModel={draftForPost.model}
+                    initialPrompt={draftForPost.prompt}
+                    initialAspectRatio={draftForPost.aspectRatio}
+                    initialIsVideo={isVideoUrl(draftForPost.resultUrl)}
+                />
             )}
         </div>
     );

@@ -3,10 +3,10 @@ const prisma = new PrismaClient();
 
 async function main() {
   const videoUrl = 'https://res.cloudinary.com/decscgrly/video/upload/v1775986094/hf_20260409_094622_41c4ed95-c7c2-49a8-933e-1cec2ea4e6d9_hfy5s1.mp4';
-  
+
   // Upsert or create
   const promos = await prisma.promotion.findMany({ where: { placement: 'home' } });
-  
+
   if (promos.length > 0) {
     await prisma.promotion.update({
       where: { id: promos[0].id },

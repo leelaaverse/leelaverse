@@ -12,6 +12,7 @@ const { getAllModels, MODEL_CATEGORIES, getImageInputMetadata } = require('./con
 const imageGenRoutes = require('./image-generation/imageGenRoutes');
 const imageUtilsRoutes = require('./image-utils/imageUtilsRoutes');
 const videoGenRoutes = require('./video-generation/videoGenRoutes');
+const { enhancePrompt, enhancePromptSync } = require('../controllers/promptEnhancerController');
 
 // Image Generation & Editing: /api/ai/image/*
 router.use('/image', imageGenRoutes);
@@ -21,6 +22,10 @@ router.use('/utils', imageUtilsRoutes);
 
 // Video Generation & Upscale: /api/ai/video/*
 router.use('/video', videoGenRoutes);
+
+// Prompt Enhancer (SSE streaming): /api/ai/enhance-prompt
+router.post('/enhance-prompt', auth, enhancePrompt);
+router.post('/enhance-prompt/sync', auth, enhancePromptSync);
 
 // ============================================
 // Master Model Listing Endpoints
@@ -42,6 +47,23 @@ router.get('/models', (req, res) => {
         const formatted = models.map(m => {
             const imageInputMeta = getImageInputMetadata(m);
 
+            // Build simplified parameters from inputSchema for frontend controls
+            const parameters = {};
+            if (m.inputSchema) {
+                Object.entries(m.inputSchema).forEach(([key, schema]) => {
+                    // Only expose useful frontend-facing params (skip prompt — handled separately)
+                    if (key === 'prompt') return;
+                    parameters[key] = {
+                        type: schema.type,
+                        default: schema.default,
+                        options: schema.options,
+                        min: schema.min,
+                        max: schema.max,
+                        required: !!schema.required
+                    };
+                });
+            }
+
             return {
                 id: m.id,
                 name: m.name,
@@ -53,7 +75,8 @@ router.get('/models', (req, res) => {
                 requiresImage: imageInputMeta.requiresImage,
                 supportsMultipleImages: imageInputMeta.supportsMultipleImages,
                 minImages: imageInputMeta.minImages,
-                maxImages: imageInputMeta.maxImages
+                maxImages: imageInputMeta.maxImages,
+                parameters
             };
         });
 

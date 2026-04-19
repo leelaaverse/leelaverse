@@ -15,6 +15,7 @@ import { fetchFeedPosts } from '../../store/slices/postsSlice';
 import apiService from '../../services/api';
 import SearchableModelDropdown from '../shared/SearchableModelDropdown';
 import ProgressiveImageReveal from '../shared/ProgressiveImageReveal';
+import { usePostProgress } from '../../contexts/PostProgressContext';
 
 const ASPECT_RATIOS = [
     { value: '1:1', label: '1:1' },
@@ -84,7 +85,12 @@ const AIStudio = ({ onBack, onNavigate }) => {
     const [guidanceScale, setGuidanceScale] = useState(3.5);
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [showModelDropdown, setShowModelDropdown] = useState(false);
-    const [enhancePrompt, setEnhancePrompt] = useState(false);
+    const [duration, setDuration] = useState(null);
+
+    // Prompt enhancer state
+    const [isEnhancing, setIsEnhancing] = useState(false);
+    const enhanceAbortRef = useRef(null);
+    const postProgress = usePostProgress();
 
     // Reference media
     const [referenceFiles, setReferenceFiles] = useState([]);
@@ -96,6 +102,12 @@ const AIStudio = ({ onBack, onNavigate }) => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [generationProgress, setGenerationProgress] = useState(0);
     const [generationStatus, setGenerationStatus] = useState('');
+
+    // Auto-resize prompt textarea when prompt updates (from enhancer streaming)
+    useEffect(() => {
+        const ta = promptRef.current;
+        if (ta) { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; }
+    }, [prompt]);
 
     // Results
     const [generations, setGenerations] = useState([]);
@@ -293,6 +305,54 @@ const AIStudio = ({ onBack, onNavigate }) => {
         if (refFileInputRef.current) refFileInputRef.current.value = '';
     }, []);
 
+    // ── PROMPT ENHANCER (SSE streaming — typing effect) ──
+    const handleEnhancePrompt = useCallback(async () => {
+        if (!prompt.trim() || isEnhancing) return;
+        setIsEnhancing(true);
+
+        const abortController = new AbortController();
+        enhanceAbortRef.current = abortController;
+
+        try {
+            const type = mediaType === 'video' ? 'video' : 'video';
+            const response = await apiService.ai.enhancePromptStream(prompt.trim(), type);
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.message || 'Enhancement failed');
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let enhanced = '';
+            setPrompt('');
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                if (abortController.signal.aborted) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n');
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(line.slice(6));
+                            if (data.token) { enhanced += data.token; setPrompt(enhanced); }
+                            if (data.done && data.fullText) { enhanced = data.fullText; setPrompt(data.fullText); }
+                            if (data.error) toast.error(data.error);
+                        } catch (e) { /* skip */ }
+                    }
+                }
+            }
+        } catch (err) {
+            if (err.name !== 'AbortError') toast.error(err.message || 'Failed to enhance prompt');
+        } finally {
+            setIsEnhancing(false);
+            enhanceAbortRef.current = null;
+        }
+    }, [prompt, mediaType, isEnhancing]);
+
     // Generation handler — uses new /api/ai/* endpoints
     const handleGenerate = useCallback(async () => {
         if (!prompt.trim()) { toast.error('Please enter a prompt'); return; }
@@ -308,7 +368,6 @@ const AIStudio = ({ onBack, onNavigate }) => {
             setActiveTab('create');
             const isVideoGen = mediaType === 'video';
             let finalPrompt = prompt.trim();
-            if (enhancePrompt) finalPrompt = `(masterpiece, best quality, highly detailed) ${finalPrompt}, professional lighting, sharp focus, 8k resolution`;
 
             // Build payload for new API
             const payload = {
@@ -321,6 +380,8 @@ const AIStudio = ({ onBack, onNavigate }) => {
                 payload.num_inference_steps = selectedModel.includes('schnell') ? Math.min(numInferenceSteps, 12) : numInferenceSteps;
                 payload.guidance_scale = guidanceScale;
                 payload.num_images = 1;
+            } else {
+                if (duration) payload.duration = duration;
             }
 
             setGenerationStatus('Generating...');
@@ -435,7 +496,7 @@ const AIStudio = ({ onBack, onNavigate }) => {
             setIsGenerating(false);
             toast.error(error.response?.data?.message || error.message || 'Failed to start generation.');
         }
-    }, [prompt, mediaType, selectedModel, aspectRatio, numInferenceSteps, guidanceScale, isLoggedIn, enhancePrompt, missingRequiredReferences, currentModelMinImages, referenceFiles, currentModel, fetchDrafts]);
+    }, [prompt, mediaType, selectedModel, aspectRatio, numInferenceSteps, guidanceScale, isLoggedIn, missingRequiredReferences, currentModelMinImages, referenceFiles, currentModel, fetchDrafts, duration]);
 
     const handleKeyDown = useCallback((e) => {
         if (e.key === 'Enter' && !e.shiftKey && !isGenerating) { e.preventDefault(); handleGenerate(); }
@@ -923,10 +984,11 @@ const AIStudio = ({ onBack, onNavigate }) => {
                             onKeyDown={handleKeyDown}
                             placeholder="Describe what you want to create..."
                             rows={3}
+                            disabled={isEnhancing}
                             style={{
                                 width: '100%', background: 'transparent', border: 'none', outline: 'none',
-                                color: t.text1, fontSize: 17, lineHeight: 1.6, resize: 'none',
-                                minHeight: 60, fontFamily: 'inherit',
+                                color: isEnhancing ? t.accent : t.text1, fontSize: 17, lineHeight: 1.6, resize: 'none',
+                                minHeight: 60, fontFamily: 'inherit', transition: 'color 0.2s', overflow: 'hidden',
                             }}
                         />
 
@@ -1050,14 +1112,25 @@ const AIStudio = ({ onBack, onNavigate }) => {
                                     </span>
                                 </button>
 
-                                {/* Prompt enhancer toggle */}
-                                <button onClick={() => setEnhancePrompt(!enhancePrompt)} title="Prompt Enhancer" style={{
-                                    padding: '5px 10px', borderRadius: 8, border: 'none', fontSize: 10, fontWeight: 600,
-                                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
-                                    background: enhancePrompt ? t.accentDim : t.surface,
-                                    color: enhancePrompt ? t.accent : t.text3,
-                                }}>
-                                    <HiOutlineSparkles size={10} /> Enhance
+                                {/* AI Prompt Enhancer (streaming) */}
+                                <button
+                                    onClick={isEnhancing ? () => { enhanceAbortRef.current?.abort(); setIsEnhancing(false); } : handleEnhancePrompt}
+                                    disabled={!prompt.trim() && !isEnhancing}
+                                    title={isEnhancing ? 'Stop enhancing' : 'Enhance prompt with AI'}
+                                    style={{
+                                        padding: '5px 12px', borderRadius: 8,
+                                        border: `1px solid ${isEnhancing ? `${t.accent}66` : t.border}`,
+                                        fontSize: 10, fontWeight: 600,
+                                        cursor: (!prompt.trim() && !isEnhancing) ? 'not-allowed' : 'pointer',
+                                        display: 'flex', alignItems: 'center', gap: 4,
+                                        background: isEnhancing ? t.accentDim : t.surface,
+                                        color: isEnhancing ? t.accent : t.text3,
+                                        opacity: (!prompt.trim() && !isEnhancing) ? 0.4 : 1,
+                                        transition: 'all 0.2s',
+                                    }}
+                                >
+                                    <HiOutlineSparkles size={10} style={{ animation: isEnhancing ? 'spin 1s linear infinite' : 'none' }} />
+                                    {isEnhancing ? 'Stop' : '✨ Enhance'}
                                 </button>
 
                                 {/* Advanced toggle */}
@@ -1098,6 +1171,13 @@ const AIStudio = ({ onBack, onNavigate }) => {
                                     const m = availableModels.find(m => m.id === id);
                                     setNumInferenceSteps(m?.defaultSteps || 4);
                                     setGuidanceScale(m?.defaultGuidance || 3.5);
+                                    // Auto-set duration from model parameters
+                                    if (m?.parameters?.duration) {
+                                        const d = m.parameters.duration;
+                                        setDuration(d.default != null ? String(d.default) : null);
+                                    } else {
+                                        setDuration(null);
+                                    }
                                 }}
                                 isDark={isDark}
                                 placeholder="Select model"
@@ -1116,6 +1196,35 @@ const AIStudio = ({ onBack, onNavigate }) => {
                                 </button>
                             ))}
                         </div>
+
+                        {/* Duration selector (video models only) */}
+                        {mediaType === 'video' && (() => {
+                            const model = availableModels.find(m => m.id === selectedModel);
+                            const durParam = model?.parameters?.duration;
+                            if (!durParam) return null;
+                            const options = durParam.options
+                                ? durParam.options.map(o => String(o))
+                                : (durParam.min != null && durParam.max != null)
+                                    ? Array.from({ length: durParam.max - durParam.min + 1 }, (_, i) => String(durParam.min + i))
+                                    : null;
+                            if (!options || options.length === 0) return null;
+                            return (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: t.cardBg, border: `1px solid ${t.border}`, borderRadius: 12, padding: '3px 8px' }}>
+                                    <span style={{ fontSize: 10, color: t.text3, fontWeight: 600, whiteSpace: 'nowrap' }}>Duration</span>
+                                    <div style={{ display: 'flex', gap: 2 }}>
+                                        {options.map(opt => (
+                                            <button key={opt} onClick={() => setDuration(opt)} style={{
+                                                padding: '6px 10px', borderRadius: 8, border: 'none', fontSize: 11, fontWeight: 500, cursor: 'pointer',
+                                                background: duration === opt ? t.accentDim : 'transparent',
+                                                color: duration === opt ? t.accent : t.text3, transition: 'all 0.15s',
+                                            }}>
+                                                {opt.endsWith('s') ? opt : `${opt}s`}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })()}
                     </div>
 
                     {/* ── Advanced Settings (expandable) ── */}

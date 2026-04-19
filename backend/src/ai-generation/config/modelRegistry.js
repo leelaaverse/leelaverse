@@ -2251,6 +2251,298 @@ const MODELS = {
                 }
         }
 },
+    // =====================================================================
+    // NEW TEXT-TO-VIDEO MODELS
+    // =====================================================================
+
+    'fal-ai-veo3-1-text-to-video': {
+        id: "fal-ai-veo3-1-text-to-video",
+        name: "Veo 3.1",
+        description: "Google's most advanced AI video generation model with sound. Cinematic 720p/1080p output.",
+        provider: "Google",
+        falEndpoint: "fal-ai/veo3.1",
+        category: MODEL_CATEGORIES.TEXT_TO_VIDEO,
+        creditCost: 200,
+        featured: true,
+        inputSchema: {
+                prompt: { type: "string", required: true },
+                aspect_ratio: { type: "string", default: "16:9", options: ["16:9", "9:16"] },
+                duration: { type: "string", default: "8s", options: ["4s", "6s", "8s"] },
+                resolution: { type: "string", default: "720p", options: ["720p", "1080p", "4k"] },
+                negative_prompt: { type: "string" },
+                generate_audio: { type: "boolean", default: true },
+                seed: { type: "integer" }
+        }
+    },
+
+    'fal-ai-veo3-1-fast-text-to-video': {
+        id: "fal-ai-veo3-1-fast-text-to-video",
+        name: "Veo 3.1 Fast",
+        description: "Faster and more cost-effective version of Google's Veo 3.1.",
+        provider: "Google",
+        falEndpoint: "fal-ai/veo3.1/fast",
+        category: MODEL_CATEGORIES.TEXT_TO_VIDEO,
+        creditCost: 120,
+        featured: true,
+        inputSchema: {
+                prompt: { type: "string", required: true },
+                aspect_ratio: { type: "string", default: "16:9", options: ["16:9", "9:16"] },
+                duration: { type: "string", default: "8s", options: ["4s", "6s", "8s"] },
+                resolution: { type: "string", default: "720p", options: ["720p", "1080p", "4k"] },
+                negative_prompt: { type: "string" },
+                generate_audio: { type: "boolean", default: true },
+                seed: { type: "integer" }
+        }
+    },
+
+    'bytedance-seedance-2-0-text-to-video': {
+        id: "bytedance-seedance-2-0-text-to-video",
+        name: "Seedance 2.0",
+        description: "ByteDance's most advanced text-to-video model. Cinematic output with native audio, multi-shot editing, and real-world physics.",
+        provider: "ByteDance",
+        falEndpoint: "bytedance/seedance-2.0/text-to-video",
+        category: MODEL_CATEGORIES.TEXT_TO_VIDEO,
+        creditCost: 100,
+        featured: true,
+        inputSchema: {
+                prompt: { type: "string", required: true },
+                aspect_ratio: { type: "string", default: "16:9", options: ["21:9", "16:9", "4:3", "1:1", "3:4", "9:16"] },
+                resolution: { type: "string", default: "1080p", options: ["480p", "720p", "1080p"] },
+                duration: { type: "string", default: "5", options: ["2", "3", "4", "5", "6", "7", "8", "9", "10"] },
+                seed: { type: "integer" },
+                enable_safety_checker: { type: "boolean", default: true }
+        }
+    },
+
+    // =====================================================================
+    // NEW IMAGE-TO-VIDEO MODELS
+    // =====================================================================
+
+    'fal-ai-veo3-1-image-to-video': {
+        id: "fal-ai-veo3-1-image-to-video",
+        name: "Veo 3.1 Image to Video",
+        description: "Google's state-of-the-art image-to-video model from DeepMind.",
+        provider: "Google",
+        falEndpoint: "fal-ai/veo3.1/image-to-video",
+        category: MODEL_CATEGORIES.IMAGE_TO_VIDEO,
+        creditCost: 200,
+        featured: true,
+        inputSchema: {
+                prompt: { type: "string", required: true },
+                image_url: { type: "string", required: true },
+                aspect_ratio: { type: "string", default: "16:9", options: ["16:9", "9:16"] },
+                duration: { type: "string", default: "8s", options: ["4s", "6s", "8s"] },
+                resolution: { type: "string", default: "720p", options: ["720p", "1080p"] },
+                generate_audio: { type: "boolean", default: true },
+                seed: { type: "integer" }
+        }
+    },
+
+    'fal-ai-veo3-1-fast-image-to-video': {
+        id: "fal-ai-veo3-1-fast-image-to-video",
+        name: "Veo 3.1 Fast Image to Video",
+        description: "Fast version of Veo 3.1 for image-to-video generation.",
+        provider: "Google",
+        falEndpoint: "fal-ai/veo3.1/fast/image-to-video",
+        category: MODEL_CATEGORIES.IMAGE_TO_VIDEO,
+        creditCost: 120,
+        featured: true,
+        inputSchema: {
+                prompt: { type: "string", required: true },
+                image_url: { type: "string", required: true },
+                aspect_ratio: { type: "string", default: "16:9", options: ["16:9", "9:16"] },
+                duration: { type: "string", default: "8s", options: ["4s", "6s", "8s"] },
+                resolution: { type: "string", default: "720p", options: ["720p", "1080p"] },
+                generate_audio: { type: "boolean", default: true },
+                seed: { type: "integer" }
+        }
+    },
+
+    'fal-ai-kling-video-v3-pro-image-to-video': {
+        id: "fal-ai-kling-video-v3-pro-image-to-video",
+        name: "Kling Video v3 Image to Video [Pro]",
+        description: "Kling 3.0 Pro: Top-tier image-to-video with cinematic visuals, fluid motion, and native audio.",
+        provider: "Kuaishou",
+        falEndpoint: "fal-ai/kling-video/v3/pro/image-to-video",
+        category: MODEL_CATEGORIES.IMAGE_TO_VIDEO,
+        creditCost: 84,
+        featured: true,
+        inputSchema: {
+                prompt: { type: "string" },
+                image_url: { type: "string", required: true },
+                duration: { type: "string", default: "5", options: ["3", "4", "5", "6", "7", "8", "9", "10"] },
+                generate_audio: { type: "boolean", default: true },
+                aspect_ratio: { type: "string", default: "16:9", options: ["16:9", "9:16", "1:1"] },
+                negative_prompt: { type: "string", default: "blur, distort, and low quality" },
+                seed: { type: "integer" }
+        }
+    },
+
+    'fal-ai-kling-video-v2-6-pro-image-to-video': {
+        id: "fal-ai-kling-video-v2-6-pro-image-to-video",
+        name: "Kling v2.6 Image to Video [Pro]",
+        description: "Kling 2.6 Pro: Top-tier image-to-video with cinematic visuals, fluid motion, and native audio.",
+        provider: "Kuaishou",
+        falEndpoint: "fal-ai/kling-video/v2.6/pro/image-to-video",
+        category: MODEL_CATEGORIES.IMAGE_TO_VIDEO,
+        creditCost: 70,
+        featured: true,
+        inputSchema: {
+                prompt: { type: "string" },
+                image_url: { type: "string", required: true },
+                duration: { type: "string", default: "5", options: ["5", "10"] },
+                aspect_ratio: { type: "string", default: "16:9", options: ["16:9", "9:16", "1:1"] },
+                negative_prompt: { type: "string", default: "blur, distort, and low quality" },
+                generate_audio: { type: "boolean", default: true }
+        }
+    },
+
+    'fal-ai-kling-video-v2-5-turbo-pro-image-to-video': {
+        id: "fal-ai-kling-video-v2-5-turbo-pro-image-to-video",
+        name: "Kling v2.5 Turbo Pro Image to Video",
+        description: "Kling 2.5 Turbo Pro: Top-tier image-to-video with unparalleled motion fluidity and cinematic visuals.",
+        provider: "Kuaishou",
+        falEndpoint: "fal-ai/kling-video/v2.5-turbo/pro/image-to-video",
+        category: MODEL_CATEGORIES.IMAGE_TO_VIDEO,
+        creditCost: 35,
+        featured: true,
+        inputSchema: {
+                prompt: { type: "string" },
+                image_url: { type: "string", required: true },
+                duration: { type: "string", default: "5", options: ["5", "10"] },
+                aspect_ratio: { type: "string", default: "16:9", options: ["16:9", "9:16", "1:1"] },
+                negative_prompt: { type: "string", default: "blur, distort, and low quality" }
+        }
+    },
+
+    'fal-ai-sora-2-image-to-video': {
+        id: "fal-ai-sora-2-image-to-video",
+        name: "Sora 2 Image to Video",
+        description: "OpenAI's Sora 2 image-to-video model with richly detailed clips and audio.",
+        provider: "OpenAI",
+        falEndpoint: "fal-ai/sora-2/image-to-video",
+        category: MODEL_CATEGORIES.IMAGE_TO_VIDEO,
+        creditCost: 150,
+        featured: true,
+        inputSchema: {
+                prompt: { type: "string", required: true },
+                image_url: { type: "string", required: true },
+                aspect_ratio: { type: "string", default: "16:9", options: ["16:9", "9:16", "1:1"] },
+                duration: { type: "integer", default: 10, min: 5, max: 20 },
+                seed: { type: "integer" }
+        }
+    },
+
+    'fal-ai-sora-2-image-to-video-pro': {
+        id: "fal-ai-sora-2-image-to-video-pro",
+        name: "Sora 2 Pro Image to Video",
+        description: "Premium Sora 2 Pro image-to-video with superior quality and audio.",
+        provider: "OpenAI",
+        falEndpoint: "fal-ai/sora-2/image-to-video/pro",
+        category: MODEL_CATEGORIES.IMAGE_TO_VIDEO,
+        creditCost: 250,
+        featured: true,
+        inputSchema: {
+                prompt: { type: "string", required: true },
+                image_url: { type: "string", required: true },
+                aspect_ratio: { type: "string", default: "16:9", options: ["16:9", "9:16", "1:1"] },
+                duration: { type: "integer", default: 10, min: 5, max: 20 },
+                seed: { type: "integer" }
+        }
+    },
+
+    'xai-grok-imagine-video-image-to-video': {
+        id: "xai-grok-imagine-video-image-to-video",
+        name: "Grok Imagine Video I2V",
+        description: "Generate videos from images with audio using xAI's Grok Imagine Video.",
+        provider: "xAI",
+        falEndpoint: "xai/grok-imagine-video/image-to-video",
+        category: MODEL_CATEGORIES.IMAGE_TO_VIDEO,
+        creditCost: 35,
+        featured: true,
+        inputSchema: {
+                prompt: { type: "string" },
+                image_url: { type: "string", required: true },
+                duration: { type: "integer", default: 6 },
+                aspect_ratio: { type: "string", default: "16:9", options: ["16:9", "4:3", "3:2", "1:1", "2:3", "3:4", "9:16"] },
+                resolution: { type: "string", default: "720p", options: ["480p", "720p"] }
+        }
+    },
+
+    'fal-ai-pixverse-c1-image-to-video': {
+        id: "fal-ai-pixverse-c1-image-to-video",
+        name: "PixVerse C1 Image to Video",
+        description: "Animate images into cinematic videos with PixVerse C1, supporting 1080p and native audio.",
+        provider: "PixVerse",
+        falEndpoint: "fal-ai/pixverse/c1/image-to-video",
+        category: MODEL_CATEGORIES.IMAGE_TO_VIDEO,
+        creditCost: 55,
+        featured: true,
+        inputSchema: {
+                prompt: { type: "string" },
+                image_url: { type: "string", required: true },
+                aspect_ratio: { type: "string", default: "16:9", options: ["16:9", "4:3", "1:1", "3:4", "9:16", "2:3", "3:2", "21:9"] },
+                resolution: { type: "string", default: "720p", options: ["360p", "540p", "720p", "1080p"] },
+                duration: { type: "integer", default: 5, min: 1, max: 15 },
+                seed: { type: "integer" },
+                generate_audio_switch: { type: "boolean" }
+        }
+    },
+
+    'fal-ai-pixverse-v6-image-to-video': {
+        id: "fal-ai-pixverse-v6-image-to-video",
+        name: "PixVerse V6 Image to Video",
+        description: "PixVerse V6 delivers lifelike physics and striking visuals for image-to-video.",
+        provider: "PixVerse",
+        falEndpoint: "fal-ai/pixverse/v6/image-to-video",
+        category: MODEL_CATEGORIES.IMAGE_TO_VIDEO,
+        creditCost: 60,
+        featured: true,
+        inputSchema: {
+                prompt: { type: "string" },
+                image_url: { type: "string", required: true },
+                aspect_ratio: { type: "string", default: "16:9", options: ["16:9", "4:3", "1:1", "3:4", "9:16"] },
+                resolution: { type: "string", default: "720p", options: ["360p", "540p", "720p", "1080p"] },
+                duration: { type: "integer", default: 5, min: 1, max: 15 },
+                seed: { type: "integer" },
+                generate_audio_switch: { type: "boolean" }
+        }
+    },
+
+    'fal-ai-minimax-hailuo-02-standard-image-to-video': {
+        id: "fal-ai-minimax-hailuo-02-standard-image-to-video",
+        name: "MiniMax Hailuo-02 I2V (Standard)",
+        description: "MiniMax Hailuo-02 Image To Video API with 768p and 512p resolutions.",
+        provider: "MiniMax",
+        falEndpoint: "fal-ai/minimax/hailuo-02/standard/image-to-video",
+        category: MODEL_CATEGORIES.IMAGE_TO_VIDEO,
+        creditCost: 40,
+        featured: true,
+        inputSchema: {
+                prompt: { type: "string", required: true },
+                image_url: { type: "string", required: true },
+                resolution: { type: "string", default: "768p", options: ["512p", "768p"] },
+                prompt_optimizer: { type: "boolean", default: true }
+        }
+    },
+
+    'fal-ai-ltx-2-19b-image-to-video': {
+        id: "fal-ai-ltx-2-19b-image-to-video",
+        name: "LTX-2 19B Image to Video",
+        description: "Generate video with audio from images using LTX-2 19B.",
+        provider: "Lightricks",
+        falEndpoint: "fal-ai/ltx-2-19b/image-to-video",
+        category: MODEL_CATEGORIES.IMAGE_TO_VIDEO,
+        creditCost: 45,
+        featured: true,
+        inputSchema: {
+                prompt: { type: "string", required: true },
+                image_url: { type: "string", required: true },
+                aspect_ratio: { type: "string", default: "16:9", options: ["16:9", "9:16", "1:1", "4:3", "3:4"] },
+                duration: { type: "string", default: "5", options: ["3", "5", "7", "9"] },
+                seed: { type: "integer" }
+        }
+    },
 
     // =====================================================================
     // VIDEO UPSCALE MODELS
@@ -2380,6 +2672,21 @@ const validateInput = (modelId, input) => {
     const errors = [];
     const sanitizedInput = {};
 
+    // Helper: coerce value to the correct type based on schema
+    const coerceValue = (value, rules) => {
+        if (value === undefined || value === null) return value;
+        if (rules.type === 'boolean') {
+            if (value === 'true' || value === true) return true;
+            if (value === 'false' || value === false) return false;
+            return Boolean(value);
+        }
+        if (rules.type === 'integer' || rules.type === 'number') {
+            const num = Number(value);
+            return isNaN(num) ? value : (rules.type === 'integer' ? Math.round(num) : num);
+        }
+        return value;
+    };
+
     for (const [key, rules] of Object.entries(schema)) {
         const value = input[key];
         const isMissingValue = value === undefined || value === null;
@@ -2396,8 +2703,8 @@ const validateInput = (modelId, input) => {
 
         // Skip optional fields that weren't provided
         if (isMissingValue) {
-            if (rules.default !== undefined) {
-                sanitizedInput[key] = rules.default;
+            if (rules.default !== undefined && rules.default !== null) {
+                sanitizedInput[key] = coerceValue(rules.default, rules);
             }
             continue;
         }
@@ -2431,8 +2738,17 @@ const validateInput = (modelId, input) => {
 
         // Validate options — for optional fields, fall back to model default instead of hard-failing
         if (rules.options && !rules.options.includes(value)) {
+            // Also try coerced string comparison for numeric options
+            const strValue = String(value);
+            const strOptions = rules.options.map(o => String(o));
+            if (strOptions.includes(strValue)) {
+                // Match found with string coercion — use the original option value
+                const matchIdx = strOptions.indexOf(strValue);
+                sanitizedInput[key] = coerceValue(rules.options[matchIdx], rules);
+                continue;
+            }
             if (!rules.required && rules.default !== undefined) {
-                sanitizedInput[key] = rules.default;
+                sanitizedInput[key] = coerceValue(rules.default, rules);
                 continue;
             }
             errors.push(`'${key}' must be one of: ${rules.options.join(', ')}`);
@@ -2440,16 +2756,17 @@ const validateInput = (modelId, input) => {
         }
 
         // Validate min/max for numbers
-        if (rules.min !== undefined && value < rules.min) {
+        const numValue = coerceValue(value, rules);
+        if (rules.min !== undefined && numValue < rules.min) {
             errors.push(`'${key}' must be >= ${rules.min}`);
             continue;
         }
-        if (rules.max !== undefined && value > rules.max) {
+        if (rules.max !== undefined && numValue > rules.max) {
             errors.push(`'${key}' must be <= ${rules.max}`);
             continue;
         }
 
-        sanitizedInput[key] = value;
+        sanitizedInput[key] = coerceValue(value, rules);
     }
 
     return { valid: errors.length === 0, errors, sanitizedInput };

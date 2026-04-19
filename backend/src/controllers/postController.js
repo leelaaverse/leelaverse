@@ -521,13 +521,16 @@ exports.createPostFromGeneration = async (req, res) => {
 			caption,
 			title,
 			type = 'content',
-			category = 'image-post',
+			category,
 			tags = [],
 			visibility = 'public',
 			aiAspectRatio
 		} = req.body;
 
-		console.log('🔍 Request Body Debug:', {
+	// Auto-detect category based on type field (video vs image)
+	const resolvedCategory = category || (type === 'video' ? 'video-post' : 'image-post');
+
+	console.log('🔍 Request Body Debug:', {
 			receivedVisibility: req.body.visibility,
 			defaultedVisibility: visibility,
 			fullBody: req.body
@@ -570,11 +573,11 @@ exports.createPostFromGeneration = async (req, res) => {
 
 		// Use the createPost function with these images
 		const postData = {
-			caption: caption || `AI generated image${aiGenerations.length > 1 ? 's' : ''}: ${aiGenerations[0].prompt}`,
-			title: title || 'AI Generated Image',
-			type,
-			category,
-			imageUrls,
+			caption: caption || `AI generated ${resolvedCategory === 'video-post' ? 'video' : 'image'}${aiGenerations.length > 1 ? 's' : ''}: ${aiGenerations[0].prompt}`,
+		title: title || (resolvedCategory === 'video-post' ? 'AI Generated Video' : 'AI Generated Image'),
+		type,
+		category: resolvedCategory,
+		imageUrls,
 			aiGenerationIds,
 			aiGenerated: true,
 			aiDetails: {
@@ -840,7 +843,12 @@ exports.createPost = async (req, res) => {
 			visibility = 'public'
 		} = req.body;
 
-		// Require authentication for AI-generated posts (no fallback)
+	// Auto-detect if content is video based on category, type, or URL extensions
+	const isVideoContent = category === 'video-post' || type === 'video' ||
+		imageUrls.some(url => /\.(mp4|webm|mov|avi)(\?|$)/i.test(url));
+	const resolvedCategory = isVideoContent ? 'video-post' : (category || 'image-post');
+
+	// Require authentication for AI-generated posts (no fallback)
 		if (aiGenerated && !userId) {
 			console.error('❌ Authentication required for AI-generated posts');
 			return res.status(401).json({
@@ -861,14 +869,14 @@ exports.createPost = async (req, res) => {
 			visibility: visibility,
 			receivedVisibility: req.body.visibility
 		});		// Validate content based on category
-		if (category === 'text-post' && !caption) {
+		if (resolvedCategory === 'text-post' && !caption) {
 			return res.status(400).json({
 				success: false,
 				message: 'Caption is required for text posts'
 			});
 		}
 
-		if ((category === 'image-post' || category === 'image-text-post') && imageUrls.length === 0) {
+		if ((resolvedCategory === 'image-post' || resolvedCategory === 'image-text-post') && imageUrls.length === 0) {
 			return res.status(400).json({
 				success: false,
 				message: 'At least one image is required for image posts'
@@ -903,13 +911,13 @@ exports.createPost = async (req, res) => {
 		const postData = {
 			authorId: finalUserId,
 			type: type,
-			category: category,
+			category: resolvedCategory,
 			caption: caption || null,
 			title: title || null,
 			mediaUrls: cloudinaryUrls, // Store multiple URLs
 			mediaUrl: cloudinaryUrls[0] || null, // First image for backward compatibility
 			thumbnailUrl: thumbnailUrl,
-			mediaType: cloudinaryUrls.length > 0 ? 'image/jpeg' : null,
+			mediaType: isVideoContent ? 'video/mp4' : (cloudinaryUrls.length > 0 ? 'image/jpeg' : null),
 			aiGenerated: aiGenerated,
 			tags: tags.map(tag => tag.toLowerCase().trim()),
 			visibility: visibility,
@@ -938,22 +946,37 @@ exports.createPost = async (req, res) => {
 			postData.aiSeed = aiDetails.seed || null;
 		}
 
-		// Create post using Prisma
-		const post = await prisma.post.create({
-			data: postData,
-			include: {
-				author: {
-					select: {
-						id: true,
-						username: true,
-						firstName: true,
-						lastName: true,
-						avatar: true,
-						verificationStatus: true
+		// Create post using Prisma (with retry for transient DB connection issues)
+		let post;
+		const MAX_DB_RETRIES = 3;
+		for (let attempt = 1; attempt <= MAX_DB_RETRIES; attempt++) {
+			try {
+				post = await prisma.post.create({
+					data: postData,
+					include: {
+						author: {
+							select: {
+								id: true,
+								username: true,
+								firstName: true,
+								lastName: true,
+								avatar: true,
+								verificationStatus: true
+							}
+						}
 					}
+				});
+				break; // Success, exit retry loop
+			} catch (dbError) {
+				console.error(`❌ DB insert attempt ${attempt}/${MAX_DB_RETRIES} failed:`, dbError.code);
+				if (dbError.code === 'P1001' && attempt < MAX_DB_RETRIES) {
+					console.log(`⏳ Retrying DB connection in ${attempt * 2}s...`);
+					await new Promise(r => setTimeout(r, attempt * 2000));
+					continue;
 				}
+				throw dbError; // Non-retryable or max retries exceeded
 			}
-		});
+		}
 
 		console.log('✅ Post created successfully!');
 		console.log('📋 Post Details:', {
@@ -997,6 +1020,26 @@ exports.createPost = async (req, res) => {
 		}
 
 		console.log('✅ Post creation complete! Should appear in feed immediately.');
+
+		// Create "post published" notification for the user
+		try {
+			const io = req.app.get('io');
+			const notification = await prisma.notification.create({
+				data: {
+					recipientId: finalUserId,
+					type: 'post',
+					message: `Your ${post.category === 'video-post' ? 'video' : 'image'} post is now live! 🎉`,
+					postId: post.id,
+					link: `/post/${post.id}`,
+					isRead: false
+				}
+			});
+			if (io) {
+				io.to(`user:${finalUserId}`).emit('new:notification', notification);
+			}
+		} catch (notifErr) {
+			console.error('Failed to create post notification:', notifErr.message);
+		}
 
 		res.status(201).json({
 			success: true,
