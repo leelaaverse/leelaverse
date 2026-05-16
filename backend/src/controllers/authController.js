@@ -3,6 +3,7 @@ const prisma = require('../config/prisma');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const rewardEngine = require('../services/rewardEngine');
+const emailService = require('../services/emailService');
 
 class AuthController {
     constructor() {
@@ -17,6 +18,8 @@ class AuthController {
         this.changePassword = this.changePassword.bind(this);
         this.requestPasswordReset = this.requestPasswordReset.bind(this);
         this.resetPassword = this.resetPassword.bind(this);
+        this.verifyOTP = this.verifyOTP.bind(this);
+        this.resendOTP = this.resendOTP.bind(this);
         this.mockRegister = this.mockRegister.bind(this);
         this.mockLogin = this.mockLogin.bind(this);
     }
@@ -50,26 +53,35 @@ class AuthController {
                 });
             }
 
-            // Create new user
+            // Generate 6-digit OTP
+            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+            const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+            // Create new user (unverified, coins will be credited after OTP)
             const user = await UserService.createUser({
                 username,
                 email: email.toLowerCase(),
                 password,
                 firstName: firstName || 'User',
-                lastName: lastName || ''
+                lastName: lastName || '',
+                isEmailVerified: false,
+                emailVerificationToken: otp,
+                emailVerificationExpires: otpExpires,
+                coinBalance: 0, // Will get 500 after OTP verification
             });
 
-            // Record the 100 free signup tokens as a transaction
-            await prisma.coinTransaction.create({
-                data: {
-                    userId: user.id,
-                    type: 'signup_bonus',
-                    amount: 100,
-                    balanceAfter: 100,
-                    description: 'Welcome bonus: 100 free tokens on signup',
-                    status: 'completed',
-                },
-            });
+            // Send OTP email via Zoho SMTP
+            try {
+                await emailService.sendOTPEmail(
+                    email.toLowerCase(),
+                    otp,
+                    firstName || 'Creator'
+                );
+                console.log(`📧 OTP sent to ${email}`);
+            } catch (emailErr) {
+                console.error('📧 Failed to send OTP email:', emailErr);
+                // Don't block registration if email fails
+            }
 
             // Generate tokens
             const accessToken = UserService.generateAccessToken(user.id);
@@ -83,11 +95,12 @@ class AuthController {
 
             res.status(201).json({
                 success: true,
-                message: 'User registered successfully',
+                message: 'Registration successful! Please verify your email.',
                 data: {
                     user: userResponse,
                     accessToken,
-                    refreshToken
+                    refreshToken,
+                    requiresOTP: true,
                 }
             });
 
@@ -547,6 +560,170 @@ class AuthController {
             res.status(500).json({
                 success: false,
                 message: 'Server error while resetting password'
+            });
+        }
+    }
+
+    /**
+     * Verify email OTP after signup
+     * POST /api/auth/verify-otp
+     */
+    async verifyOTP(req, res) {
+        try {
+            const { email, otp } = req.body;
+
+            if (!email || !otp) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Email and OTP are required',
+                });
+            }
+
+            const user = await prisma.user.findUnique({
+                where: { email: email.toLowerCase() },
+            });
+
+            if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'User not found',
+                });
+            }
+
+            if (user.isEmailVerified) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Email is already verified',
+                });
+            }
+
+            // Check OTP expiry
+            if (!user.emailVerificationExpires || new Date() > new Date(user.emailVerificationExpires)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'OTP has expired. Please request a new one.',
+                });
+            }
+
+            // Verify OTP
+            if (user.emailVerificationToken !== otp) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid OTP. Please try again.',
+                });
+            }
+
+            // OTP is valid — verify email + credit 500 coins
+            const SIGNUP_BONUS = 500;
+
+            const updatedUser = await prisma.$transaction(async (tx) => {
+                // Update user: verify + add coins
+                const updated = await tx.user.update({
+                    where: { id: user.id },
+                    data: {
+                        isEmailVerified: true,
+                        emailVerificationToken: null,
+                        emailVerificationExpires: null,
+                        coinBalance: SIGNUP_BONUS,
+                        totalCoinsEarned: SIGNUP_BONUS,
+                    },
+                });
+
+                // Record the signup bonus transaction
+                await tx.coinTransaction.create({
+                    data: {
+                        userId: user.id,
+                        type: 'signup_bonus',
+                        amount: SIGNUP_BONUS,
+                        balanceAfter: SIGNUP_BONUS,
+                        description: `Welcome bonus: ${SIGNUP_BONUS} free coins on email verification`,
+                        status: 'completed',
+                    },
+                });
+
+                return updated;
+            });
+
+            const { password: _, ...userResponse } = updatedUser;
+
+            res.json({
+                success: true,
+                message: `Email verified! You've received ${SIGNUP_BONUS} welcome coins! 🎉`,
+                data: {
+                    user: userResponse,
+                    bonusCoins: SIGNUP_BONUS,
+                },
+            });
+        } catch (error) {
+            console.error('OTP verification error:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Server error during OTP verification',
+            });
+        }
+    }
+
+    /**
+     * Resend OTP email
+     * POST /api/auth/resend-otp
+     */
+    async resendOTP(req, res) {
+        try {
+            const { email } = req.body;
+
+            if (!email) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Email is required',
+                });
+            }
+
+            const user = await prisma.user.findUnique({
+                where: { email: email.toLowerCase() },
+            });
+
+            if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'User not found',
+                });
+            }
+
+            if (user.isEmailVerified) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Email is already verified',
+                });
+            }
+
+            // Generate new OTP
+            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+            const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+            await prisma.user.update({
+                where: { id: user.id },
+                data: {
+                    emailVerificationToken: otp,
+                    emailVerificationExpires: otpExpires,
+                },
+            });
+
+            // Send OTP email
+            await emailService.sendOTPEmail(
+                email.toLowerCase(),
+                otp,
+                user.firstName || 'Creator'
+            );
+
+            res.json({
+                success: true,
+                message: 'A new verification code has been sent to your email',
+            });
+        } catch (error) {
+            console.error('Resend OTP error:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to resend verification code',
             });
         }
     }

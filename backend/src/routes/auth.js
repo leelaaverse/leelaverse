@@ -41,6 +41,22 @@ router.post('/login',
     authController.login
 );
 
+// @route   POST /api/auth/verify-otp
+// @desc    Verify email OTP after signup
+// @access  Public
+router.post('/verify-otp',
+    authLimiter,
+    authController.verifyOTP
+);
+
+// @route   POST /api/auth/resend-otp
+// @desc    Resend OTP verification email
+// @access  Public
+router.post('/resend-otp',
+    authLimiter,
+    authController.resendOTP
+);
+
 // @route   POST /api/auth/refresh-token
 // @desc    Refresh access token
 // @access  Public (but requires valid refresh token)

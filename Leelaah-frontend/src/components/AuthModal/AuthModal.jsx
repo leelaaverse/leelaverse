@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import apiService from '../../services/api';
 import './AuthModal.css';
 
 const AuthModal = ({ isOpen, onClose, mode, onSuccess }) => {
-    // 'login' | 'signup' | 'forgot' | 'resetSent'
+    // 'login' | 'signup' | 'forgot' | 'resetSent' | 'otp' | 'congrats'
     const [viewMode, setViewMode] = useState(mode === 'login' ? 'login' : 'signup');
     const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState({
@@ -18,12 +19,29 @@ const AuthModal = ({ isOpen, onClose, mode, onSuccess }) => {
     const [successMessage, setSuccessMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
 
+    // OTP state
+    const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
+    const [otpEmail, setOtpEmail] = useState('');
+    const [otpTimer, setOtpTimer] = useState(0);
+    const [pendingAuthData, setPendingAuthData] = useState(null);
+    const [bonusCoins, setBonusCoins] = useState(500);
+    const otpRefs = useRef([]);
+
     const isLogin = viewMode === 'login';
 
     // Update mode when prop changes
-    React.useEffect(() => {
+    useEffect(() => {
         setViewMode(mode === 'login' ? 'login' : 'signup');
     }, [mode]);
+
+    // OTP countdown timer
+    useEffect(() => {
+        if (otpTimer <= 0) return;
+        const interval = setInterval(() => {
+            setOtpTimer((t) => (t <= 1 ? 0 : t - 1));
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [otpTimer]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -101,24 +119,146 @@ const AuthModal = ({ isOpen, onClose, mode, onSuccess }) => {
             const data = await response.json();
 
             if (response.ok && data.success) {
-                setSuccessMessage(data.message || (isLogin ? 'Login successful!' : 'Registration successful!'));
-
+                // Store tokens immediately
                 if (data.data?.accessToken) localStorage.setItem('accessToken', data.data.accessToken);
                 if (data.data?.refreshToken) localStorage.setItem('refreshToken', data.data.refreshToken);
                 if (data.data?.user) localStorage.setItem('user', JSON.stringify(data.data.user));
 
-                setTimeout(() => {
-                    onSuccess(data.data);
-                    handleClose();
-                }, 1500);
+                // If signup, show OTP verification
+                if (!isLogin && data.data?.requiresOTP) {
+                    setOtpEmail(formData.email);
+                    setPendingAuthData(data.data);
+                    setOtpDigits(['', '', '', '', '', '']);
+                    setOtpTimer(60);
+                    setViewMode('otp');
+                    setErrorMessage('');
+                    setSuccessMessage('');
+                } else {
+                    // Login success
+                    setSuccessMessage(data.message || 'Login successful!');
+                    setTimeout(() => {
+                        onSuccess(data.data);
+                        handleClose();
+                    }, 1500);
+                }
             } else {
-                setErrorMessage(data.message || 'Something went wrong. Please try again.');
+                // Extract specific validation error messages if available
+                let errMsg = data.message || 'Something went wrong. Please try again.';
+                if (data.errors && Array.isArray(data.errors) && data.errors.length > 0) {
+                    errMsg = data.errors.map((e) => e.message).join('. ');
+                }
+                setErrorMessage(errMsg);
             }
         } catch (error) {
             console.error('Auth error:', error);
             setErrorMessage('Network error. Please check your connection and try again.');
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    // ─── OTP Input Handlers ───
+    const handleOtpChange = (index, value) => {
+        if (!/^\d*$/.test(value)) return; // Only digits
+        const newDigits = [...otpDigits];
+        newDigits[index] = value.slice(-1);
+        setOtpDigits(newDigits);
+
+        // Auto-focus next input
+        if (value && index < 5) {
+            otpRefs.current[index + 1]?.focus();
+        }
+    };
+
+    const handleOtpKeyDown = (index, e) => {
+        if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
+            otpRefs.current[index - 1]?.focus();
+        }
+    };
+
+    const handleOtpPaste = (e) => {
+        e.preventDefault();
+        const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+        const newDigits = [...otpDigits];
+        for (let i = 0; i < pasted.length; i++) {
+            newDigits[i] = pasted[i];
+        }
+        setOtpDigits(newDigits);
+        const nextEmpty = newDigits.findIndex((d) => !d);
+        otpRefs.current[nextEmpty === -1 ? 5 : nextEmpty]?.focus();
+    };
+
+    const handleVerifyOTP = async () => {
+        const otp = otpDigits.join('');
+        if (otp.length !== 6) {
+            setErrorMessage('Please enter all 6 digits');
+            return;
+        }
+
+        setIsLoading(true);
+        setErrorMessage('');
+
+        try {
+            const res = await apiService.auth.verifyOTP({ email: otpEmail, otp });
+            if (res.data.success) {
+                setBonusCoins(res.data.data.bonusCoins || 500);
+                // Update local data with verified user
+                const verifiedUser = res.data.data.user;
+                if (verifiedUser) {
+                    localStorage.setItem('user', JSON.stringify(verifiedUser));
+                }
+                setViewMode('congrats');
+                setErrorMessage('');
+            } else {
+                setErrorMessage(res.data.message || 'Verification failed');
+            }
+        } catch (error) {
+            setErrorMessage(error.response?.data?.message || 'Verification failed. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleResendOTP = async () => {
+        if (otpTimer > 0) return;
+        setIsLoading(true);
+        setErrorMessage('');
+
+        try {
+            await apiService.auth.resendOTP({ email: otpEmail });
+            setOtpTimer(60);
+            setOtpDigits(['', '', '', '', '', '']);
+            setSuccessMessage('New code sent to your email!');
+            setTimeout(() => setSuccessMessage(''), 3000);
+        } catch (error) {
+            setErrorMessage(error.response?.data?.message || 'Failed to resend code');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleCongratsClose = () => {
+        if (pendingAuthData) {
+            // Re-fetch the profile to get the verified user with coins
+            const fetchAndComplete = async () => {
+                try {
+                    const profileRes = await apiService.auth.getProfile();
+                    if (profileRes.data.success) {
+                        onSuccess({
+                            ...pendingAuthData,
+                            user: profileRes.data.data.user,
+                        });
+                    } else {
+                        onSuccess(pendingAuthData);
+                    }
+                } catch {
+                    onSuccess(pendingAuthData);
+                }
+                handleClose();
+            };
+            fetchAndComplete();
+        } else {
+            handleClose();
         }
     };
 
@@ -172,6 +312,9 @@ const AuthModal = ({ isOpen, onClose, mode, onSuccess }) => {
         setErrorMessage('');
         setSuccessMessage('');
         setShowPassword(false);
+        setOtpDigits(['', '', '', '', '', '']);
+        setOtpEmail('');
+        setPendingAuthData(null);
         setViewMode(mode === 'login' ? 'login' : 'signup');
         onClose();
     };
@@ -184,6 +327,156 @@ const AuthModal = ({ isOpen, onClose, mode, onSuccess }) => {
     };
 
     if (!isOpen) return null;
+
+    // ─── OTP Verification View ───
+    if (viewMode === 'otp') {
+        const isFilled = otpDigits.every((d) => d !== '');
+        return (
+            <div className="auth-modal-overlay" onClick={handleClose}>
+                <div className="auth-modal-container" onClick={(e) => e.stopPropagation()}>
+                    <button className="auth-modal-close" onClick={handleClose}>
+                        <i className="fa-solid fa-xmark"></i>
+                    </button>
+                    <div className="auth-modal-content otp-content">
+                        {/* Animated envelope icon */}
+                        <div className="otp-icon-wrap">
+                            <div className="otp-icon-bg">
+                                <i className="fa-solid fa-envelope-open-text"></i>
+                            </div>
+                            <div className="otp-icon-ring"></div>
+                        </div>
+
+                        <h2 className="auth-modal-title">Verify Your Email</h2>
+                        <p className="auth-modal-subtitle">
+                            We sent a 6-digit code to<br />
+                            <strong className="otp-email-highlight">{otpEmail}</strong>
+                        </p>
+
+                        {errorMessage && (
+                            <div className="auth-alert auth-alert-error">
+                                <i className="fa-solid fa-circle-exclamation"></i>
+                                {errorMessage}
+                            </div>
+                        )}
+                        {successMessage && (
+                            <div className="auth-alert auth-alert-success">
+                                <i className="fa-solid fa-circle-check"></i>
+                                {successMessage}
+                            </div>
+                        )}
+
+                        {/* OTP Input */}
+                        <div className="otp-input-group" onPaste={handleOtpPaste}>
+                            {otpDigits.map((digit, i) => (
+                                <input
+                                    key={i}
+                                    ref={(el) => (otpRefs.current[i] = el)}
+                                    type="text"
+                                    inputMode="numeric"
+                                    maxLength={1}
+                                    className={`otp-digit ${digit ? 'filled' : ''}`}
+                                    value={digit}
+                                    onChange={(e) => handleOtpChange(i, e.target.value)}
+                                    onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                                    autoFocus={i === 0}
+                                />
+                            ))}
+                        </div>
+
+                        <button
+                            className="auth-submit-btn otp-verify-btn"
+                            onClick={handleVerifyOTP}
+                            disabled={!isFilled || isLoading}
+                        >
+                            {isLoading ? (
+                                <>
+                                    <i className="fa-solid fa-spinner fa-spin"></i>
+                                    Verifying...
+                                </>
+                            ) : (
+                                <>
+                                    <i className="fa-solid fa-shield-check"></i>
+                                    Verify & Continue
+                                </>
+                            )}
+                        </button>
+
+                        <div className="otp-resend">
+                            <p>Didn't receive the code?</p>
+                            {otpTimer > 0 ? (
+                                <span className="otp-timer">
+                                    Resend in <strong>{otpTimer}s</strong>
+                                </span>
+                            ) : (
+                                <button
+                                    className="otp-resend-btn"
+                                    onClick={handleResendOTP}
+                                    disabled={isLoading}
+                                >
+                                    Resend Code
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // ─── Congrats View (500 coins bonus) ───
+    if (viewMode === 'congrats') {
+        return (
+            <div className="auth-modal-overlay" onClick={handleCongratsClose}>
+                <div className="auth-modal-container congrats-container" onClick={(e) => e.stopPropagation()}>
+                    <div className="auth-modal-content congrats-content">
+                        {/* Animated particles background */}
+                        <div className="congrats-particles">
+                            {[...Array(20)].map((_, i) => (
+                                <div key={i} className="congrats-particle" style={{
+                                    '--x': `${Math.random() * 100}%`,
+                                    '--delay': `${Math.random() * 2}s`,
+                                    '--size': `${4 + Math.random() * 6}px`,
+                                    '--duration': `${2 + Math.random() * 3}s`,
+                                }} />
+                            ))}
+                        </div>
+
+                        {/* Trophy / Celebration Icon */}
+                        <div className="congrats-icon-wrap">
+                            <div className="congrats-glow"></div>
+                            <div className="congrats-icon">
+                                <span className="congrats-emoji">🎉</span>
+                            </div>
+                        </div>
+
+                        <h2 className="congrats-title">Congratulations!</h2>
+                        <p className="congrats-subtitle">Your email has been verified</p>
+
+                        {/* Coin reward card */}
+                        <div className="congrats-reward-card">
+                            <div className="congrats-coin-anim">
+                                <span className="congrats-coin-icon">🪙</span>
+                                <span className="congrats-coin-icon delay-1">🪙</span>
+                                <span className="congrats-coin-icon delay-2">🪙</span>
+                            </div>
+                            <div className="congrats-reward-amount">+{bonusCoins}</div>
+                            <div className="congrats-reward-label">Welcome Coins</div>
+                        </div>
+
+                        <p className="congrats-message">
+                            Unleash your creativity — generate stunning AI art, <br />
+                            videos, and more with your free coins!
+                        </p>
+
+                        <button className="congrats-btn" onClick={handleCongratsClose}>
+                            <i className="fa-solid fa-wand-magic-sparkles"></i>
+                            Start Creating
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     // ─── Forgot Password View ───
     if (viewMode === 'forgot') {

@@ -95,7 +95,9 @@ function App() {
         'admin-community': 'adminCommunity',
         'settings': 'settings',
         'bloops': 'bloops',
-        'profile': 'profile'
+        'profile': 'profile',
+        'chat': 'chat',
+        'messages': 'chat'
       };
       
       if (path.startsWith('post/')) {
@@ -145,7 +147,8 @@ function App() {
       settings: '/settings',
       bloops: '/bloops',
       home: '/',
-      profile: '/profile'
+      profile: '/profile',
+      chat: '/chat'
     };
 
     if (view === 'post' && data) {

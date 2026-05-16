@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { FaPaperPlane, FaSearch, FaArrowLeft, FaCheck, FaImage, FaSmile, FaTimes } from 'react-icons/fa';
-import { IoClose } from 'react-icons/io5';
+import { IoClose, IoCheckmarkDone, IoCheckmark } from 'react-icons/io5';
 import { BiMessageDetail } from 'react-icons/bi';
 import { MdPersonAddAlt1, MdGif } from 'react-icons/md';
+import { HiOutlineDotsVertical } from 'react-icons/hi';
 import EmojiPicker from 'emoji-picker-react';
 import apiService from '../../services/api';
 import socketService from '../../services/socket';
@@ -26,10 +27,12 @@ const ChatPage = ({ onBack, onNavigate }) => {
 	const [selectedImage, setSelectedImage] = useState(null);
 	const [imagePreview, setImagePreview] = useState(null);
 	const [uploadingImage, setUploadingImage] = useState(false);
+	const [isMobileConvOpen, setIsMobileConvOpen] = useState(false);
 	const messagesEndRef = useRef(null);
 	const typingTimeoutRef = useRef(null);
 	const searchTimeoutRef = useRef(null);
 	const fileInputRef = useRef(null);
+	const inputRef = useRef(null);
 
 	const scrollToBottom = () => {
 		messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -146,6 +149,7 @@ const ChatPage = ({ onBack, onNavigate }) => {
 
 	const loadConversation = async (conversation) => {
 		setLoading(true);
+		setIsMobileConvOpen(true);
 		try {
 			const response = await apiService.messages.getConversation(conversation.id);
 			if (response.data.success) {
@@ -200,9 +204,6 @@ const ChatPage = ({ onBack, onNavigate }) => {
 					}));
 					socketService.joinConversation(response.data.conversation.id);
 				}
-
-				// NOTE: Socket message is now emitted by the backend upon successful API call
-				// We do NOT need to emit it manually here.
 
 				socketService.stopTyping(selectedConversation.id || response.data.conversation.id);
 				fetchConversations();
@@ -339,6 +340,11 @@ const ChatPage = ({ onBack, onNavigate }) => {
 		}
 	};
 
+	const handleMobileBack = () => {
+		setIsMobileConvOpen(false);
+		setSelectedConversation(null);
+	};
+
 	const formatTime = (timestamp) => {
 		const date = new Date(timestamp);
 		const now = new Date();
@@ -354,6 +360,34 @@ const ChatPage = ({ onBack, onNavigate }) => {
 		return date.toLocaleDateString();
 	};
 
+	const formatMessageTime = (timestamp) => {
+		const date = new Date(timestamp);
+		return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+	};
+
+	// Group messages by date
+	const groupMessagesByDate = (msgs) => {
+		const groups = [];
+		let currentDate = '';
+		msgs.forEach((msg) => {
+			const d = new Date(msg.createdAt);
+			const dateStr = d.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+			const today = new Date();
+			const isToday = d.toDateString() === today.toDateString();
+			const yesterday = new Date(today);
+			yesterday.setDate(today.getDate() - 1);
+			const isYesterday = d.toDateString() === yesterday.toDateString();
+			const label = isToday ? 'Today' : isYesterday ? 'Yesterday' : dateStr;
+
+			if (label !== currentDate) {
+				currentDate = label;
+				groups.push({ type: 'date', label });
+			}
+			groups.push({ type: 'message', data: msg });
+		});
+		return groups;
+	};
+
 	const filteredConversations = conversations.filter(conv =>
 		conv.otherUser.username.toLowerCase().includes(searchQuery.toLowerCase())
 	);
@@ -362,20 +396,27 @@ const ChatPage = ({ onBack, onNavigate }) => {
 		req.otherUser.username.toLowerCase().includes(searchQuery.toLowerCase())
 	);
 
-	const filteredFollowing = searchQuery ? following.filter(user =>
-		user.username.toLowerCase().includes(searchQuery.toLowerCase())
+	const filteredFollowing = searchQuery ? following.filter(u =>
+		u.username.toLowerCase().includes(searchQuery.toLowerCase())
 	) : [];
 
+	const groupedMessages = groupMessagesByDate(messages);
+
 	return (
-		<div className="chat-page">
-			{/* Left Sidebar */}
+		<div className={`chat-page ${isMobileConvOpen ? 'conversation-selected' : ''}`}>
+			{/* ─── Left Sidebar ─── */}
 			<div className="chat-sidebar">
 				{/* Header */}
 				<div className="chat-sidebar-header">
-					<button className="chat-back-btn" onClick={onBack}>
+					<button className="chat-back-btn" onClick={onBack} title="Back to Home">
 						<FaArrowLeft />
 					</button>
-					<h2>{user?.username}</h2>
+					<div className="chat-header-info">
+						<h2>Messages</h2>
+						<span className="chat-msg-count">
+							{conversations.length} conversation{conversations.length !== 1 ? 's' : ''}
+						</span>
+					</div>
 				</div>
 
 				{/* Search */}
@@ -383,10 +424,15 @@ const ChatPage = ({ onBack, onNavigate }) => {
 					<FaSearch className="search-icon" />
 					<input
 						type="text"
-						placeholder="Search"
+						placeholder="Search conversations..."
 						value={searchQuery}
 						onChange={handleSearch}
 					/>
+					{searchQuery && (
+						<button className="search-clear" onClick={() => setSearchQuery('')}>
+							<FaTimes />
+						</button>
+					)}
 				</div>
 
 				{/* Tabs */}
@@ -395,13 +441,16 @@ const ChatPage = ({ onBack, onNavigate }) => {
 						className={`chat-tab ${activeTab === 'primary' ? 'active' : ''}`}
 						onClick={() => setActiveTab('primary')}
 					>
-						Primary
+						<span className="tab-text">Primary</span>
+						{conversations.length > 0 && (
+							<span className="tab-count">{conversations.length}</span>
+						)}
 					</button>
 					<button
 						className={`chat-tab ${activeTab === 'requests' ? 'active' : ''}`}
 						onClick={() => setActiveTab('requests')}
 					>
-						Requests
+						<span className="tab-text">Requests</span>
 						{messageRequests.length > 0 && (
 							<span className="tab-badge">{messageRequests.length}</span>
 						)}
@@ -414,8 +463,11 @@ const ChatPage = ({ onBack, onNavigate }) => {
 						<>
 							{filteredConversations.length === 0 && !searchQuery && (
 								<div className="chat-empty-state">
-									<BiMessageDetail size={40} />
-									<p>No messages yet</p>
+									<div className="empty-icon-wrap">
+										<BiMessageDetail size={32} />
+									</div>
+									<h4>No messages yet</h4>
+									<p>Start a conversation with someone you follow</p>
 								</div>
 							)}
 
@@ -425,44 +477,64 @@ const ChatPage = ({ onBack, onNavigate }) => {
 									className={`chat-conversation ${selectedConversation?.id === conv.id ? 'active' : ''}`}
 									onClick={() => loadConversation(conv)}
 								>
-									<img
-										src={conv.otherUser.avatar || `https://ui-avatars.com/api/?name=${conv.otherUser.username}&background=random`}
-										alt={conv.otherUser.username}
-										className="conversation-avatar"
-									/>
-									<div className="conversation-info">
-										<div className="conversation-name">{conv.otherUser.username}</div>
-										<div className="conversation-preview">{conv.lastMessage?.content || ''}</div>
+									<div className="conv-avatar-wrap">
+										<img
+											src={conv.otherUser.avatar || `https://ui-avatars.com/api/?name=${conv.otherUser.username}&background=5d5fef&color=fff&bold=true`}
+											alt={conv.otherUser.username}
+											className="conversation-avatar"
+										/>
+										<span className="conv-online-dot"></span>
 									</div>
-									<div className="conversation-meta">
-										<span className="conversation-time">{formatTime(conv.lastMessageAt)}</span>
-										{conv.unreadCount > 0 && (
-											<span className="unread-badge">{conv.unreadCount}</span>
-										)}
+									<div className="conversation-info">
+										<div className="conv-top-row">
+											<span className="conversation-name">{conv.otherUser.username}</span>
+											<span className="conversation-time">{formatTime(conv.lastMessageAt)}</span>
+										</div>
+										<div className="conv-bottom-row">
+											<span className="conversation-preview">
+												{conv.lastMessage?.senderId === user?.id && (
+													<IoCheckmarkDone className="msg-sent-icon" />
+												)}
+												{conv.lastMessage?.content || 'Sent an attachment'}
+											</span>
+											{conv.unreadCount > 0 && (
+												<span className="unread-badge">{conv.unreadCount}</span>
+											)}
+										</div>
 									</div>
 								</div>
 							))}
 
 							{searchQuery && filteredFollowing.length > 0 && (
 								<>
-									<div className="section-divider">Following</div>
-									{filteredFollowing.map((user) => (
+									<div className="section-divider">
+										<span>People you follow</span>
+									</div>
+									{filteredFollowing.map((u) => (
 										<div
-											key={user.id}
+											key={u.id}
 											className="chat-conversation"
 											onClick={() => {
-												setSelectedConversation({ otherUser: user, messages: [] });
+												setSelectedConversation({ otherUser: u, messages: [] });
 												setMessages([]);
 												setSearchQuery('');
+												setIsMobileConvOpen(true);
 											}}
 										>
-											<img
-												src={user.avatar || `https://ui-avatars.com/api/?name=${user.username}&background=random`}
-												alt={user.username}
-												className="conversation-avatar"
-											/>
+											<div className="conv-avatar-wrap">
+												<img
+													src={u.avatar || `https://ui-avatars.com/api/?name=${u.username}&background=5d5fef&color=fff&bold=true`}
+													alt={u.username}
+													className="conversation-avatar"
+												/>
+											</div>
 											<div className="conversation-info">
-												<div className="conversation-name">{user.username}</div>
+												<div className="conv-top-row">
+													<span className="conversation-name">{u.username}</span>
+												</div>
+												<div className="conv-bottom-row">
+													<span className="conversation-preview">Start a conversation</span>
+												</div>
 											</div>
 										</div>
 									))}
@@ -475,27 +547,32 @@ const ChatPage = ({ onBack, onNavigate }) => {
 						<>
 							{filteredRequests.length === 0 && (
 								<div className="chat-empty-state">
-									<MdPersonAddAlt1 size={40} />
-									<p>No requests</p>
+									<div className="empty-icon-wrap">
+										<MdPersonAddAlt1 size={32} />
+									</div>
+									<h4>No requests</h4>
+									<p>Message requests will appear here</p>
 								</div>
 							)}
 
 							{filteredRequests.map((req) => (
 								<div key={req.id} className="chat-request">
-									<img
-										src={req.otherUser.avatar || `https://ui-avatars.com/api/?name=${req.otherUser.username}&background=random`}
-										alt={req.otherUser.username}
-										className="conversation-avatar"
-									/>
+									<div className="conv-avatar-wrap">
+										<img
+											src={req.otherUser.avatar || `https://ui-avatars.com/api/?name=${req.otherUser.username}&background=5d5fef&color=fff&bold=true`}
+											alt={req.otherUser.username}
+											className="conversation-avatar"
+										/>
+									</div>
 									<div className="conversation-info">
 										<div className="conversation-name">{req.otherUser.username}</div>
 										<div className="conversation-preview">{req.lastMessage?.content}</div>
 									</div>
 									<div className="request-actions">
-										<button className="btn-accept" onClick={() => handleAcceptRequest(req)}>
+										<button className="btn-accept" onClick={() => handleAcceptRequest(req)} title="Accept">
 											<FaCheck />
 										</button>
-										<button className="btn-reject" onClick={() => handleRejectRequest(req)}>
+										<button className="btn-reject" onClick={() => handleRejectRequest(req)} title="Decline">
 											<IoClose />
 										</button>
 									</div>
@@ -506,30 +583,80 @@ const ChatPage = ({ onBack, onNavigate }) => {
 				</div>
 			</div>
 
-			{/* Right Panel - Messages */}
+			{/* ─── Right Panel - Messages ─── */}
 			<div className="chat-message-panel">
 				{selectedConversation ? (
 					<>
 						{/* Chat Header */}
 						<div className="chat-message-header">
-							<img
-								src={selectedConversation.otherUser.avatar || `https://ui-avatars.com/api/?name=${selectedConversation.otherUser.username}&background=random`}
-								alt={selectedConversation.otherUser.username}
-								className="header-avatar"
-							/>
-							<div className="header-info">
-								<div className="header-name">{selectedConversation.otherUser.username}</div>
+							<button className="mobile-back-btn" onClick={handleMobileBack}>
+								<FaArrowLeft />
+							</button>
+							<div
+								className="header-user-info"
+								onClick={() => onNavigate && onNavigate('user', selectedConversation.otherUser.id)}
+								style={{ cursor: 'pointer' }}
+							>
+								<img
+									src={selectedConversation.otherUser.avatar || `https://ui-avatars.com/api/?name=${selectedConversation.otherUser.username}&background=5d5fef&color=fff&bold=true`}
+									alt={selectedConversation.otherUser.username}
+									className="header-avatar"
+								/>
+								<div className="header-info">
+									<div className="header-name">{selectedConversation.otherUser.username}</div>
+									<div className="header-status">
+										{isTyping ? (
+											<span className="status-typing">typing...</span>
+										) : (
+											<span className="status-online">Active</span>
+										)}
+									</div>
+								</div>
+							</div>
+							<div className="header-actions">
+								<button className="header-action-btn" title="More options">
+									<HiOutlineDotsVertical />
+								</button>
 							</div>
 						</div>
 
-						{/* Messages */}
+						{/* Messages Area */}
 						<div className="chat-messages">
 							{loading ? (
-								<div className="message-loading">Loading...</div>
+								<div className="chat-skeleton-container">
+									{[1, 2, 3, 4, 5].map((i) => (
+										<div key={i} className={`skeleton-message ${i % 2 === 0 ? 'sent' : 'received'}`}>
+											<div className="skeleton-bubble" style={{ width: `${Math.floor(Math.random() * 40) + 20}%` }}></div>
+										</div>
+									))}
+								</div>
 							) : (
 								<>
-									{messages.map((msg, idx) => {
-										// Detect shared post: has mediaUrl + content contains ?post=
+									{messages.length === 0 && (
+										<div className="chat-start-notice">
+											<div className="chat-start-avatar">
+												<img
+													src={selectedConversation.otherUser.avatar || `https://ui-avatars.com/api/?name=${selectedConversation.otherUser.username}&background=5d5fef&color=fff&bold=true`}
+													alt=""
+												/>
+											</div>
+											<h4>{selectedConversation.otherUser.username}</h4>
+											<p>Send a message to start the conversation</p>
+										</div>
+									)}
+
+									{groupedMessages.map((item, idx) => {
+										if (item.type === 'date') {
+											return (
+												<div key={`date-${idx}`} className="message-date-divider">
+													<span>{item.label}</span>
+												</div>
+											);
+										}
+
+										const msg = item.data;
+										const isSent = msg.senderId === user.id;
+										// Detect shared post
 										const isSharedPost = msg.mediaUrl && msg.content?.includes('?post=');
 										const sharedPostId = isSharedPost
 											? (() => { try { const u = msg.content.split('\n').find(l => l.includes('?post=')); return new URL(u).searchParams.get('post'); } catch { return null; } })()
@@ -540,8 +667,8 @@ const ChatPage = ({ onBack, onNavigate }) => {
 
 										return (
 											<div
-												key={idx}
-												className={`message ${msg.senderId === user.id ? 'sent' : 'received'}`}
+												key={msg.id || idx}
+												className={`message ${isSent ? 'sent' : 'received'} ${msg.isOptimistic ? 'optimistic' : ''}`}
 											>
 												<div className="message-bubble">
 													{isSharedPost ? (
@@ -563,7 +690,6 @@ const ChatPage = ({ onBack, onNavigate }) => {
 														</div>
 													) : (
 														<>
-															{msg.content && <p>{msg.content}</p>}
 															{msg.mediaUrl && (
 																<img
 																	src={msg.mediaUrl}
@@ -575,18 +701,31 @@ const ChatPage = ({ onBack, onNavigate }) => {
 																	}}
 																/>
 															)}
+															{msg.content && <p>{msg.content}</p>}
 														</>
 													)}
-													<span className="message-time">{formatTime(msg.createdAt)}</span>
+													<div className="message-meta">
+														<span className="message-time">{formatMessageTime(msg.createdAt)}</span>
+														{isSent && (
+															<span className="message-status">
+																{msg.isOptimistic ? <IoCheckmark /> : <IoCheckmarkDone />}
+															</span>
+														)}
+													</div>
 												</div>
 											</div>
 										);
 									})}
+
 									{isTyping && (
-										<div className="typing-indicator">
-											<span></span>
-											<span></span>
-											<span></span>
+										<div className="message received">
+											<div className="message-bubble typing-bubble">
+												<div className="typing-indicator">
+													<span></span>
+													<span></span>
+													<span></span>
+												</div>
+											</div>
 										</div>
 									)}
 									<div ref={messagesEndRef} />
@@ -598,18 +737,20 @@ const ChatPage = ({ onBack, onNavigate }) => {
 						<form className="chat-message-input" onSubmit={handleSendMessage}>
 							{/* Image Preview */}
 							{imagePreview && (
-								<div className="image-preview">
-									<img src={imagePreview} alt="Preview" />
-									<button type="button" className="remove-image" onClick={handleRemoveImage}>
-										<FaTimes />
-									</button>
+								<div className="image-preview-bar">
+									<div className="image-preview-item">
+										<img src={imagePreview} alt="Preview" />
+										<button type="button" className="remove-image" onClick={handleRemoveImage}>
+											<FaTimes />
+										</button>
+									</div>
 								</div>
 							)}
 
 							{/* Emoji Picker */}
 							{showEmojiPicker && (
 								<div className="emoji-picker-wrapper">
-									<EmojiPicker onEmojiClick={handleEmojiClick} theme="dark" />
+									<EmojiPicker onEmojiClick={handleEmojiClick} theme="dark" width="100%" height={350} />
 								</div>
 							)}
 
@@ -626,14 +767,6 @@ const ChatPage = ({ onBack, onNavigate }) => {
 									<button
 										type="button"
 										className="media-btn"
-										onClick={() => fileInputRef.current?.click()}
-										title="Upload image"
-									>
-										<FaImage />
-									</button>
-									<button
-										type="button"
-										className="media-btn"
 										onClick={() => setShowEmojiPicker(!showEmojiPicker)}
 										title="Add emoji"
 									>
@@ -642,30 +775,37 @@ const ChatPage = ({ onBack, onNavigate }) => {
 									<button
 										type="button"
 										className="media-btn"
-										title="Send GIF (Coming soon)"
-										disabled
+										onClick={() => fileInputRef.current?.click()}
+										title="Upload image"
 									>
-										<MdGif />
+										<FaImage />
 									</button>
 								</div>
 
 								<input
+									ref={inputRef}
 									type="text"
 									value={messageInput}
 									onChange={handleTyping}
-									placeholder="Message..."
+									placeholder="Type a message..."
+									onFocus={() => setShowEmojiPicker(false)}
 								/>
 
 								{imagePreview ? (
 									<button
 										type="button"
+										className="send-btn"
 										onClick={handleImageUpload}
 										disabled={uploadingImage}
 									>
-										{uploadingImage ? '...' : <FaPaperPlane />}
+										{uploadingImage ? (
+											<div className="send-spinner"></div>
+										) : (
+											<FaPaperPlane />
+										)}
 									</button>
 								) : (
-									<button type="submit" disabled={!messageInput.trim()}>
+									<button type="submit" className="send-btn" disabled={!messageInput.trim()}>
 										<FaPaperPlane />
 									</button>
 								)}
@@ -674,9 +814,14 @@ const ChatPage = ({ onBack, onNavigate }) => {
 					</>
 				) : (
 					<div className="chat-empty-panel">
-						<BiMessageDetail size={80} />
-						<h3>Your messages</h3>
-						<p>Send a message to start a chat</p>
+						<div className="empty-panel-content">
+							<div className="empty-panel-icon">
+								<BiMessageDetail size={48} />
+							</div>
+							<h3>Your Messages</h3>
+							<p>Send private messages to your friends and creators</p>
+							<span className="empty-panel-hint">Select a conversation or search for someone to chat with</span>
+						</div>
 					</div>
 				)}
 			</div>

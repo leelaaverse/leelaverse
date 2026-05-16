@@ -110,6 +110,8 @@ const apiService = {
 		refreshToken: (refreshToken) => apiClient.post('/api/auth/refresh', { refreshToken }),
 		getProfile: () => apiClient.get('/api/auth/profile'),
 		updateProfile: (data) => apiClient.put('/api/auth/profile', data),
+		verifyOTP: (data) => apiClient.post('/api/auth/verify-otp', data),
+		resendOTP: (data) => apiClient.post('/api/auth/resend-otp', data),
 	},
 
 	// Profile API

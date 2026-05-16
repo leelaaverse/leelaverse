@@ -115,7 +115,7 @@ class PaymentController {
             const order = await razorpay.orders.create({
                 amount: amountInPaise,
                 currency: 'INR',
-                receipt: `coins_${userId}_${Date.now()}`,
+                receipt: `cn_${userId.slice(-8)}_${Date.now()}`,
                 notes: {
                     userId,
                     coins: coins.toString(),
